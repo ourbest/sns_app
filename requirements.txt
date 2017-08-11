@@ -2,3 +2,5 @@ django
 mysqlclient
 redis
 qqbot
+gunicorn
+gevent
