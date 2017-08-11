@@ -1,89 +1,172 @@
 from django.db import models
 
 
+class User(models.Model):
+    """
+    用户
+    """
+    name = models.CharField('姓名', max_length=30)
+    email = models.CharField('邮箱', max_length=50)
+    status = models.IntegerField('状态', default=0)
+    passwd = models.CharField('密码', max_length=50)
+    created_at = models.DateTimeField('创建时间', auto_now_add=True)
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        verbose_name = '员工'
+        verbose_name_plural = ' 员工列表'
+
+
 # Create your models here.
 class PhoneDevice(models.Model):
     """
     手机
     """
-    label = models.CharField(max_length=50)
-    type = models.IntegerField("类型", default=1, help_text="0 - 手机，1 - 虚拟机")
-    model = models.CharField(max_length=20)
-    system = models.CharField(max_length=50)
-    status = models.IntegerField(default=0)
-    owner = models.ForeignKey(User, null=True, blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
+    label = models.CharField('编号', max_length=50)
+    phone_num = models.CharField('手机号', max_length=20)
+    type = models.IntegerField("类型", default=0, help_text="0 - 手机，1 - 虚拟机")
+    model = models.CharField('型号', max_length=20)
+    system = models.CharField('系统和版本', max_length=50)
+    status = models.IntegerField('状态', default=0)
+    owner = models.ForeignKey(User, null=True, blank=True, verbose_name='所有者')
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='添加时间')
 
+    def __str__(self):
+        return self.label
 
-class User(models.Model):
-    """
-    用户
-    """
-    name = models.CharField(max_length=30)
-    email = models.CharField(max_length=30)
-    status = models.IntegerField(default=0)
+    class Meta:
+        verbose_name = '手机'
+        verbose_name_plural = ' 手机列表'
 
 
 class App(models.Model):
     """
     生活圈
     """
-    app_id = models.IntegerField(primary_key=True)
-    app_name = models.CharField(max_length=32)
+    app_id = models.IntegerField('ID', primary_key=True)
+    app_name = models.CharField('名称', max_length=32)
+
+    def __str__(self):
+        return '%s (%s)' % (self.app_name, self.app_id)
+
+    class Meta:
+        verbose_name = '生活圈'
+        verbose_name_plural = ' 生活圈列表'
 
 
 class AppUser(models.Model):
     """
-    生活圈用户
+    生活圈马甲用户
     """
-    name = models.CharField(max_length=30)
-    user_id = models.IntegerField()
-    memo = models.CharField(max_length=50)
-    created_at = models.DateTimeField(auto_now_add=True)
-    user = models.ForeignKey(User)
+    name = models.CharField('名字', max_length=30)
+    cutt_user_id = models.IntegerField('生活圈用户ID')
+    memo = models.CharField('备注', max_length=50)
+    created_at = models.DateTimeField('添加时间', auto_now_add=True)
+    user = models.ForeignKey(User, verbose_name='属于')
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        verbose_name = 'APP马甲'
+        verbose_name_plural = ' APP马甲列表'
 
 
 class SnsUser(models.Model):
     """
     微信/QQ用户
     """
-    name = models.CharField(max_length=30)
-    type = models.IntegerField()
-    login_name = models.CharField(max_length=30)
-    passwd = models.CharField(max_length=30)
-    status = models.IntegerField(default=0)
-    memo = models.CharField(max_length=255, null=True, blank=True)
-    phone = models.CharField(max_length=30)
-    device = models.ForeignKey(PhoneDevice, null=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-    owner = models.ForeignKey(User, null=True)
-    app = models.ForeignKey(App)
+    name = models.CharField('显示名', max_length=30)
+    type = models.IntegerField('类型', default=0, help_text='0 - QQ 1 - 微信')
+    login_name = models.CharField('登录名', max_length=30)
+    passwd = models.CharField('密码', max_length=30)
+    status = models.IntegerField('状态', default=0)
+    memo = models.CharField('备注', max_length=255, null=True, blank=True)
+    phone = models.CharField('电话', max_length=30)
+    device = models.ForeignKey(PhoneDevice, null=True, verbose_name='设备')
+    created_at = models.DateTimeField('创建时间', auto_now_add=True)
+    updated_at = models.DateTimeField('更新时间', auto_now=True)
+    owner = models.ForeignKey(User, null=True, verbose_name='所有者')
+    app = models.ForeignKey(App, verbose_name='生活圈')
+    bot_login_token = models.BinaryField(null=True, blank=True)
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        verbose_name = '社交账号'
+        verbose_name_plural = ' 社交账号列表'
 
 
 class SnsGroup(models.Model):
     """
     qq／微信群
     """
-    group_id = models.CharField(max_length=50, primary_key=True)
-    type = models.IntegerField(default=0)
-    group_name = models.CharField(50)
-    group_user_count = models.IntegerField(default=0)
-    status = models.IntegerField(default=0)
-    created_at = models.DateTimeField(auto_now_add=True)
+    group_id = models.CharField('群ID', max_length=50, primary_key=True)
+    type = models.IntegerField('类型', default=0, help_text='0 - QQ 1 - 微信')
+    group_name = models.CharField('群名', max_length=50)
+    group_user_count = models.IntegerField('群用户数', default=0)
+    status = models.IntegerField('状态', default=0)
+    created_at = models.DateTimeField(verbose_name='添加时间', auto_now_add=True)
+
+    def __str__(self):
+        return '%s (%s)' % (self.group_name, self.group_id)
+
+    class Meta:
+        verbose_name = '群'
+        verbose_name_plural = '群列表'
 
 
 class SnsUserGroup(models.Model):
     """
     用户群
     """
-    sns_user = models.ForeignKey(SnsUser)
-    sns_group = models.ForeignKey(SnsGroup)
-    nick_name = models.CharField(50)
-    created_at = models.DateTimeField(auto_now_add=True)
-    status = models.IntegerField(default=0)
-    active = models.IntegerField(default=0)
-    last_post_at = models.DateTimeField(null=True)
+    sns_user = models.ForeignKey(SnsUser, verbose_name='用户')
+    sns_group = models.ForeignKey(SnsGroup, verbose_name='群')
+    nick_name = models.CharField(max_length=50, verbose_name='备注名')
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='加入时间')
+    status = models.IntegerField(default=0, verbose_name='状态')
+    active = models.IntegerField(default=0, verbose_name='可用')
+    last_post_at = models.DateTimeField(null=True, verbose_name='最后分发时间')
+
+    def __str__(self):
+        return str(self.sns_group)
+
+
+class SnsUserInfo(models.Model):
+    """
+    用户信息
+    """
+    type = models.IntegerField(default=0, help_text="0 - QQ 1 - 微信")
+    uin = models.CharField(max_length=50)
+    user_id = models.CharField(max_length=50)
+    nick = models.CharField(max_length=100)
+    avatar = models.CharField(max_length=255)
+    memo = models.CharField(max_length=255)
+
+    def __str__(self):
+        return '%s (%s)' % (self.nick, self.user_id)
+
+
+class SnsGroupUser(models.Model):
+    """
+    群中的用户信息
+    """
+    group = models.ForeignKey(SnsGroup, verbose_name='群')
+    user = models.ForeignKey(SnsUserInfo, verbose_name='用户')
+    nick = models.CharField('昵称', max_length=50)
+    title = models.CharField('头衔', max_length=20)
+    created_at = models.DateTimeField('添加时间', auto_now_add=True)
+    status = models.IntegerField('状态', default=0)
+    updated_at = models.DateTimeField('修改时间', auto_now=True)
+
+    def __str__(self):
+        return str(self.user)
+
+
+# 用户
 
 
 class UserActionLog(models.Model):
