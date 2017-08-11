@@ -4,3 +4,4 @@ redis
 qqbot
 gunicorn
 gevent
+WhiteNoise

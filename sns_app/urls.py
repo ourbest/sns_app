@@ -23,8 +23,3 @@ from django.views.static import serve
 urlpatterns = [
     url(r'^admin/', admin.site.urls),
 ]
-
-if not settings.DEBUG:
-    urlpatterns += [
-        url(r'^%s(?P<path>.*)$' % re.escape(settings.STATIC_URL.lstrip('/')), view=serve),
-    ]
