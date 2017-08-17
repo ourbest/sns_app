@@ -5,3 +5,5 @@ qqbot
 gunicorn
 gevent
 WhiteNoise
+py-dev-common
+qiniu
