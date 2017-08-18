@@ -1,6 +1,21 @@
 from django.db import models
 
 
+class App(models.Model):
+    """
+    生活圈
+    """
+    app_id = models.IntegerField('ID', primary_key=True)
+    app_name = models.CharField('名称', max_length=32)
+
+    def __str__(self):
+        return '%s (%s)' % (self.app_name, self.app_id)
+
+    class Meta:
+        verbose_name = '生活圈'
+        verbose_name_plural = ' 生活圈列表'
+
+
 class User(models.Model):
     """
     用户
@@ -10,6 +25,7 @@ class User(models.Model):
     status = models.IntegerField('状态', default=0)
     passwd = models.CharField('密码', max_length=50)
     created_at = models.DateTimeField('创建时间', auto_now_add=True)
+    app = models.ForeignKey(App, verbose_name='生活圈', null=True, blank=True, default=None)
 
     def __str__(self):
         return self.name
@@ -39,21 +55,6 @@ class PhoneDevice(models.Model):
     class Meta:
         verbose_name = '手机'
         verbose_name_plural = ' 手机列表'
-
-
-class App(models.Model):
-    """
-    生活圈
-    """
-    app_id = models.IntegerField('ID', primary_key=True)
-    app_name = models.CharField('名称', max_length=32)
-
-    def __str__(self):
-        return '%s (%s)' % (self.app_name, self.app_id)
-
-    class Meta:
-        verbose_name = '生活圈'
-        verbose_name_plural = ' 生活圈列表'
 
 
 class AppUser(models.Model):
@@ -108,7 +109,8 @@ class SnsGroup(models.Model):
     type = models.IntegerField('类型', default=0, help_text='0 - QQ 1 - 微信')
     group_name = models.CharField('群名', max_length=50)
     group_user_count = models.IntegerField('群用户数', default=0)
-    status = models.IntegerField('状态', default=0)
+    status = models.IntegerField('状态', default=0, help_text='0 - 未使用 1 - 已分配 -1 - 忽略')
+    app = models.ForeignKey(App, verbose_name='生活圈', null=True)
     created_at = models.DateTimeField(verbose_name='添加时间', auto_now_add=True)
 
     def __str__(self):
@@ -164,6 +166,17 @@ class SnsGroupUser(models.Model):
 
     def __str__(self):
         return str(self.user)
+
+
+class SnsGroupSplit(models.Model):
+    """
+    推广人员分配到的群表
+    """
+    group = models.ForeignKey(SnsGroup, verbose_name='群')
+    user = models.ForeignKey(User, verbose_name='推广人')
+    status = models.IntegerField('状态', default=0)
+    created_at = models.DateTimeField('添加时间', auto_now_add=True)
+    phone = models.ForeignKey(PhoneDevice, null=True, verbose_name='设备')
 
 
 # 用户

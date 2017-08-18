@@ -7,3 +7,4 @@ gevent
 WhiteNoise
 py-dev-common
 qiniu
+wxpy
