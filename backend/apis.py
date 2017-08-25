@@ -31,17 +31,27 @@ def import_qq():
 
 @api_func_anonymous
 def import_qun(app, ids):
+    cnt = 0
+    total = 0
     for line in ids.split('\n'):
         line = line.strip()
         if line:
+            total += 1
             account = re.split('\s+', line)
             try:
                 db = SnsGroup.objects.filter(group_id=account[0]).first()
                 if not db:
                     SnsGroup(group_id=account[0], group_name=account[1], type=0, app_id=app,
                              group_user_count=account[2]).save()
+                    cnt += 1
             except:
                 logger.warning("error save %s" % account)
+
+    return {
+        'count': cnt,
+        'total': total,
+        'message': '成功'
+    }
 
 
 @api_func_anonymous
@@ -79,10 +89,13 @@ def export_qun(request, email, filter):
 
     if filter == '所有':
         db = SnsGroup.objects.filter(app_id=app)
-        return ['%s %s %s' % (x.group_id, x.group.group_name, x.group.group_user_count) for x in db]
+        return ['%s\t%s\t%s' % (x.group_id, x.group_name, x.group_user_count) for x in db]
+    elif filter == '分配情况':
+        db = SnsGroupSplit.objects.filter(group__app_id=app).select_related('group', 'user')
+        return ['%s\t%s\t%s\t%s' % (x.group.group_id, x.group.group_name, x.group.group_user_count, x.user.email) for x in db]
     elif filter == '未分配':
         db = SnsGroup.objects.filter(app_id=app, status=0)
-        return ['%s %s %s' % (x.group_id, x.group.group_name, x.group.group_user_count) for x in db]
+        return ['%s\t%s\t%s' % (x.group_id, x.group_name, x.group_user_count) for x in db]
     elif user:
         db = SnsGroupSplit.objects.filter(user__email=user).select_related("group")
         if filter == '未指定手机':
@@ -90,7 +103,7 @@ def export_qun(request, email, filter):
             # db = db.filter(status=0)
         # if not full and len(db):
         #     SnsGroupSplit.objects.filter(user__email=user, status=0).update(status=1)
-        return ['%s %s %s' % (x.group_id, x.group.group_name, x.group.group_user_count) for x in db]
+        return ['%s\t%s\t%s' % (x.group_id, x.group.group_name, x.group.group_user_count) for x in db]
 
 
 @api_func_anonymous
