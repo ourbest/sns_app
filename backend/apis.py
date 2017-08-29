@@ -3,7 +3,7 @@ import re
 
 from dj.utils import api_func_anonymous, api_error
 
-from backend.models import User, App, SnsGroup, SnsGroupSplit, PhoneDevice, SnsUser
+from backend.models import User, App, SnsGroup, SnsGroupSplit, PhoneDevice, SnsUser, SnsUserGroup
 
 logger = logging.getLogger(__name__)
 
@@ -11,9 +11,17 @@ DEFAULT_APP = 1519662
 
 
 @api_func_anonymous
-def upload(ftype, fid):
-    uploaded_file = None
-    print(ftype, fid)
+def upload(type, id, task_id):
+    return "ok"
+
+
+@api_func_anonymous
+def task(id):
+    print(id)
+    return {
+        'name': 'test.txt',
+        'content': 'this is a test'
+    }
 
 
 @api_func_anonymous
@@ -100,25 +108,25 @@ def import_phone(ids):
 
 
 @api_func_anonymous
-def import_user(request, ids):
+def import_user(request, ids, app):
     """
-    email name app
+    email name
     :return:
     """
     total = 0
+    if not app:
+        app = _get_session_app(request)
     for line in ids.split('\n'):
         line = line.strip()
         if line:
             account = re.split('\s+', line)
             db = User.objects.filter(email=account[0]).first()
             if not db:
-                app = account[2] if len(account) > 2 else _get_session_app(request)
                 User(email=account[0], name=account[1], status=0, passwd='testpwd', app_id=app).save()
                 total += 1
             else:
                 db.name = account[1]
-                if len(account) > 2:
-                    db.app_id = account[2]
+                db.app_id = app
                 db.save()
 
     return {
@@ -134,6 +142,13 @@ def import_sns():
 
 @api_func_anonymous
 def import_qun(app, ids, request):
+    """
+    群号 群名 群人数 qq号[可选]
+    :param app:
+    :param ids:
+    :param request:
+    :return:
+    """
     if not app:
         app = _get_session_app(request)
     cnt = 0
@@ -146,9 +161,21 @@ def import_qun(app, ids, request):
             try:
                 db = SnsGroup.objects.filter(group_id=account[0]).first()
                 if not db:
-                    SnsGroup(group_id=account[0], group_name=account[1], type=0, app_id=app,
-                             group_user_count=account[2]).save()
+                    db = SnsGroup(group_id=account[0], group_name=account[1], type=0, app_id=app,
+                                  group_user_count=account[2])
+                    db.save()
                     cnt += 1
+
+                if len(account) > 3:
+                    qq_num = account[3]
+                    su = SnsUser.objects.filter(login_name=qq_num, type=0).first()
+                    if su:
+                        sug = SnsUserGroup.objects.filter(sns_user=su, sns_group=db).first()
+                        if not sug:
+                            sug = SnsUserGroup(sns_group=db, sns_user=su, status=0)
+                        sug.active = 1
+                        sug.save()
+
             except:
                 logger.warning("error save %s" % account)
 
