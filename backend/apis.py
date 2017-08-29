@@ -1,9 +1,10 @@
 import logging
 import re
+from collections import defaultdict
 
 from dj.utils import api_func_anonymous, api_error
 
-from backend.models import User, App, SnsGroup, SnsGroupSplit, PhoneDevice, SnsUser, SnsUserGroup
+from backend.models import User, App, SnsGroup, SnsGroupSplit, PhoneDevice, SnsUser, SnsUserGroup, SnsGroupLost
 
 logger = logging.getLogger(__name__)
 
@@ -65,6 +66,44 @@ def import_qq(ids):
         'total': total,
         'message': '成功'
     }
+
+
+@api_func_anonymous
+def my_qun(request):
+    return [{
+        'id': x.sns_group.id,
+        'name': x.sns_group.group_name,
+        'qq': {
+            x.sns_user.login_name,
+            x.sns_user.name
+        },
+        'device': {
+            'label': x.sns_user.device.label,
+            'phone': x.sns_user.device.phone_num
+        },
+        'member_count': x.sns_group.group_user_count
+    } for x in
+        SnsUserGroup.objects.filter(sns_user__owner__email=_get_session_user(request), active=1,
+                                    status=0).select_related("sns_group", "sns_user", "sns_user__device")]
+
+
+@api_func_anonymous
+def my_lost_qun(request):
+    return [{
+        'id': x.sns_group.id,
+        'name': x.sns_group.group_name,
+        'qq': {
+            x.sns_user.login_name,
+            x.sns_user.name
+        },
+        'device': {
+            'label': x.sns_user.device.label,
+            'phone': x.sns_user.device.phone_num
+        },
+        'member_count': x.sns_group.group_user_count
+    } for x in
+        SnsUserGroup.objects.filter(sns_user__owner__email=_get_session_user(request), active=0,
+                                    status=-1).select_related("sns_group", "sns_user", "sns_user__device")]
 
 
 @api_func_anonymous
@@ -141,6 +180,95 @@ def import_sns():
 
 
 @api_func_anonymous
+def import_useless_qun(ids):
+    total = 0
+    # if not app:
+    #     app = _get_session_app(request)
+
+    for line in ids.split('\n'):
+        line = line.strip()
+        if line:
+            total += 1
+            db = SnsGroup.objects.filter(group_id=line).first()
+            if db:
+                db.status = -2
+                db.save()
+                # db = SnsGroup()
+                # 删除无效群的数据
+                db.snsgroupsplit_set.all().delete()
+
+
+@api_func_anonymous
+def import_qun_stat(ids):
+    """
+    导入群的统计数据
+    这个是完整的，如果之前在的群没了，说明被踢了
+    :param ids:
+    :return:
+    """
+    to_save = defaultdict(list)
+    total = 0
+    for line in ids.split('\n'):
+        line = line.strip()
+        if line:
+            account = re.split('\s+', line)
+            if len(account) == 4:
+                total += 1
+                to_save[account[3]].append((account[0], account[1], account[2]))
+
+    for k, accounts in to_save.items():
+        sns_user = SnsUser.objects.filter(login_name=k, type=0).first()
+        if sns_user:
+            all_groups = sns_user.snsusergroup_set.all()
+            all_group_ids = set()
+            for (qun_num, qun_name, qun_user_cnt) in accounts:
+                all_group_ids.add(qun_num)
+                found = None
+                for group in all_groups:
+                    if qun_num == group.group_id:
+                        # in
+                        found = group
+                        break
+
+                if not found:
+                    # 新增
+                    qun = SnsGroup.objects.filter(group_id=qun_num, type=0).first()
+                    if not qun:
+                        qun = SnsGroup(group_id=qun_num, group_name=qun_name, type=0, app_id=sns_user.app_id,
+                                       group_user_count=qun_user_cnt, status=2)
+                        qun.save()
+                    else:
+                        if qun.status != 2:
+                            qun.status = 2
+                            qun.save()
+
+                    SnsUserGroup(sns_group=qun, sns_user=sns_user, status=0, active=1).save()
+                else:
+                    if found.status != 0:
+                        found.status = 0
+                        found.active = 1
+                        found.save()
+
+                    qun = found.sns_group
+
+                    if qun.status != 2:
+                        qun.status = 2
+
+                    qun.group_user_count = qun_user_cnt
+                    qun.save()
+
+            for group in all_groups:
+                if group.group_id not in all_group_ids:
+                    # 被踢了
+                    SnsGroupLost(group_id=group.group_id, sns_user=sns_user).save()
+                    # SnsGroupSplit.objects.filter(group_id=group.group_id, status__gte=0).update(status=-1)
+                    SnsGroupSplit.objects.filter(group_id=group.group_id).delete()
+                    group.status = -1
+                    group.active = 0
+                    group.save()
+
+
+@api_func_anonymous
 def import_qun(app, ids, request):
     """
     群号 群名 群人数 qq号[可选]
@@ -175,7 +303,9 @@ def import_qun(app, ids, request):
                             sug = SnsUserGroup(sns_group=db, sns_user=su, status=0)
                         sug.active = 1
                         sug.save()
-
+                        db.status = 2
+                        db.snsgroupsplit_set.filter(status=0).update(status=1)
+                        db.save()
             except:
                 logger.warning("error save %s" % account)
 
@@ -213,8 +343,8 @@ def split_qq(app, request):
 
 
 @api_func_anonymous
-def export_qun(request, email, filter):
-    user = email if email else _get_session_user(request)
+def export_qun(request, others, filter, device):
+    user = _get_session_user(request)
     app = _get_session_app(request)
     # if user:
     #     db = User.objects.filter(email=email).first()
@@ -231,6 +361,17 @@ def export_qun(request, email, filter):
     elif filter == '未分配':
         db = SnsGroup.objects.filter(app_id=app, status=0)
         return ['%s\t%s\t%s' % (x.group_id, x.group_name, x.group_user_count) for x in db]
+    elif filter == '特定手机':
+        if not device:
+            return []
+        db = SnsGroupSplit.objects.filter(phone_id=device).select_related("group")
+        return ['%s\t%s\t%s' % (x.group.group_id, x.group.group_name, x.group.group_user_count) for x in db]
+    elif filter == '分配给':
+        if not others:
+            return []
+        db = SnsGroupSplit.objects.filter(user__email=others).select_related("group")
+        return ['%s\t%s\t%s' % (x.group_id, x.group.group_name, x.group.group_user_count) for x in db]
+
     elif user:
         db = SnsGroupSplit.objects.filter(user__email=user).select_related("group")
         if filter == '未指定手机':
@@ -275,9 +416,9 @@ def apps():
 
 
 @api_func_anonymous
-def login(request, email):
+def login(request, email, password):
     user = User.objects.filter(email=email).first()
-    if user:
+    if user and password == user.passwd:
         request.session['user'] = email
         logger.info("User %s login." % user)
         return "ok"
@@ -286,14 +427,28 @@ def login(request, email):
 
 
 @api_func_anonymous
+def login_info(request):
+    return _get_session_user(request)
+
+
+@api_func_anonymous
 def logout(request):
     del request.session['user']
+    return "ok"
 
 
 @api_func_anonymous
 def users(request):
     app = _get_session_app(request)
-    return [{x.email, x.name} for x in User.objects.filter(app_id=app)]
+    return [{'id': x.id, 'email': x.email, 'name': x.name} for x in User.objects.filter(app_id=app)]
+
+
+@api_func_anonymous
+def devices(request):
+    email = _get_session_user(request)
+    if email:
+        return [{'id': x.id, 'label': x.label, 'num': x.phone_num}
+                for x in PhoneDevice.objects.filter(owner__email=email)]
 
 
 def _after_upload_file(ftype, fid, local_file):

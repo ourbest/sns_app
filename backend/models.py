@@ -127,7 +127,7 @@ class SnsUserGroup(models.Model):
     """
     sns_user = models.ForeignKey(SnsUser, verbose_name='用户')
     sns_group = models.ForeignKey(SnsGroup, verbose_name='群')
-    nick_name = models.CharField(max_length=50, verbose_name='备注名')
+    nick_name = models.CharField(max_length=50, verbose_name='备注名', null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='加入时间')
     status = models.IntegerField(default=0, verbose_name='状态')
     active = models.IntegerField(default=0, verbose_name='可用')
@@ -177,6 +177,16 @@ class SnsGroupSplit(models.Model):
     status = models.IntegerField('状态', default=0)
     created_at = models.DateTimeField('添加时间', auto_now_add=True)
     phone = models.ForeignKey(PhoneDevice, null=True, verbose_name='设备')
+
+
+class SnsGroupLost(models.Model):
+    """
+    丢失的群列表
+    """
+    group = models.ForeignKey(SnsGroup, verbose_name='群')
+    sns_user = models.ForeignKey(SnsUser, verbose_name='账号')
+    status = models.IntegerField('状态', default=0, help_text='0 - 未处理, 1 - 已处理')
+    created_at = models.DateTimeField('添加时间', auto_now_add=True)
 
 
 # 用户
