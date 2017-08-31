@@ -1,8 +1,13 @@
 import logging
+import os
 import re
 from collections import defaultdict
+from datetime import datetime
 
 from dj.utils import api_func_anonymous, api_error
+from django.conf import settings
+from django.core.files.uploadedfile import TemporaryUploadedFile
+from qiniu import Auth, put_file, etag
 
 from backend.models import User, App, SnsGroup, SnsGroupSplit, PhoneDevice, SnsUser, SnsUserGroup, SnsGroupLost
 
@@ -12,7 +17,23 @@ DEFAULT_APP = 1519662
 
 
 @api_func_anonymous
-def upload(type, id, task_id):
+def upload(type, id, task_id, request):
+    if 'file' not in request.FILES:
+        api_error(1000, '没有上传的文件')
+
+    upload_file = request.FILES['file']
+
+    name = os.path.basename(upload_file.name)
+    if isinstance(upload_file, TemporaryUploadedFile):
+        tmp_file = upload_file.temporary_file_path()
+    else:
+        tmp_file = "/tmp/%s/%s" % (task_id, name)
+        with open(tmp_file, "wb") as out:
+            for chunk in upload_file.chunks():
+                out.write(chunk)
+
+    _upload_to_qiniu(id, task_id, type, name, tmp_file)
+    os.remove(tmp_file)
     return "ok"
 
 
@@ -466,3 +487,12 @@ def _get_session_app(request):
         return user.app_id
     else:
         return DEFAULT_APP
+
+
+def _upload_to_qiniu(device_id, task, type, name, file):
+    q = Auth(settings.QINIU_AK, settings.QINIU_SK)
+    ts = int(datetime.now().timestamp())
+    key = 'sns/%s/%s/%s/%s/%s' % (task, device_id, type, ts, name)
+    token = q.upload_token(settings.QINIU_BUCKET, key)
+    ret, info = put_file(token, key, file)
+    return ret['key'] == key and ret['hash'] == etag(file)
