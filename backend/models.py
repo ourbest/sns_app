@@ -189,6 +189,58 @@ class SnsGroupLost(models.Model):
     created_at = models.DateTimeField('添加时间', auto_now_add=True)
 
 
+class SnsTaskType(models.Model):
+    """
+    任务类型
+    """
+    name = models.CharField(max_length=32)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+
+class ActiveDevice(models.Model):
+    """
+    当前在线的设备
+    """
+    device = models.ForeignKey(PhoneDevice, verbose_name='设备')
+    active_at = models.DateTimeField('最后上线时间', auto_now=True)
+    status = models.IntegerField('状态', default=0, help_text='0 - 正常， 1 - 工作中')
+
+
+class SnsTask(models.Model):
+    """
+    任务
+    """
+    name = models.CharField(max_length=80)
+    created_at = models.DateTimeField(auto_now_add=True)
+    type = models.ForeignKey(SnsTaskType)
+    data = models.TextField(blank=True, null=True)
+    status = models.IntegerField(default=0)
+
+
+class SnsTaskDevice(models.Model):
+    """
+    任务具体设备
+    """
+    task = models.ForeignKey(SnsTask)
+    device = models.ForeignKey(PhoneDevice)
+    created_at = models.DateTimeField(auto_now_add=True)
+    status = models.IntegerField(default=0)
+    started_at = models.DateTimeField(null=True, blank=True)
+    finish_at = models.DateTimeField(null=True, blank=True)
+    data = models.TextField(blank=True, null=True)
+
+
+class DeviceFile(models.Model):
+    """
+    设备上传的文件信息
+    """
+    device = models.ForeignKey(PhoneDevice)
+    qiniu_key = models.CharField(max_length=255)
+    created_at = models.DateTimeField(auto_now_add=True)
+    task = models.ForeignKey(SnsTask)
+    type = models.CharField(max_length=20)
+
+
 # 用户
 
 

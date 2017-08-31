@@ -7,9 +7,11 @@ from datetime import datetime
 from dj.utils import api_func_anonymous, api_error
 from django.conf import settings
 from django.core.files.uploadedfile import TemporaryUploadedFile
+from django.utils import timezone
 from qiniu import Auth, put_file, etag
 
-from backend.models import User, App, SnsGroup, SnsGroupSplit, PhoneDevice, SnsUser, SnsUserGroup, SnsGroupLost
+from backend.models import User, App, SnsGroup, SnsGroupSplit, PhoneDevice, SnsUser, SnsUserGroup, SnsGroupLost, \
+    SnsTaskDevice, DeviceFile
 
 logger = logging.getLogger(__name__)
 
@@ -32,18 +34,40 @@ def upload(type, id, task_id, request):
             for chunk in upload_file.chunks():
                 out.write(chunk)
 
-    _upload_to_qiniu(id, task_id, type, name, tmp_file)
+    key = _upload_to_qiniu(id, task_id, type, name, tmp_file)
+
+    device = PhoneDevice.objects.filter(label=id).first()
+
+    if device:
+        device_task = SnsTaskDevice.objects.filter(device__label=id, task_id=task_id).first()
+        if device_task:
+            if device_task.status != 2:
+                device_task.status = 2
+                device_task.finish_at = timezone.now()
+                device_task.save()
+
+            DeviceFile(device=device, task_id=task_id, qiniu_key=key, type=type).save()
     os.remove(tmp_file)
     return "ok"
 
 
+def _make_task_content(device_task):
+    return '[task]\nid=%s\ntype=%s\n[data]\n%s' % (device_task.task_id, device_task.task.type, device_task.data)
+
+
 @api_func_anonymous
 def task(id):
-    print(id)
-    return {
-        'name': 'test.txt',
-        'content': 'this is a test'
-    }
+    device_task = SnsTaskDevice.objects.filter(device__label=id, status=0).first()
+    if device_task:
+        device_task.status = 1
+        device_task.started_at = timezone.now()
+        device_task.save()
+        return {
+            'name': 'task.txt',
+            'content': _make_task_content(device_task)
+        }
+
+    return {}
 
 
 @api_func_anonymous
@@ -495,4 +519,4 @@ def _upload_to_qiniu(device_id, task, type, name, file):
     key = 'sns/%s/%s/%s/%s/%s' % (task, device_id, type, ts, name)
     token = q.upload_token(settings.QINIU_BUCKET, key)
     ret, info = put_file(token, key, file)
-    return ret['key'] == key and ret['hash'] == etag(file)
+    return key if ret['key'] == key and ret['hash'] == etag(file) else None
