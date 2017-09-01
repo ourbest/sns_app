@@ -55,7 +55,7 @@ ROOT_URLCONF = 'sns_app.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [os.path.join(BASE_DIR, 'templates')],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -121,6 +121,8 @@ QINIU_SK = ''
 QINIU_BUCKET = ''
 
 FILE_UPLOAD_HANDLERS = ["django.core.files.uploadhandler.TemporaryFileUploadHandler"]
+
+JS_VER = 'f9dc33e8998e605a2024'
 
 try:
     from .local_settings import *

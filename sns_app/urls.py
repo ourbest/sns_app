@@ -19,6 +19,7 @@ from django.contrib import admin
 from django.http import FileResponse
 
 import backend.urls
+from . import views
 
 
 def asserts(request, file):
@@ -29,4 +30,6 @@ urlpatterns = [
     url(r'^admin/', admin.site.urls),
     url(r'^api/', include(backend.urls)),
     url(r'^asserts/(?P<file>.+)$', asserts),
+    url(r'^$', views.home),
+    url(r'^dist/(?P<page>.+)$', views.dist)
 ]
