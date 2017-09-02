@@ -92,7 +92,7 @@ def import_qq(ids):
         if line:
             account = re.split('\s+', line)
             db = SnsUser.objects.filter(type=0, login_name=account[0]).first()
-            device = PhoneDevice.objects.filter(phone_num=account[4])
+            device = PhoneDevice.objects.filter(phone_num=account[4]).first()
             if not db:
                 SnsUser(passwd=account[1], type=0, login_name=account[0],
                         owner=device.owner, app_id=device.owner.app_id,
