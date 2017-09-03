@@ -7,6 +7,7 @@ from datetime import datetime
 from dj.utils import api_func_anonymous, api_error
 from django.conf import settings
 from django.core.files.uploadedfile import TemporaryUploadedFile
+from django.db.models import Sum
 from django.utils import timezone
 from qiniu import Auth, put_file, etag
 
@@ -92,7 +93,7 @@ def import_qq(ids):
         if line:
             account = re.split('\s+', line)
             db = SnsUser.objects.filter(type=0, login_name=account[0]).first()
-            device = PhoneDevice.objects.filter(phone_num=account[4]).first()
+            device = PhoneDevice.objects.filter(phone_num=account[3]).first()
             if not db:
                 SnsUser(passwd=account[1], type=0, login_name=account[0],
                         owner=device.owner, app_id=device.owner.app_id,
@@ -111,6 +112,19 @@ def import_qq(ids):
         'total': total,
         'message': '成功'
     }
+
+
+@api_func_anonymous
+def my_qq(request, email):
+    if not email:
+        email = _get_session_user(request)
+
+    return [{
+        'phone': x.phone,
+        'login_name': x.login_name,
+        'type': x.type,
+        'name': x.name
+    } for x in SnsUser.objects.filter(owner__email=email).order_by("phone")]
 
 
 @api_func_anonymous
@@ -461,6 +475,27 @@ def apps():
 
 
 @api_func_anonymous
+def app_summary(app_id):
+    app = App.objects.filter(app_id=app_id).first()
+    if app:
+        cnt = SnsGroup.objects.filter(app=app).aggregate(Sum('group_user_count'))
+        members = cnt['group_user_count__sum']
+        cnt2 = SnsUserGroup.objects.filter(sns_user__app=app).aggregate(Sum('sns_group__group_user_count'))
+        members2 = cnt2['sns_group__group_user_count__sum']
+        return {
+            'name': app.app_name,
+            'qun_scan': SnsGroup.objects.filter(app=app).count(),
+            'qun_scan_members': members if members else 0,
+            'total_user': User.objects.filter(app=app).count(),
+            'total_qq': SnsUser.objects.filter(type=0, app=app).count(),
+            'total_wx': SnsUser.objects.filter(type=1, app=app).count(),
+            'total_device': PhoneDevice.objects.filter(owner__app=app).count(),
+            'qun_join': SnsUserGroup.objects.filter(sns_user__app=app).count(),
+            'qun_join_members': members2 if members2 else 0
+        }
+
+
+@api_func_anonymous
 def login(request, email, password):
     user = User.objects.filter(email=email).first()
     if user and password == user.passwd:
@@ -473,7 +508,17 @@ def login(request, email, password):
 
 @api_func_anonymous
 def login_info(request):
-    return _get_session_user(request)
+    email = _get_session_user(request)
+    ret = {
+        'email': email
+    }
+
+    if email:
+        user = User.objects.filter(email=email).first()
+        ret['app_id'] = user.app.app_id
+        ret['app_name'] = user.app.app_name
+        ret['username'] = user.name
+    return ret
 
 
 @api_func_anonymous
@@ -483,8 +528,8 @@ def logout(request):
 
 
 @api_func_anonymous
-def users(request):
-    app = _get_session_app(request)
+def users(request, app_id):
+    app = _get_session_app(request) if not app_id else app_id
     return [{'id': x.id, 'email': x.email, 'name': x.name} for x in User.objects.filter(app_id=app)]
 
 

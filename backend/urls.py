@@ -15,6 +15,7 @@ urlpatterns = [
     url(r'^import/stat$', apis.import_qun_stat),
     url(r'^import/useless_qun$', apis.import_useless_qun),
     url(r'^import/phone$', apis.import_phone),
+    url(r'^my/qq$', apis.my_qq),
     url(r'^my/qun$', apis.my_qun),
     url(r'^my/qun/lost$', apis.my_lost_qun),
     url(r'^split/qq$', apis.split_qq),
@@ -27,4 +28,5 @@ urlpatterns = [
     url(r'^login/info$', apis.login_info),
     url(r'^logout$', apis.logout),
     url(r'^apps$', apis.apps),
+    url(r'^app/summary$', apis.app_summary),
 ]
