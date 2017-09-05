@@ -303,6 +303,8 @@ def import_qun_stat(ids):
             all_groups = sns_user.snsusergroup_set.all()
             all_group_ids = set()
             for (qun_num, qun_name, qun_user_cnt) in accounts:
+                if qun_num in all_group_ids:
+                    continue
                 all_group_ids.add(qun_num)
                 found = None
                 for group in all_groups:
