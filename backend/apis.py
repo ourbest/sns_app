@@ -47,7 +47,13 @@ def upload(type, id, task_id, request):
                 device_task.finish_at = timezone.now()
                 device_task.save()
 
-            DeviceFile(device=device, task_id=task_id, qiniu_key=key, type=type).save()
+            device_file = DeviceFile(device=device, task_id=task_id, qiniu_key=key, type=type)
+            device_file.save()
+
+    if type == 'result' and task_id == 'stat':
+        with open(tmp_file, 'rt', encoding='utf-8') as f:
+            import_qun_stat(f.read())
+
     os.remove(tmp_file)
     return "ok"
 
@@ -129,40 +135,30 @@ def my_qq(request, email):
 
 @api_func_anonymous
 def my_qun(request):
-    return [{
-        'id': x.sns_group.id,
-        'name': x.sns_group.group_name,
-        'qq': {
-            x.sns_user.login_name,
-            x.sns_user.name
-        },
-        'device': {
-            'label': x.sns_user.device.label,
-            'phone': x.sns_user.device.phone_num
-        },
-        'member_count': x.sns_group.group_user_count
-    } for x in
-        SnsUserGroup.objects.filter(sns_user__owner__email=_get_session_user(request), active=1,
-                                    status=0).select_related("sns_group", "sns_user", "sns_user__device")]
+    return [_qun_to_json(x) for x in
+            SnsUserGroup.objects.filter(sns_user__owner__email=_get_session_user(request), active=1,
+                                        status=0).select_related("sns_group", "sns_user", "sns_user__device")]
+
+
+@api_func_anonymous
+def device_qun(device):
+    return [_qun_to_json(x) for x in SnsUserGroup.objects.filter(active=1, status=0,
+                                                                 sns_user__device__label=device).select_related(
+        "sns_group", "sns_user", "sns_user__device")]
+
+
+@api_func_anonymous
+def account_qun(sns_id):
+    return [_qun_to_json(x) for x in
+            SnsUserGroup.objects.filter(sns_user_id=sns_id, active=1,
+                                        status=0).select_related("sns_group", "sns_user", "sns_user__device")]
 
 
 @api_func_anonymous
 def my_lost_qun(request):
-    return [{
-        'id': x.sns_group.id,
-        'name': x.sns_group.group_name,
-        'qq': {
-            x.sns_user.login_name,
-            x.sns_user.name
-        },
-        'device': {
-            'label': x.sns_user.device.label,
-            'phone': x.sns_user.device.phone_num
-        },
-        'member_count': x.sns_group.group_user_count
-    } for x in
-        SnsUserGroup.objects.filter(sns_user__owner__email=_get_session_user(request), active=0,
-                                    status=-1).select_related("sns_group", "sns_user", "sns_user__device")]
+    return [_qun_to_json(x) for x in
+            SnsUserGroup.objects.filter(sns_user__owner__email=_get_session_user(request), active=0,
+                                        status=-1).select_related("sns_group", "sns_user", "sns_user__device")]
 
 
 @api_func_anonymous
@@ -271,7 +267,7 @@ def import_qun_stat(ids):
         line = line.strip()
         if line:
             account = re.split('\s+', line)
-            if len(account) == 4:
+            if len(account) == 4 and account[0].isdigit():
                 total += 1
                 to_save[account[3]].append((account[0], account[1], account[2]))
 
@@ -284,7 +280,7 @@ def import_qun_stat(ids):
                 all_group_ids.add(qun_num)
                 found = None
                 for group in all_groups:
-                    if qun_num == group.group_id:
+                    if qun_num == group.sns_group_id:
                         # in
                         found = group
                         break
@@ -317,11 +313,11 @@ def import_qun_stat(ids):
                     qun.save()
 
             for group in all_groups:
-                if group.group_id not in all_group_ids:
+                if group.sns_group_id not in all_group_ids:
                     # 被踢了
-                    SnsGroupLost(group_id=group.group_id, sns_user=sns_user).save()
+                    SnsGroupLost(group_id=group.sns_group_id, sns_user=sns_user).save()
                     # SnsGroupSplit.objects.filter(group_id=group.group_id, status__gte=0).update(status=-1)
-                    SnsGroupSplit.objects.filter(group_id=group.group_id).delete()
+                    SnsGroupSplit.objects.filter(group_id=group.sns_group_id).delete()
                     group.status = -1
                     group.active = 0
                     group.save()
@@ -501,7 +497,7 @@ def login(request, email, password):
     if user and password == user.passwd:
         request.session['user'] = email
         logger.info("User %s login." % user)
-        return "ok"
+        return login_info(request)
 
     api_error(1001)
 
@@ -539,6 +535,58 @@ def devices(request):
     if email:
         return [{'id': x.id, 'label': x.label, 'num': x.phone_num}
                 for x in PhoneDevice.objects.filter(owner__email=email)]
+
+
+@api_func_anonymous
+def accounts(request, device_id):
+    email = _get_session_user(request)
+    if email:
+        return [_sns_user_to_json(x) for x in SnsUser.objects.filter(device_id=device_id)]
+
+
+@api_func_anonymous
+def account(sns_id):
+    return _sns_user_to_json(SnsUser.objects.filter(id=sns_id).first())
+
+
+@api_func_anonymous
+def update_account(sns_id, password, name):
+    sns_user = SnsUser.objects.filter(id=sns_id).first()
+    if sns_user:
+        sns_user.passwd = password
+        if name:
+            sns_user.name = name
+        sns_user.save()
+
+    return _sns_user_to_json(sns_user)
+
+
+def _qun_to_json(x):
+    return {
+        'id': x.sns_group.group_id,
+        'name': x.sns_group.group_name,
+        'qq': {
+            'id': x.sns_user.login_name,
+            'name': x.sns_user.name
+        },
+        'device': {
+            'label': x.sns_user.device.label,
+            'phone': x.sns_user.device.phone_num
+        },
+        'member_count': x.sns_group.group_user_count
+    }
+
+
+def _sns_user_to_json(sns_user):
+    return {
+        'id': sns_user.id,
+        'name': sns_user.name,
+        'type': sns_user.type,
+        'login': sns_user.login_name,
+        'password': sns_user.passwd,
+        'phone': sns_user.phone,
+        'memo': sns_user.memo
+    } if sns_user else {}
 
 
 def _after_upload_file(ftype, fid, local_file):
