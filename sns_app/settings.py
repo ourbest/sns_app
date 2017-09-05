@@ -122,7 +122,7 @@ QINIU_BUCKET = ''
 
 FILE_UPLOAD_HANDLERS = ["django.core.files.uploadhandler.TemporaryFileUploadHandler"]
 
-JS_VER = '469b43f7fb37d2d9add3'
+JS_VER = '41f34bd382dc26417cca'
 
 try:
     from .local_settings import *

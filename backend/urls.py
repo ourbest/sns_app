@@ -18,6 +18,8 @@ urlpatterns = [
     url(r'^my/qq$', apis.my_qq),
     url(r'^my/qun$', apis.my_qun),
     url(r'^device/qun$', apis.device_qun),
+    url(r'^device/create$', apis.device_create),
+    url(r'^qq/create$', apis.qq_create),
     url(r'^my/qun/lost$', apis.my_lost_qun),
     url(r'^split/qq$', apis.split_qq),
     url(r'^users$', apis.users),

@@ -148,6 +148,32 @@ def device_qun(device):
 
 
 @api_func_anonymous
+def device_create(request, phone):
+    dev = PhoneDevice.objects.filter(label=phone).first()
+    if not dev:
+        email = _get_session_user(request)
+        if email:
+            owner = User.objects.filter(email=email).first()
+            if owner:
+                PhoneDevice(label=phone, phone_num=phone, owner=owner).save()
+    return "ok"
+
+
+@api_func_anonymous
+def qq_create(request, qq, name, phone, password):
+    dev = PhoneDevice.objects.filter(label=phone).first()
+    db = SnsUser.objects.filter(login_name=qq, type=0).first()
+    if not db and dev:
+        email = _get_session_user(request)
+        if email:
+            owner = User.objects.filter(email=email).first()
+            SnsUser(login_name=qq, device=dev, name=name, passwd=password,
+                    type=0, phone=phone, owner=owner, app_id=owner.app_id).save()
+
+    return "ok"
+
+
+@api_func_anonymous
 def account_qun(sns_id):
     return [_qun_to_json(x) for x in
             SnsUserGroup.objects.filter(sns_user_id=sns_id, active=1,
