@@ -364,12 +364,16 @@ def import_qun(app, ids, request):
         app = _get_session_app(request)
     cnt = 0
     total = 0
+    exists = {x.group_id for x in SnsGroup.objects.filter(app_id=app)}
     for line in ids.split('\n'):
         line = line.strip()
         if line:
             total += 1
             account = re.split('\s+', line)
             try:
+                if account[0] in exists:
+                    continue
+
                 db = SnsGroup.objects.filter(group_id=account[0]).first()
                 if not db:
                     db = SnsGroup(group_id=account[0], group_name=account[1], type=0, app_id=app,
@@ -403,7 +407,7 @@ def import_qun(app, ids, request):
 def split_qq(app, request):
     if not app:
         app = _get_session_app(request)
-    users = User.objects.filter(app_id=app)
+    users = User.objects.filter(app_id=app, role=0)
     idx = 0
     forward = True
 

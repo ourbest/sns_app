@@ -25,6 +25,7 @@ class User(models.Model):
     status = models.IntegerField('状态', default=0)
     passwd = models.CharField('密码', max_length=50)
     created_at = models.DateTimeField('创建时间', auto_now_add=True)
+    role = models.IntegerField(default=0, help_text='0-组员 1-组长')
     app = models.ForeignKey(App, verbose_name='生活圈', null=True, blank=True, default=None)
 
     def __str__(self):
