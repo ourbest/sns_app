@@ -651,7 +651,7 @@ def create_task(type, params, phone, request):
     api_error(1001, '不存在的手机')
 
 
-TASK_STATUS_TEXT = ['', '已创建', '执行中', '已完成', '已中断']
+TASK_STATUS_TEXT = ['已创建', '执行中', '已完成', '已中断']
 
 
 @api_func_anonymous
