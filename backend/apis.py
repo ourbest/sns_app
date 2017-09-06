@@ -11,8 +11,9 @@ from django.db.models import Sum
 from django.utils import timezone
 from qiniu import Auth, put_file, etag
 
+from backend import model_manager
 from backend.models import User, App, SnsGroup, SnsGroupSplit, PhoneDevice, SnsUser, SnsUserGroup, SnsGroupLost, \
-    SnsTaskDevice, DeviceFile
+    SnsTaskDevice, DeviceFile, SnsTaskType, SnsTask
 
 logger = logging.getLogger(__name__)
 
@@ -591,6 +592,30 @@ def update_account(sns_id, password, name):
         sns_user.save()
 
     return _sns_user_to_json(sns_user)
+
+
+@api_func_anonymous
+def task_types():
+    return [{
+        'id': x.id,
+        'name': x.name,
+        'memo': x.memo,
+    } for x in SnsTaskType.objects.all()]
+
+
+@api_func_anonymous
+def create_task(type, params, phone, request):
+    labels = re.split(';', phone)
+    devices = model_manager.get_phones(labels)
+    if devices:
+        task_type = model_manager.get_task_type(type)
+        task = SnsTask(name=task_type.name, type=task_type, app_id=_get_session_app(request), status=0, data=params)
+        task.save()
+        for device in devices:
+            SnsTaskDevice(task=task, device=device, data=task.data).save()
+
+        return "ok"
+    api_error(1001, '不存在的手机')
 
 
 def _qun_to_json(x):

@@ -36,4 +36,6 @@ urlpatterns = [
     url(r'^logout$', apis.logout),
     url(r'^apps$', apis.apps),
     url(r'^app/summary$', apis.app_summary),
+    url(r'^task/types$', apis.task_types),
+    url(r'^task/create$', apis.create_task),
 ]

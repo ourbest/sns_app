@@ -196,6 +196,7 @@ class SnsTaskType(models.Model):
     """
     name = models.CharField(max_length=32)
     created_at = models.DateTimeField(auto_now_add=True)
+    memo = models.CharField(max_length=255, null=True)
 
 
 class ActiveDevice(models.Model):
@@ -216,6 +217,7 @@ class SnsTask(models.Model):
     type = models.ForeignKey(SnsTaskType)
     data = models.TextField(blank=True, null=True)
     status = models.IntegerField(default=0)
+    app = models.ForeignKey(App, null=True)
 
 
 class SnsTaskDevice(models.Model):

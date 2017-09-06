@@ -47,7 +47,7 @@ def bot_func(message):
         bot_command_handler(message)
         return
 
-    articles = message.articles
+    # articles = message.articles
 
     if message.type == 'Friends' and bot.auto_accept:
         # 好友申请
@@ -222,7 +222,7 @@ class AsyncBot(Bot):
         self.load_config("data/bots/%s.cfg" % self.self.name)
 
         if dump:
-            self.file_helper.send('🤖️机器人上线了')
+            # self.file_helper.send('🤖️机器人上线了')
             self.dump_login_status(self.cache_path)
 
     def load_config(self, cfg):
