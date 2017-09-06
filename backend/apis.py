@@ -4,6 +4,7 @@ import re
 from collections import defaultdict
 from datetime import datetime
 
+from dj import times
 from dj.utils import api_func_anonymous, api_error
 from django.conf import settings
 from django.core.files.uploadedfile import TemporaryUploadedFile
@@ -59,6 +60,10 @@ def upload(type, id, task_id, request):
             device_file = DeviceFile(device=device, task_id=task_id, qiniu_key=key, type=type)
             device_file.save()
 
+            if device_task.task.type_id == 4:
+                with open(tmp_file, 'rt', encoding='utf-8') as f:
+                    import_qun_stat(f.read())
+
     if type == 'result' and task_id == 'stat':
         with open(tmp_file, 'rt', encoding='utf-8') as f:
             import_qun_stat(f.read())
@@ -82,6 +87,7 @@ def task(id):
             ad.active_at = timezone.now()
             ad.status = 0
 
+        SnsTaskDevice.objects.filter(device__label=id, status=1).update(status=3, finish_at=timezone.now())
         device_task = SnsTaskDevice.objects.filter(device__label=id, status=0).first()
         if device_task:
             device_task.status = 1
@@ -645,6 +651,9 @@ def create_task(type, params, phone, request):
     api_error(1001, '不存在的手机')
 
 
+TASK_STATUS_TEXT = ['', '已创建', '执行中', '已完成', '已中断']
+
+
 @api_func_anonymous
 def my_tasks(request):
     return [{
@@ -652,9 +661,23 @@ def my_tasks(request):
         'name': x.name,
         'status': x.status,
         'type': x.type.name,
-        'creator': x.creator.name
+        'create_time': times.to_str(x.created_at),
+        'creator': x.creator.name,
+        'data': x.data,
+        'status_text': TASK_STATUS_TEXT[x.status],
     } for x in SnsTask.objects.filter(creator__email=_get_session_user(request)).select_related(
         'creator', 'type').order_by('-pk')[:50]]
+
+
+@api_func_anonymous
+def task_devices(task_id):
+    return [{
+        'device': x.device.label,
+        'create_time': times.to_str(x.created_at),
+        'finish_time': times.to_str(x.finish_at),
+        'status': x.status,
+        'status_text': TASK_STATUS_TEXT[x.status],
+    } for x in SnsTaskDevice.objects.filter(task_id=task_id).select_related('device')]
 
 
 @api_func_anonymous
