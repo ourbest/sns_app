@@ -41,6 +41,14 @@ def upload(type, id, task_id, request):
     device = PhoneDevice.objects.filter(label=id).first()
 
     if device:
+        ad = model_manager.get_active_device(device)
+        if not ad:
+            ad = ActiveDevice(device=device, status=0, active_at=timezone.now())
+        else:
+            ad.active_at = timezone.now()
+            ad.status = 0
+        ad.save()
+
         device_task = SnsTaskDevice.objects.filter(device__label=id, task_id=task_id).first()
         if device_task:
             if device_task.status != 2:
@@ -73,7 +81,6 @@ def task(id):
         else:
             ad.active_at = timezone.now()
             ad.status = 0
-        ad.save()
 
         device_task = SnsTaskDevice.objects.filter(device__label=id, status=0).first()
         if device_task:
@@ -81,6 +88,7 @@ def task(id):
             device_task.started_at = timezone.now()
             device_task.save()
             ad.status = 1
+            ad.save()
             if device_task.task.status == 0:
                 device_task.task.status = 1
                 device_task.task.save()
@@ -88,6 +96,9 @@ def task(id):
                 'name': 'task.txt',
                 'content': _make_task_content(device_task)
             }
+        else:
+            ad.status = 0
+        ad.save()
 
     return {}
 
