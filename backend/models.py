@@ -218,6 +218,7 @@ class SnsTask(models.Model):
     data = models.TextField(blank=True, null=True)
     status = models.IntegerField(default=0)
     app = models.ForeignKey(App, null=True)
+    creator = models.ForeignKey(User, null=True)
 
 
 class SnsTaskDevice(models.Model):

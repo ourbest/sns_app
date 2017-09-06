@@ -38,4 +38,6 @@ urlpatterns = [
     url(r'^app/summary$', apis.app_summary),
     url(r'^task/types$', apis.task_types),
     url(r'^task/create$', apis.create_task),
+    url(r'^my/tasks$', apis.my_tasks),
+    url(r'^my/online$', apis.online_phones),
 ]

@@ -13,7 +13,7 @@ from qiniu import Auth, put_file, etag
 
 from backend import model_manager
 from backend.models import User, App, SnsGroup, SnsGroupSplit, PhoneDevice, SnsUser, SnsUserGroup, SnsGroupLost, \
-    SnsTaskDevice, DeviceFile, SnsTaskType, SnsTask
+    SnsTaskDevice, DeviceFile, SnsTaskType, SnsTask, ActiveDevice
 
 logger = logging.getLogger(__name__)
 
@@ -60,20 +60,34 @@ def upload(type, id, task_id, request):
 
 
 def _make_task_content(device_task):
-    return '[task]\nid=%s\ntype=%s\n[data]\n%s' % (device_task.task_id, device_task.task.type, device_task.data)
+    return '[task]\nid=%s\ntype=%s\n[data]\n%s' % (device_task.task_id, device_task.task.type_id, device_task.data)
 
 
 @api_func_anonymous
 def task(id):
-    device_task = SnsTaskDevice.objects.filter(device__label=id, status=0).first()
-    if device_task:
-        device_task.status = 1
-        device_task.started_at = timezone.now()
-        device_task.save()
-        return {
-            'name': 'task.txt',
-            'content': _make_task_content(device_task)
-        }
+    device = model_manager.get_phone(id)
+    if device:
+        ad = model_manager.get_active_device(device)
+        if not ad:
+            ad = ActiveDevice(device=device, status=0, active_at=timezone.now())
+        else:
+            ad.active_at = timezone.now()
+            ad.status = 0
+        ad.save()
+
+        device_task = SnsTaskDevice.objects.filter(device__label=id, status=0).first()
+        if device_task:
+            device_task.status = 1
+            device_task.started_at = timezone.now()
+            device_task.save()
+            ad.status = 1
+            if device_task.task.status == 0:
+                device_task.task.status = 1
+                device_task.task.save()
+            return {
+                'name': 'task.txt',
+                'content': _make_task_content(device_task)
+            }
 
     return {}
 
@@ -609,13 +623,40 @@ def create_task(type, params, phone, request):
     devices = model_manager.get_phones(labels)
     if devices:
         task_type = model_manager.get_task_type(type)
-        task = SnsTask(name=task_type.name, type=task_type, app_id=_get_session_app(request), status=0, data=params)
+        task = SnsTask(name=task_type.name, type=task_type,
+                       app_id=_get_session_app(request), status=0,
+                       data=params, creator=model_manager.get_user(_get_session_user(request)))
         task.save()
         for device in devices:
             SnsTaskDevice(task=task, device=device, data=task.data).save()
 
         return "ok"
     api_error(1001, '不存在的手机')
+
+
+@api_func_anonymous
+def my_tasks(request):
+    return [{
+        'id': x.id,
+        'name': x.name,
+        'status': x.status,
+        'type': x.type.name,
+        'creator': x.creator.name
+    } for x in SnsTask.objects.filter(creator__email=_get_session_user(request)).select_related(
+        'creator', 'type').order_by('-pk')[:50]]
+
+
+@api_func_anonymous
+def online_phones(request):
+    return [_device_to_json(x.device) for x in model_manager.get_online(_get_session_user(request))]
+
+
+def _device_to_json(x):
+    return {
+        'id': x.id,
+        'label': x.label,
+        'num': x.phone_num
+    }
 
 
 def _qun_to_json(x):
