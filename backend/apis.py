@@ -4,11 +4,13 @@ import re
 from collections import defaultdict
 from datetime import datetime
 
+import requests
 from dj import times
 from dj.utils import api_func_anonymous, api_error
 from django.conf import settings
 from django.core.files.uploadedfile import TemporaryUploadedFile
 from django.db.models import Sum
+from django.http import HttpResponseRedirect
 from django.utils import timezone
 from qiniu import Auth, put_file, etag
 
@@ -57,7 +59,8 @@ def upload(type, id, task_id, request):
                 device_task.finish_at = timezone.now()
                 device_task.save()
 
-            device_file = DeviceFile(device=device, task_id=task_id, qiniu_key=key, type=type)
+            device_file = DeviceFile(device=device, task_id=device_task.task_id, qiniu_key=key,
+                                     file_name=name, type=type, device_task=device_task)
             device_file.save()
 
             if device_task.task.type_id == 4:
@@ -676,8 +679,26 @@ def task_devices(task_id):
         'create_time': times.to_str(x.created_at),
         'finish_time': times.to_str(x.finish_at),
         'status': x.status,
+        'id': x.id,
         'status_text': TASK_STATUS_TEXT[x.status],
     } for x in SnsTaskDevice.objects.filter(task_id=task_id).select_related('device')]
+
+
+@api_func_anonymous
+def task_files(task_id, file_type):
+    return [{
+        'name': x.file_name,
+        'id': x.id
+    } for x in DeviceFile.objects.filter(device_task_id=task_id, type=file_type)]
+
+
+@api_func_anonymous
+def file_content(file_id):
+    df = DeviceFile.objects.filter(id=file_id).first()
+    if df and df.type != 'image':
+        return _get_content(df.qiniu_key)
+
+    return "" if not df else HttpResponseRedirect('%s%s' % (settings.QINIU_URL, df.qiniu_key))
 
 
 @api_func_anonymous
@@ -745,3 +766,7 @@ def _upload_to_qiniu(device_id, task, type, name, file):
     token = q.upload_token(settings.QINIU_BUCKET, key)
     ret, info = put_file(token, key, file)
     return key if ret['key'] == key and ret['hash'] == etag(file) else None
+
+
+def _get_content(qiniu_key):
+    return requests.get('%s%s' % (settings.QINIU_URL, qiniu_key)).text

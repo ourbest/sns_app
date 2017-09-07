@@ -41,4 +41,7 @@ urlpatterns = [
     url(r'^my/tasks$', apis.my_tasks),
     url(r'^my/online$', apis.online_phones),
     url(r'^task/devices$', apis.task_devices),
+    url(r'^task/files$', apis.task_files),
+    url(r'^file/content$', apis.file_content),
+    url(r'^image$', apis.file_content),
 ]

@@ -240,9 +240,11 @@ class DeviceFile(models.Model):
     """
     device = models.ForeignKey(PhoneDevice)
     qiniu_key = models.CharField(max_length=255)
+    file_name = models.CharField(max_length=50, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     task = models.ForeignKey(SnsTask)
     type = models.CharField(max_length=20)
+    device_task = models.ForeignKey(SnsTaskDevice, null=True)
 
 
 # 用户
