@@ -685,11 +685,11 @@ def task_devices(task_id):
 
 
 @api_func_anonymous
-def task_files(task_id, file_type):
+def task_files(i_task_id, file_type):
     return [{
         'name': x.file_name,
         'id': x.id
-    } for x in DeviceFile.objects.filter(device_task_id=task_id, type=file_type)]
+    } for x in DeviceFile.objects.filter(device_task_id=i_task_id, type=file_type)]
 
 
 @api_func_anonymous
