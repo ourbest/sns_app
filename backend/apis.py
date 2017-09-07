@@ -418,6 +418,9 @@ def import_qun(app, ids, request):
             total += 1
             account = re.split('\s+', line)
             try:
+                if not account[0].isdigit():
+                    continue
+
                 if account[0] in exists:
                     continue
 
