@@ -33,3 +33,31 @@ def get_online(email):
 
 def get_active_device(device):
     return ActiveDevice.objects.filter(device=device).first()
+
+
+def mark_task_finish(device_task):
+    _set_task_status(device_task, 2)
+
+
+def mark_task_cancel(device_task):
+    _set_task_status(device_task, 3)
+
+
+def _set_task_status(device_task, status):
+    device_task.status = status
+    device_task.finish_at = timezone.now()
+    device_task.save()
+    device_task.device.status = 0
+    device_task.device.save()
+    check_task_status(device_task.task)
+
+
+def check_task_status(task):
+    in_prog = False
+    for x in task.devicetask_set.all():
+        if x.status <= 1:
+            in_prog = True
+            break
+    if not in_prog:
+        task.status = 2
+        task.save()

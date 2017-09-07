@@ -56,9 +56,7 @@ def upload(type, id, task_id, request):
         device_task = SnsTaskDevice.objects.filter(device__label=id, task_id=task_id).first()
         if device_task:
             if device_task.status != 2:
-                device_task.status = 2
-                device_task.finish_at = timezone.now()
-                device_task.save()
+                model_manager.mark_task_finish(device_task)
 
             device_file = DeviceFile(device=device, task_id=device_task.task_id, qiniu_key=key,
                                      file_name=name, type=type, device_task=device_task)
@@ -91,7 +89,9 @@ def task(id):
             ad.active_at = timezone.now()
             ad.status = 0
 
-        SnsTaskDevice.objects.filter(device__label=id, status=1).update(status=3, finish_at=timezone.now())
+        for x in SnsTaskDevice.objects.filter(device__label=id, status=1):
+            model_manager.mark_task_cancel(x)
+
         device_task = SnsTaskDevice.objects.filter(device__label=id, status=0).first()
         if device_task:
             device_task.status = 1
