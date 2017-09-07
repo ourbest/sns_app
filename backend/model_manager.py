@@ -54,7 +54,7 @@ def _set_task_status(device_task, status):
 
 def check_task_status(task):
     in_prog = False
-    for x in task.devicetask_set.all():
+    for x in task.snstaskdevice_set.all():
         if x.status <= 1:
             in_prog = True
             break
