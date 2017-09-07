@@ -42,7 +42,7 @@ def upload(type, id, task_id, request):
 
     key = _upload_to_qiniu(id, task_id, type, name, tmp_file)
 
-    device = PhoneDevice.objects.filter(label=id).first()
+    device = model_manager.get_phone(id)
 
     if device:
         ad = model_manager.get_active_device(device)
@@ -64,11 +64,14 @@ def upload(type, id, task_id, request):
 
             if device_task.task.type_id == 4:
                 with open(tmp_file, 'rt', encoding='utf-8') as f:
-                    import_qun_stat(f.read())
+                    import_qun_stat(f.read(), id)
+            elif device_task.task.type_id == 1:
+                with open(tmp_file, 'rt', encoding='utf-8') as f:
+                    import_qun(device_task.task.app_id, f.read(), None)
 
     if type == 'result' and task_id == 'stat':
         with open(tmp_file, 'rt', encoding='utf-8') as f:
-            import_qun_stat(f.read())
+            import_qun_stat(f.read(), None)
 
     os.remove(tmp_file)
     return "ok"
@@ -316,7 +319,7 @@ def import_useless_qun(ids):
 
 
 @api_func_anonymous
-def import_qun_stat(ids):
+def import_qun_stat(ids, device_id):
     """
     导入群的统计数据
     这个是完整的，如果之前在的群没了，说明被踢了
@@ -333,8 +336,16 @@ def import_qun_stat(ids):
                 total += 1
                 to_save[account[3]].append((account[0], account[1], account[2]))
 
+    device = model_manager.get_phone(device_id)
+
     for k, accounts in to_save.items():
         sns_user = SnsUser.objects.filter(login_name=k, type=0).first()
+        if not sns_user and device_id:
+            sns_user = SnsUser(name=k, login_name=k, passwd='_',
+                               phone=device.phone, device=device,
+                               owner=device.owner, app=device.owner.app)
+            sns_user.save()
+
         if sns_user:
             all_groups = sns_user.snsusergroup_set.all()
             all_group_ids = set()
