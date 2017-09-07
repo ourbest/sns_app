@@ -694,8 +694,8 @@ def task_files(i_task_id, file_type):
 
 
 @api_func_anonymous
-def file_content(file_id, i_att):
-    df = DeviceFile.objects.filter(id=file_id).first()
+def file_content(i_file_id, i_att):
+    df = DeviceFile.objects.filter(id=i_file_id).first()
     if i_att != 1 and df and df.type != 'image':
         return _get_content(df.qiniu_key)
 
