@@ -3,7 +3,7 @@ import os
 import re
 from collections import defaultdict
 from datetime import datetime
-from urllib.parse import urlencode
+from urllib.parse import quote
 
 import requests
 from dj import times
@@ -701,7 +701,7 @@ def file_content(file_id, i_att):
 
     return "" if not df else HttpResponseRedirect('%s%s%s'
                                                   % (settings.QINIU_URL, df.qiniu_key,
-                                                     '?attname=' + urlencode(df.file_name) if i_att else ''))
+                                                     '?attname=' + quote(df.file_name) if i_att else ''))
 
 
 @api_func_anonymous
