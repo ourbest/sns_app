@@ -326,6 +326,7 @@ def import_qun_stat(ids, device_id):
     :param ids:
     :return:
     """
+    logger.info('import stat of %s', device_id)
     to_save = defaultdict(list)
     total = 0
     for line in ids.split('\n'):
@@ -340,7 +341,8 @@ def import_qun_stat(ids, device_id):
 
     for k, accounts in to_save.items():
         sns_user = SnsUser.objects.filter(login_name=k, type=0).first()
-        if not sns_user and device_id:
+        logger.info("Sns user %s not found device is %s", k, device_id)
+        if device and not sns_user:
             sns_user = SnsUser(name=k, login_name=k, passwd='_',
                                phone=device.phone, device=device,
                                owner=device.owner, app=device.owner.app)
@@ -388,6 +390,7 @@ def import_qun_stat(ids, device_id):
                     qun.save()
 
             for group in all_groups:
+                lost = 0
                 if group.sns_group_id not in all_group_ids:
                     # 被踢了
                     SnsGroupLost(group_id=group.sns_group_id, sns_user=sns_user).save()
@@ -396,6 +399,10 @@ def import_qun_stat(ids, device_id):
                     group.status = -1
                     group.active = 0
                     group.save()
+                    lost += 1
+                logger.info("total lost %s", lost)
+
+    logger.info('Import done total %s', total)
 
 
 @api_func_anonymous
