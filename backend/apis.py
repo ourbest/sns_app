@@ -786,4 +786,6 @@ def _upload_to_qiniu(device_id, task, type, name, file):
 
 
 def _get_content(qiniu_key):
-    return requests.get('%s%s' % (settings.QINIU_URL, qiniu_key)).text
+    resp = requests.get('%s%s' % (settings.QINIU_URL, qiniu_key))
+    resp.encoding = 'utf-8'
+    return resp.text
