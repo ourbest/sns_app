@@ -19,7 +19,7 @@ from backend import model_manager
 from backend.models import User, App, SnsGroup, SnsGroupSplit, PhoneDevice, SnsUser, SnsUserGroup, SnsGroupLost, \
     SnsTaskDevice, DeviceFile, SnsTaskType, SnsTask, ActiveDevice
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('backend')
 
 DEFAULT_APP = 1519662
 
@@ -53,7 +53,7 @@ def upload(type, id, task_id, request):
             ad.status = 0
         ad.save()
 
-        device_task = SnsTaskDevice.objects.filter(device__label=id, task_id=task_id).first()
+        device_task = SnsTaskDevice.objects.filter(device__label=id, id=task_id).first()
         if device_task:
             if device_task.status != 2:
                 model_manager.mark_task_finish(device_task)
@@ -344,7 +344,7 @@ def import_qun_stat(ids, device_id):
         logger.info("Sns user %s not found device is %s", k, device_id)
         if device and not sns_user:
             sns_user = SnsUser(name=k, login_name=k, passwd='_',
-                               phone=device.phone, device=device,
+                               phone=device.phone_num, device=device,
                                owner=device.owner, app=device.owner.app)
             sns_user.save()
 
