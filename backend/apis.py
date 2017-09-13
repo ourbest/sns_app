@@ -15,13 +15,12 @@ from django.http import HttpResponseRedirect
 from django.utils import timezone
 from qiniu import Auth, put_file, etag
 
-from backend import model_manager
+from backend import model_manager, api_helper
+from backend.api_helper import get_session_user, get_session_app, sns_user_to_json, device_to_json, qun_to_json
 from backend.models import User, App, SnsGroup, SnsGroupSplit, PhoneDevice, SnsUser, SnsUserGroup, SnsGroupLost, \
     SnsTaskDevice, DeviceFile, SnsTaskType, SnsTask, ActiveDevice
 
 logger = logging.getLogger('backend')
-
-DEFAULT_APP = 1519662
 
 
 @api_func_anonymous
@@ -162,7 +161,7 @@ def import_qq(ids):
 @api_func_anonymous
 def my_qq(request, email):
     if not email:
-        email = _get_session_user(request)
+        email = get_session_user(request)
 
     return [{
         'phone': x.phone,
@@ -174,15 +173,15 @@ def my_qq(request, email):
 
 @api_func_anonymous
 def my_qun(request):
-    return [_qun_to_json(x) for x in
-            SnsUserGroup.objects.filter(sns_user__owner__email=_get_session_user(request), active=1,
+    return [qun_to_json(x) for x in
+            SnsUserGroup.objects.filter(sns_user__owner__email=get_session_user(request), active=1,
                                         status=0).select_related("sns_group", "sns_user", "sns_user__device")]
 
 
 @api_func_anonymous
 def device_qun(device):
-    return [_qun_to_json(x) for x in SnsUserGroup.objects.filter(active=1, status=0,
-                                                                 sns_user__device__label=device).select_related(
+    return [qun_to_json(x) for x in SnsUserGroup.objects.filter(active=1, status=0,
+                                                                sns_user__device__label=device).select_related(
         "sns_group", "sns_user", "sns_user__device")]
 
 
@@ -190,7 +189,7 @@ def device_qun(device):
 def device_create(request, phone):
     dev = PhoneDevice.objects.filter(label=phone).first()
     if not dev:
-        email = _get_session_user(request)
+        email = get_session_user(request)
         if email:
             owner = User.objects.filter(email=email).first()
             if owner:
@@ -203,7 +202,7 @@ def qq_create(request, qq, name, phone, password):
     dev = PhoneDevice.objects.filter(label=phone).first()
     db = SnsUser.objects.filter(login_name=qq, type=0).first()
     if not db and dev:
-        email = _get_session_user(request)
+        email = get_session_user(request)
         if email:
             owner = User.objects.filter(email=email).first()
             SnsUser(login_name=qq, device=dev, name=name, passwd=password,
@@ -214,15 +213,15 @@ def qq_create(request, qq, name, phone, password):
 
 @api_func_anonymous
 def account_qun(sns_id):
-    return [_qun_to_json(x) for x in
+    return [qun_to_json(x) for x in
             SnsUserGroup.objects.filter(sns_user_id=sns_id, active=1,
                                         status=0).select_related("sns_group", "sns_user", "sns_user__device")]
 
 
 @api_func_anonymous
 def my_lost_qun(request):
-    return [_qun_to_json(x) for x in
-            SnsUserGroup.objects.filter(sns_user__owner__email=_get_session_user(request), active=0,
+    return [qun_to_json(x) for x in
+            SnsUserGroup.objects.filter(sns_user__owner__email=get_session_user(request), active=0,
                                         status=-1).select_related("sns_group", "sns_user", "sns_user__device")]
 
 
@@ -274,7 +273,7 @@ def import_user(request, ids, app):
     """
     total = 0
     if not app:
-        app = _get_session_app(request)
+        app = get_session_app(request)
     for line in ids.split('\n'):
         line = line.strip()
         if line:
@@ -415,7 +414,7 @@ def import_qun(app, ids, request):
     :return:
     """
     if not app:
-        app = _get_session_app(request)
+        app = get_session_app(request)
     cnt = 0
     total = 0
     exists = {x.group_id for x in SnsGroup.objects.filter(app_id=app)}
@@ -463,7 +462,7 @@ def import_qun(app, ids, request):
 @api_func_anonymous
 def split_qq(app, request):
     if not app:
-        app = _get_session_app(request)
+        app = get_session_app(request)
     users = User.objects.filter(app_id=app, role=0)
     idx = 0
     forward = True
@@ -488,8 +487,8 @@ def split_qq(app, request):
 
 @api_func_anonymous
 def export_qun(request, others, filter, device):
-    user = _get_session_user(request)
-    app = _get_session_app(request)
+    user = get_session_user(request)
+    app = get_session_app(request)
     # if user:
     #     db = User.objects.filter(email=email).first()
     #     if db:
@@ -528,7 +527,7 @@ def export_qun(request, others, filter, device):
 
 @api_func_anonymous
 def split_qun_to_device(request, email):
-    user = email if email else _get_session_user(request)
+    user = email if email else get_session_user(request)
     if user:
         phones = PhoneDevice.objects.filter(owner__email=user)
         idx = 0
@@ -582,10 +581,9 @@ def app_summary(app_id):
 
 @api_func_anonymous
 def login(request, email, password):
-    user = User.objects.filter(email=email).first()
-    if user and password == user.passwd:
+    if api_helper.auth(email, password):
         request.session['user'] = email
-        logger.info("User %s login." % user)
+        logger.info("User %s login." % email)
         return login_info(request)
 
     api_error(1001)
@@ -593,7 +591,7 @@ def login(request, email, password):
 
 @api_func_anonymous
 def login_info(request):
-    email = _get_session_user(request)
+    email = get_session_user(request)
     ret = {
         'email': email
     }
@@ -614,13 +612,13 @@ def logout(request):
 
 @api_func_anonymous
 def users(request, app_id):
-    app = _get_session_app(request) if not app_id else app_id
+    app = get_session_app(request) if not app_id else app_id
     return [{'id': x.id, 'email': x.email, 'name': x.name} for x in User.objects.filter(app_id=app)]
 
 
 @api_func_anonymous
 def devices(request):
-    email = _get_session_user(request)
+    email = get_session_user(request)
     if email:
         return [{'id': x.id, 'label': x.label, 'num': x.phone_num}
                 for x in PhoneDevice.objects.filter(owner__email=email)]
@@ -628,14 +626,14 @@ def devices(request):
 
 @api_func_anonymous
 def accounts(request, device_id):
-    email = _get_session_user(request)
+    email = get_session_user(request)
     if email:
-        return [_sns_user_to_json(x) for x in SnsUser.objects.filter(device_id=device_id)]
+        return [sns_user_to_json(x) for x in SnsUser.objects.filter(device_id=device_id)]
 
 
 @api_func_anonymous
 def account(sns_id):
-    return _sns_user_to_json(SnsUser.objects.filter(id=sns_id).first())
+    return sns_user_to_json(SnsUser.objects.filter(id=sns_id).first())
 
 
 @api_func_anonymous
@@ -647,7 +645,7 @@ def update_account(sns_id, password, name):
             sns_user.name = name
         sns_user.save()
 
-    return _sns_user_to_json(sns_user)
+    return sns_user_to_json(sns_user)
 
 
 @api_func_anonymous
@@ -666,8 +664,8 @@ def create_task(type, params, phone, request):
     if devices:
         task_type = model_manager.get_task_type(type)
         task = SnsTask(name=task_type.name, type=task_type,
-                       app_id=_get_session_app(request), status=0,
-                       data=params, creator=model_manager.get_user(_get_session_user(request)))
+                       app_id=get_session_app(request), status=0,
+                       data=params, creator=model_manager.get_user(get_session_user(request)))
         task.save()
         for device in devices:
             SnsTaskDevice(task=task, device=device, data=task.data).save()
@@ -690,7 +688,7 @@ def my_tasks(request):
         'creator': x.creator.name,
         'data': x.data,
         'status_text': TASK_STATUS_TEXT[x.status],
-    } for x in SnsTask.objects.filter(creator__email=_get_session_user(request)).select_related(
+    } for x in SnsTask.objects.filter(creator__email=get_session_user(request)).select_related(
         'creator', 'type').order_by('-pk')[:50]]
 
 
@@ -704,6 +702,21 @@ def task_devices(task_id):
         'id': x.id,
         'status_text': TASK_STATUS_TEXT[x.status],
     } for x in SnsTaskDevice.objects.filter(task_id=task_id).select_related('device')]
+
+
+@api_func_anonymous
+def device_tasks(device):
+    return [{
+        'id': x.id,
+        'name': x.task.name,
+        'status': x.status,
+        'type': x.task.type.name,
+        'started_at': times.to_str(x.started_at),
+        'finish_at': times.to_str(x.finish_at),
+        'data': x.data,
+        'status_text': TASK_STATUS_TEXT[x.status],
+    } for x in SnsTaskDevice.objects.filter(device__label=device).select_related(
+        'task', 'task__type').order_by('-pk')[:50]]
 
 
 @api_func_anonymous
@@ -727,60 +740,11 @@ def file_content(i_file_id, i_att):
 
 @api_func_anonymous
 def online_phones(request):
-    return [_device_to_json(x.device) for x in model_manager.get_online(_get_session_user(request))]
-
-
-def _device_to_json(x):
-    return {
-        'id': x.id,
-        'label': x.label,
-        'num': x.phone_num
-    }
-
-
-def _qun_to_json(x):
-    return {
-        'id': x.sns_group.group_id,
-        'name': x.sns_group.group_name,
-        'qq': {
-            'id': x.sns_user.login_name,
-            'name': x.sns_user.name
-        },
-        'device': {
-            'label': x.sns_user.device.label,
-            'phone': x.sns_user.device.phone_num
-        },
-        'member_count': x.sns_group.group_user_count
-    }
-
-
-def _sns_user_to_json(sns_user):
-    return {
-        'id': sns_user.id,
-        'name': sns_user.name,
-        'type': sns_user.type,
-        'login': sns_user.login_name,
-        'password': sns_user.passwd,
-        'phone': sns_user.phone,
-        'memo': sns_user.memo
-    } if sns_user else {}
+    return [device_to_json(x.device) for x in model_manager.get_online(get_session_user(request))]
 
 
 def _after_upload_file(ftype, fid, local_file):
     pass
-
-
-def _get_session_user(request):
-    return request.session.get('user')
-
-
-def _get_session_app(request):
-    email = _get_session_user(request)
-    user = User.objects.filter(email=email).first()
-    if user:
-        return user.app_id
-    else:
-        return DEFAULT_APP
 
 
 def _upload_to_qiniu(device_id, task, type, name, file):

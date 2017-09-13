@@ -1,6 +1,6 @@
 from django.conf.urls import url
 
-from backend import apis
+from backend import apis, users
 
 app_name = 'backend'
 urlpatterns = [
@@ -19,6 +19,7 @@ urlpatterns = [
     url(r'^my/qun$', apis.my_qun),
     url(r'^device/qun$', apis.device_qun),
     url(r'^device/create$', apis.device_create),
+    url(r'^device/tasks$', apis.device_tasks),
     url(r'^qq/create$', apis.qq_create),
     url(r'^my/qun/lost$', apis.my_lost_qun),
     url(r'^split/qq$', apis.split_qq),
@@ -44,4 +45,7 @@ urlpatterns = [
     url(r'^task/files$', apis.task_files),
     url(r'^file/content$', apis.file_content),
     url(r'^image$', apis.file_content),
+    url(r'^user/info$', users.user_info),
+    url(r'^user/update$', users.update_user_info),
+    url(r'^user/pwd$', users.change_password),
 ]
