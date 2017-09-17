@@ -3,7 +3,8 @@ from datetime import timedelta
 from django.db.models import Q
 from django.utils import timezone
 
-from backend.models import PhoneDevice, SnsTaskType, App, User, ActiveDevice
+from backend.models import PhoneDevice, SnsTaskType, App, User, ActiveDevice, SnsGroup, SnsUser, SnsUserGroup, \
+    SnsGroupSplit
 
 
 def get_phone(label):
@@ -29,6 +30,14 @@ def get_user(email):
 def get_online(email):
     return ActiveDevice.objects.filter(device__owner__email=email).filter(
         Q(active_at__gt=(timezone.now() - timedelta(seconds=300))) | Q(status=1))
+
+
+def get_qq(qq_id):
+    return SnsUser.objects.filter(login_name=qq_id, type=0).first()
+
+
+def get_qun(qun_num, type=0):
+    return SnsGroup.objects.filter(group_id=qun_num, type=type).first()
 
 
 def get_active_device(device):
@@ -61,3 +70,65 @@ def check_task_status(task):
     if not in_prog:
         task.status = 2
         task.save()
+
+
+def set_qun_useless(db):
+    db.status = -2
+    db.save()
+    # db = SnsGroup()
+    # 删除无效群的数据
+    db.snsgroupsplit_set.all().delete()
+
+
+def set_qun_join(qq_id, qun):
+    qq = get_qq(qq_id)
+    if qun.status != 2:
+        qun.status = 2
+        qun.save()
+
+    try:
+        qun.snsgroupsplit_set.filter(user=qq.owner).update(status=3)
+        sug = SnsUserGroup(sns_group=qun, sns_user=qq, status=0, active=1)
+        sug.save()
+    except:
+        pass
+
+    return sug
+
+
+def reset_qun_status(device_task):
+    """
+    将未处理的群重置成未发送
+    :param device_task:
+    :return:
+    """
+    SnsGroupSplit.objects.filter(phone=device_task.device, status=1).update(status=0, phone=None)
+
+
+def set_qun_applying(device, qun):
+    """
+    将群状态改写成申请中
+    :param device:
+    :param qun:
+    :return:
+    """
+    SnsGroupSplit.objects.filter(phone=device, group=qun).update(status=2)
+
+
+def set_qun_manual(qun):
+    """
+    需要输入问题
+    :param qun:
+    :return:
+    """
+    qun.status = -1
+    qun.save()
+    # db = SnsGroup()
+    # 删除无效群的数据
+    qun.snsgroupsplit_set.all().delete()
+
+
+def get_qun_idle(user, size, device):
+    ret = SnsGroupSplit.objects.filter(user=user, status=0)[:size]
+    ret.update(phone=device, status=1)
+    return ret

@@ -52,32 +52,69 @@ def upload(type, id, task_id, request):
             ad.status = 0
         ad.save()
 
-        device_task = SnsTaskDevice.objects.filter(device__label=id, id=task_id).first()
-        if device_task:
-            if device_task.status != 2:
-                model_manager.mark_task_finish(device_task)
+        if task_id.isdigit():
+            device_task = SnsTaskDevice.objects.filter(device__label=id, id=task_id).first()
+            if device_task:
+                if device_task.status != 2:
+                    model_manager.mark_task_finish(device_task)
 
-            device_file = DeviceFile(device=device, task_id=device_task.task_id, qiniu_key=key,
-                                     file_name=name, type=type, device_task=device_task)
-            device_file.save()
+                device_file = DeviceFile(device=device, task_id=device_task.task_id, qiniu_key=key,
+                                         file_name=name, type=type, device_task=device_task)
+                device_file.save()
 
-            if device_task.task.type_id == 4:
-                with open(tmp_file, 'rt', encoding='utf-8') as f:
-                    import_qun_stat(f.read(), id)
-            elif device_task.task.type_id == 1:
-                with open(tmp_file, 'rt', encoding='utf-8') as f:
-                    import_qun(device_task.task.app_id, f.read(), None)
+                if device_task.task.type_id == 4:  # 统计
+                    with open(tmp_file, 'rt', encoding='utf-8') as f:
+                        import_qun_stat(f.read(), id)
+                elif device_task.task.type_id == 1:  # 查群
+                    with open(tmp_file, 'rt', encoding='utf-8') as f:
+                        import_qun(device_task.task.app_id, f.read(), None)
+                elif device_task.task.type_id == 2:  # 加群
+                    with open(tmp_file, 'rt', encoding='utf-8') as f:
+                        import_add_result(device_task, f.read())
 
-    if type == 'result' and task_id == 'stat':
-        with open(tmp_file, 'rt', encoding='utf-8') as f:
-            import_qun_stat(f.read(), None)
+    if type == 'result':
+        if task_id == 'stat':
+            with open(tmp_file, 'rt', encoding='utf-8') as f:
+                import_qun_stat(f.read(), None)
+        elif task_id == 'qun':
+            with open(tmp_file, 'rt', encoding='utf-8') as f:
+                import_qun(device.owner.app_id, f.read())
 
     os.remove(tmp_file)
     return "ok"
 
 
+def import_add_result(device_task, lines):
+    """
+    1列 群号，2列 属性，3列QQ号
+    属性有这些：付费群，不存在，不允许加入，需要回答问题，已发送验证，满员群，已加群，无需验证已加入
+    :param device_task:
+    :param lines:
+    :return:
+    """
+    for line in lines.split('\n'):
+        line = line.strip()
+        [qun_id, status, qq_id] = re.split('\s+', line)
+        qun = model_manager.get_qun(qun_id)
+        if status in ('付费群', '不存在', '不允许加入'):
+            model_manager.set_qun_useless(qun)
+        elif status in ('已加群', '无需验证已加入'):
+            model_manager.set_qun_join(qq_id, qun)
+        elif status in ('已发送验证',):
+            model_manager.set_qun_applying(device_task.device, qun)
+        elif status in ('需要回答问题',):
+            model_manager.set_qun_manual(qun)
+
+    model_manager.reset_qun_status(device_task)
+
+
 def _make_task_content(device_task):
-    return '[task]\nid=%s\ntype=%s\n[data]\n%s' % (device_task.task_id, device_task.task.type_id, device_task.data)
+    data = device_task.data
+    if device_task.task.type_id == 2:
+        # 加群
+        data = '\n'.join([x.group_id for x in
+                          model_manager.get_qun_idle(device_task.task.creator, 200, device_task.device)])
+    return '[task]\nid=%s\ntype=%s\n[data]\n%s' % (device_task.task_id, device_task.task.type_id, data)
 
 
 @api_func_anonymous
@@ -310,11 +347,7 @@ def import_useless_qun(ids):
             total += 1
             db = SnsGroup.objects.filter(group_id=line).first()
             if db:
-                db.status = -2
-                db.save()
-                # db = SnsGroup()
-                # 删除无效群的数据
-                db.snsgroupsplit_set.all().delete()
+                model_manager.set_qun_useless(db)
 
 
 @api_func_anonymous
@@ -427,27 +460,27 @@ def import_qun(app, ids, request):
                 if not account[0].isdigit():
                     continue
 
-                if account[0] in exists:
-                    continue
-
-                db = SnsGroup.objects.filter(group_id=account[0]).first()
-                if not db:
+                if account[0] not in exists:
+                    # db = SnsGroup.objects.filter(group_id=account[0]).first()
+                    # if not db:
                     db = SnsGroup(group_id=account[0], group_name=account[1], type=0, app_id=app,
                                   group_user_count=account[2])
                     db.save()
                     cnt += 1
 
                 if len(account) > 3:
+                    if not db:
+                        db = model_manager.get_qun(account[0])
                     qq_num = account[3]
                     su = SnsUser.objects.filter(login_name=qq_num, type=0).first()
-                    if su:
+                    if db and su:
                         sug = SnsUserGroup.objects.filter(sns_user=su, sns_group=db).first()
                         if not sug:
                             sug = SnsUserGroup(sns_group=db, sns_user=su, status=0)
                         sug.active = 1
                         sug.save()
                         db.status = 2
-                        db.snsgroupsplit_set.filter(status=0).update(status=1)
+                        db.snsgroupsplit_set.filter(status=0).update(status=3)
                         db.save()
             except:
                 logger.warning("error save %s" % account)
