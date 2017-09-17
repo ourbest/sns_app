@@ -102,7 +102,7 @@ def reset_qun_status(device_task):
     :param device_task:
     :return:
     """
-    SnsGroupSplit.objects.filter(phone=device_task.device, status=1).update(status=0, phone=None)
+    SnsGroupSplit.objects.filter(phone=device_task.device, status=1).update(status=0)
 
 
 def set_qun_applying(device, qun):
@@ -129,6 +129,7 @@ def set_qun_manual(qun):
 
 
 def get_qun_idle(user, size, device):
-    ret = SnsGroupSplit.objects.filter(user=user, status=0)[:size]
-    ret.update(phone=device, status=1)
+    ret = SnsGroupSplit.objects.filter(phone=device, status=0)[:size]
+    # ret = SnsGroupSplit.objects.filter(user=user, status=0)[:size]
+    ret.update(status=1)
     return ret
