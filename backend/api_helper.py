@@ -1,3 +1,4 @@
+import re
 import requests
 
 from backend.models import User, AppUser
@@ -110,3 +111,11 @@ def save_cutt_id(user, cutt_id, user_type):
         db = AppUser(name=name, type=user_type, user=user)
     db.cutt_user_id = cutt_id
     db.save()
+
+
+def to_share_url(user, url, share_type=0):
+    u = re.findall(r'https?://tz.fafengtuqiang.cn/weizhan/article/\d+/\d+/\d+', url)[0]
+    qq = user.appuser_set.filter(type=share_type).first()
+    if qq:
+        u = '%s/%s' % (u, qq.cutt_user_id)
+    return u

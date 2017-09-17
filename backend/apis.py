@@ -114,6 +114,9 @@ def _make_task_content(device_task):
         # 加群
         data = '\n'.join([x.group_id for x in
                           model_manager.get_qun_idle(device_task.task.creator, 200, device_task.device)])
+    elif device_task.task.type_id == 3:
+        # 分发
+        data = api_helper.to_share_url(device_task.task.creator, data)
     return '[task]\nid=%s\ntype=%s\n[data]\n%s' % (device_task.task_id, device_task.task.type_id, data)
 
 
