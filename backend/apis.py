@@ -18,7 +18,7 @@ from qiniu import Auth, put_file, etag
 from backend import model_manager, api_helper
 from backend.api_helper import get_session_user, get_session_app, sns_user_to_json, device_to_json, qun_to_json
 from backend.models import User, App, SnsGroup, SnsGroupSplit, PhoneDevice, SnsUser, SnsUserGroup, SnsGroupLost, \
-    SnsTaskDevice, DeviceFile, SnsTaskType, SnsTask, ActiveDevice
+    SnsTaskDevice, DeviceFile, SnsTaskType, SnsTask, ActiveDevice, SnsApplyTaskLog
 
 logger = logging.getLogger('backend')
 
@@ -94,16 +94,22 @@ def import_add_result(device_task, lines):
     """
     for line in lines.split('\n'):
         line = line.strip()
-        [qun_id, status, qq_id] = re.split('\s+', line)
-        qun = model_manager.get_qun(qun_id)
-        if status in ('付费群', '不存在', '不允许加入'):
-            model_manager.set_qun_useless(qun)
-        elif status in ('已加群', '无需验证已加入'):
-            model_manager.set_qun_join(qq_id, qun)
-        elif status in ('已发送验证',):
-            model_manager.set_qun_applying(device_task.device, qun)
-        elif status in ('需要回答问题',):
-            model_manager.set_qun_manual(qun)
+        try:
+            [qun_id, status, qq_id] = re.split('\s+', line)
+            qun = model_manager.get_qun(qun_id)
+            qq = model_manager.get_qq(qq_id)
+            SnsApplyTaskLog(device=device_task.device, device_task=device_task, account=qq, memo=status,
+                            group=qun).save()
+            if status in ('付费群', '不存在', '不允许加入'):
+                model_manager.set_qun_useless(qun)
+            elif status in ('已加群', '无需验证已加入'):
+                model_manager.set_qun_join(qq, qun)
+            elif status in ('已发送验证',):
+                model_manager.set_qun_applying(device_task.device, qun)
+            elif status in ('需要回答问题',):
+                model_manager.set_qun_manual(qun)
+        except:
+            logger.warning('error import line %s' % line, exc_info=1)
 
     model_manager.reset_qun_status(device_task)
 
@@ -460,16 +466,13 @@ def import_qun(app, ids, request):
             total += 1
             account = re.split('\s+', line)
             try:
-                if not account[0].isdigit():
+                if not account[0].isdigit() and account[0] in exists:
                     continue
 
-                if account[0] not in exists:
-                    # db = SnsGroup.objects.filter(group_id=account[0]).first()
-                    # if not db:
-                    db = SnsGroup(group_id=account[0], group_name=account[1], type=0, app_id=app,
-                                  group_user_count=account[2])
-                    db.save()
-                    cnt += 1
+                db = SnsGroup(group_id=account[0], group_name=account[1], type=0, app_id=app,
+                              group_user_count=account[2])
+                db.save()
+                cnt += 1
 
                 if len(account) > 3:
                     if not db:
@@ -613,8 +616,13 @@ def send_qq():
 
 
 @api_func_anonymous
-def apps():
-    return [{'id': x.app_id, 'name': x.app_name} for x in App.objects.all()]
+def apps(request):
+    user = model_manager.get_user(get_session_user(request))
+    apps = user.userauthapp_set.all()
+    ret = [{'id': user.app.app_id, 'name': user.app.app_name}]
+    ret += [{'id': x.app.app_id, 'name': x.app.app_name} for x in apps if x.app_id != user.app_id]
+
+    return ret  # [{'id': x.app_id, 'name': x.app_name} for x in App.objects.all()]
 
 
 @api_func_anonymous

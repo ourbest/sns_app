@@ -3,8 +3,8 @@ from datetime import timedelta
 from django.db.models import Q
 from django.utils import timezone
 
-from backend.models import PhoneDevice, SnsTaskType, App, User, ActiveDevice, SnsGroup, SnsUser, SnsUserGroup, \
-    SnsGroupSplit
+from backend.models import PhoneDevice, SnsTaskType, App, User, ActiveDevice, SnsUser, SnsGroup
+from backend.models import SnsUserGroup, SnsGroupSplit
 
 
 def get_phone(label):
@@ -133,3 +133,29 @@ def get_qun_idle(user, size, device):
     # ret = SnsGroupSplit.objects.filter(user=user, status=0)[:size]
     ret.update(status=1)
     return ret
+
+
+def get_or_create_qq(device, qq):
+    db = SnsUser.objects.filter(login_name=qq).first()
+    if not db:
+        db = SnsUser(login_name=qq, name=qq, phone=device.phone, device=device,
+                     owner=device.owner, app_id=device.owner.app_id)
+        db.save()
+    return db
+
+
+def get_or_create_qun(device, qun_num):
+    db = SnsGroup.objects.filter(group_id=qun_num).first()
+    if not db:
+        db = SnsGroup(group_id=qun_num, group_name=qun_num, type=0, app_id=device.owner.app_id,
+                      group_user_count=0, status=1)
+        db.save()
+    return db
+
+
+def mark_qun_useless(group):
+    group.status = -2
+    group.save()
+    # db = SnsGroup()
+    # 删除无效群的数据
+    group.snsgroupsplit_set.all().delete()

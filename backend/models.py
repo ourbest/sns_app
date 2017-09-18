@@ -36,6 +36,14 @@ class User(models.Model):
         verbose_name_plural = ' 员工列表'
 
 
+class UserAuthApp(models.Model):
+    """
+    用户授权的APP列表
+    """
+    user = models.ForeignKey(User)
+    app = models.ForeignKey(App)
+
+
 # Create your models here.
 class PhoneDevice(models.Model):
     """
@@ -250,6 +258,18 @@ class DeviceFile(models.Model):
     task = models.ForeignKey(SnsTask)
     type = models.CharField(max_length=20)
     device_task = models.ForeignKey(SnsTaskDevice, null=True)
+
+
+class SnsApplyTaskLog(models.Model):
+    """
+    加群的历史记录
+    """
+    device_task = models.ForeignKey(SnsTaskDevice, null=True)
+    device = models.ForeignKey(PhoneDevice)
+    created_at = models.DateTimeField(auto_now_add=True)
+    account = models.ForeignKey(SnsUser)
+    group = models.ForeignKey(SnsGroup)
+    memo = models.CharField(max_length=30)
 
 
 # 用户

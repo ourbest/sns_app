@@ -74,7 +74,7 @@ def user_to_json(x):
         'id': y.id,
         'name': y.name,
         'type': y.type,
-        'cutt_id': y.cutt_user_id
+        'cutt_id': y.cutt_user_id,
     } for y in x.appuser_set.all()]
 
     ret = {'id': x.id, 'email': x.email, 'name': x.name, 'role': x.role, 'app_users': app_users}
