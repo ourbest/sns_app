@@ -21,6 +21,7 @@ def update_user_info(request, name, app_id, qq_id, wx_id, i_role):
     user.name = name
     if app_id:
         user.app_id = app_id
+        model_manager.add_user_auth(user, app_id)
 
     user.role = i_role
 

@@ -3,7 +3,7 @@ from datetime import timedelta
 from django.db.models import Q
 from django.utils import timezone
 
-from backend.models import PhoneDevice, SnsTaskType, App, User, ActiveDevice, SnsUser, SnsGroup
+from backend.models import PhoneDevice, SnsTaskType, App, User, ActiveDevice, SnsUser, SnsGroup, UserAuthApp
 from backend.models import SnsUserGroup, SnsGroupSplit
 
 
@@ -159,3 +159,8 @@ def mark_qun_useless(group):
     # db = SnsGroup()
     # 删除无效群的数据
     group.snsgroupsplit_set.all().delete()
+
+
+def add_user_auth(user, app_id):
+    if not UserAuthApp.objects.filter(app_id=app_id, user=user).first():
+        UserAuthApp(user=user, app_id=app_id).save()

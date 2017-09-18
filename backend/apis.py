@@ -502,7 +502,7 @@ def import_qun(app, ids, request):
 def split_qq(app, request):
     if not app:
         app = get_session_app(request)
-    users = User.objects.filter(app_id=app, role=0)
+    users = [x for x in User.objects.filter(app_id=app) if x.phonedevice_set.count() > 0]
     idx = 0
     forward = True
 
