@@ -1,9 +1,11 @@
+from collections import defaultdict
 from datetime import timedelta
 
 from django.db.models import Q
 from django.utils import timezone
 
-from backend.models import PhoneDevice, SnsTaskType, App, User, ActiveDevice, SnsUser, SnsGroup, UserAuthApp
+from backend.models import PhoneDevice, SnsTaskType, App, User, ActiveDevice, SnsUser, SnsGroup, UserAuthApp, \
+    MenuItemPerm
 from backend.models import SnsUserGroup, SnsGroupSplit
 
 
@@ -130,8 +132,9 @@ def set_qun_manual(qun):
 
 def get_qun_idle(user, size, device):
     ret = SnsGroupSplit.objects.filter(phone=device, status=0)[:size]
-    # ret = SnsGroupSplit.objects.filter(user=user, status=0)[:size]
-    ret.update(status=1)
+    ids = [x.pk for x in ret]
+
+    SnsGroupSplit.objects.filter(pk__in=ids).update(status=1)
     return ret
 
 
@@ -164,3 +167,19 @@ def mark_qun_useless(group):
 def add_user_auth(user, app_id):
     if not UserAuthApp.objects.filter(app_id=app_id, user=user).first():
         UserAuthApp(user=user, app_id=app_id).save()
+
+
+def get_user_menu(user):
+    ret = defaultdict(list)
+
+    for item in MenuItemPerm.objects.filter(role__lte=user.role).order_by('menu__show_order').select_related('menu'):
+        items = ret[item.menu.menu_category]
+        menu = item.menu
+        items.append({
+            'title': menu.menu_name,
+            'name': menu.menu_route,
+            'icon': menu.menu_icon,
+            'group': menu.menu_category,
+        })
+
+    return ret

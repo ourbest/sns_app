@@ -9,6 +9,7 @@ urlpatterns = [
     # url(r'^image$', apis.image),
     url(r'^qr$', apis.qq_qr),
     url(r'^import/qq$', apis.import_qq),
+    url(r'^menu$', apis.get_menu),
     # url(r'^import/split$', apis.import_split),
     url(r'^import/user$', apis.import_user),
     url(r'^import/qun$', apis.import_qun),

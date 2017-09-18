@@ -3,6 +3,7 @@ import os
 import re
 from collections import defaultdict
 from datetime import datetime
+from random import shuffle
 from urllib.parse import quote
 
 import requests
@@ -21,6 +22,11 @@ from backend.models import User, App, SnsGroup, SnsGroupSplit, PhoneDevice, SnsU
     SnsTaskDevice, DeviceFile, SnsTaskType, SnsTask, ActiveDevice, SnsApplyTaskLog
 
 logger = logging.getLogger('backend')
+
+
+@api_func_anonymous
+def get_menu(request):
+    return model_manager.get_user_menu(model_manager.get_user(api_helper.get_session_user(request)))
 
 
 @api_func_anonymous
@@ -118,8 +124,9 @@ def _make_task_content(device_task):
     data = device_task.data
     if device_task.task.type_id == 2:
         # 加群
-        data = '\n'.join([x.group_id for x in
-                          model_manager.get_qun_idle(device_task.task.creator, 200, device_task.device)])
+        ids = [x.group_id for x in model_manager.get_qun_idle(device_task.task.creator, 200, device_task.device)]
+        shuffle(ids)
+        data = '\n'.join(ids)
     elif device_task.task.type_id == 3:
         # 分发
         data = api_helper.to_share_url(device_task.task.creator, data)

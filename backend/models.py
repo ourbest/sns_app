@@ -272,6 +272,20 @@ class SnsApplyTaskLog(models.Model):
     memo = models.CharField(max_length=30)
 
 
+class MenuItem(models.Model):
+    menu_route = models.CharField(max_length=80)
+    menu_name = models.CharField(max_length=20)
+    menu_category = models.CharField(max_length=20)
+    menu_icon = models.CharField(max_length=32)
+    show_order = models.IntegerField(default=0)
+    status = models.IntegerField(default=0)
+
+
+class MenuItemPerm(models.Model):
+    menu = models.ForeignKey(MenuItem)
+    role = models.IntegerField(default=0)
+
+
 # 用户
 
 
