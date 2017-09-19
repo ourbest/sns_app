@@ -114,8 +114,9 @@ def save_cutt_id(user, cutt_id, user_type):
 
 
 def to_share_url(user, url, share_type=0):
-    u = re.findall(r'https?://tz.fafengtuqiang.cn/weizhan/article/\d+/\d+/\d+', url)[0]
+    u = re.findall(r'https?://.+?/weizhan/article/\d+/\d+/\d+', url)
     if u:
+        u = u[0]
         qq = user.appuser_set.filter(type=share_type).first()
         if qq:
             u = '%s/%s' % (u, qq.cutt_user_id)
