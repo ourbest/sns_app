@@ -129,7 +129,7 @@ def _make_task_content(device_task):
         data = '\n'.join(ids)
     elif device_task.task.type_id == 3:
         # 分发
-        data = api_helper.to_share_url(device_task.task.creator, data)
+        data = api_helper.to_share_url(device_task.device.owner, data)
     return '[task]\nid=%s\ntype=%s\n[data]\n%s' % (device_task.task_id, device_task.task.type_id, data)
 
 
@@ -509,7 +509,7 @@ def import_qun(app, ids, request):
 def split_qq(app, request):
     if not app:
         app = get_session_app(request)
-    users = [x for x in User.objects.filter(app_id=app) if x.phonedevice_set.count() > 0]
+    users = [x for x in User.objects.filter(app_id=app, status=0) if x.phonedevice_set.count() > 0]
     idx = 0
     forward = True
 
@@ -541,28 +541,28 @@ def export_qun(request, others, filter, device):
     #         app = db.app_id
 
     if filter == '所有':
-        db = SnsGroup.objects.filter(app_id=app)
+        db = SnsGroup.objects.filter(app_id=app).order_by("-pk")
         return ['%s\t%s\t%s' % (x.group_id, x.group_name, x.group_user_count) for x in db]
     elif filter == '分配情况':
-        db = SnsGroupSplit.objects.filter(group__app_id=app).select_related('group', 'user')
+        db = SnsGroupSplit.objects.filter(group__app_id=app).select_related('group', 'user').order_by("-pk")
         return ['%s\t%s\t%s\t%s' % (x.group.group_id, x.group.group_name, x.group.group_user_count, x.user.email) for x
                 in db]
     elif filter == '未分配':
-        db = SnsGroup.objects.filter(app_id=app, status=0)
+        db = SnsGroup.objects.filter(app_id=app, status=0).order_by("-pk")
         return ['%s\t%s\t%s' % (x.group_id, x.group_name, x.group_user_count) for x in db]
     elif filter == '特定手机':
         if not device:
             return []
-        db = SnsGroupSplit.objects.filter(phone_id=device).select_related("group")
+        db = SnsGroupSplit.objects.filter(phone_id=device).select_related("group").order_by("-pk")
         return ['%s\t%s\t%s' % (x.group.group_id, x.group.group_name, x.group.group_user_count) for x in db]
     elif filter == '分配给':
         if not others:
             return []
-        db = SnsGroupSplit.objects.filter(user__email=others).select_related("group")
+        db = SnsGroupSplit.objects.filter(user__email=others).select_related("group").order_by("-pk")
         return ['%s\t%s\t%s' % (x.group_id, x.group.group_name, x.group.group_user_count) for x in db]
 
     elif user:
-        db = SnsGroupSplit.objects.filter(user__email=user).select_related("group")
+        db = SnsGroupSplit.objects.filter(user__email=user).select_related("group").order_by("-pk")
         if filter == '未指定手机':
             db = db.filter(phone__isnull=True)
             # db = db.filter(status=0)

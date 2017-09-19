@@ -286,6 +286,17 @@ class MenuItemPerm(models.Model):
     role = models.IntegerField(default=0)
 
 
+class UserDelegate(models.Model):
+    """
+    授权给其他用户使用我的设备
+    """
+    owner = models.ForeignKey(User, related_name='owner')
+    delegate = models.ForeignKey(User, related_name='delegate')
+
+    class Meta:
+        unique_together = ('owner', 'delegate')
+
+
 # 用户
 
 

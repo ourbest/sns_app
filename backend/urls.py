@@ -8,21 +8,29 @@ urlpatterns = [
     url(r'^task$', apis.task),
     # url(r'^image$', apis.image),
     url(r'^qr$', apis.qq_qr),
-    url(r'^import/qq$', apis.import_qq),
     url(r'^menu$', apis.get_menu),
+
+    # imports ====
+    url(r'^import/qq$', apis.import_qq),
     # url(r'^import/split$', apis.import_split),
     url(r'^import/user$', apis.import_user),
     url(r'^import/qun$', apis.import_qun),
     url(r'^import/stat$', apis.import_qun_stat),
     url(r'^import/useless_qun$', apis.import_useless_qun),
     url(r'^import/phone$', apis.import_phone),
+
+    # my ====
     url(r'^my/qq$', apis.my_qq),
     url(r'^my/qun$', apis.my_qun),
+    url(r'^my/qun/lost$', apis.my_lost_qun),
+    url(r'^my/tasks$', apis.my_tasks),
+    url(r'^my/online$', apis.online_phones),
+
     url(r'^device/qun$', apis.device_qun),
     url(r'^device/create$', apis.device_create),
     url(r'^device/tasks$', apis.device_tasks),
+
     url(r'^qq/create$', apis.qq_create),
-    url(r'^my/qun/lost$', apis.my_lost_qun),
     url(r'^split/qq$', apis.split_qq),
     url(r'^users$', apis.users),
     url(r'^devices$', apis.devices),
@@ -41,8 +49,6 @@ urlpatterns = [
     url(r'^app/summary$', apis.app_summary),
     url(r'^task/types$', apis.task_types),
     url(r'^task/create$', apis.create_task),
-    url(r'^my/tasks$', apis.my_tasks),
-    url(r'^my/online$', apis.online_phones),
     url(r'^task/devices$', apis.task_devices),
     url(r'^task/files$', apis.task_files),
     url(r'^file/content$', apis.file_content),
@@ -50,4 +56,8 @@ urlpatterns = [
     url(r'^user/info$', users.user_info),
     url(r'^user/update$', users.update_user_info),
     url(r'^user/pwd$', users.change_password),
+    url(r'^user/all$', users.all_users),
+    url(r'^user/delegates$', users.delegates),
+    url(r'^user/delegated$', users.delegated),
+    url(r'^user/delegate/update$', users.set_delegates),
 ]

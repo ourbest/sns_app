@@ -3,6 +3,7 @@ import logging
 from dj.utils import api_func_anonymous, api_error
 
 from backend import api_helper, model_manager
+from backend.models import UserDelegate, User
 
 logger = logging.getLogger('backend')
 
@@ -36,6 +37,23 @@ def update_user_info(request, name, app_id, qq_id, wx_id, i_role):
 
 
 @api_func_anonymous
+def delegates(request):
+    return [api_helper.user_to_json(x.delegate) for x in
+            UserDelegate.objects.filter(owner__email=api_helper.get_session_user(request))]
+
+
+@api_func_anonymous
+def delegated(request):
+    return [api_helper.user_to_json(x.owner) for x in
+            UserDelegate.objects.filter(delegate__email=api_helper.get_session_user(request))]
+
+
+@api_func_anonymous
+def all_users():
+    return [api_helper.user_to_json(x) for x in User.objects.all()]
+
+
+@api_func_anonymous
 def change_password(request, old_pwd, new_pwd):
     email = api_helper.get_session_user(request)
     user = api_helper.auth(email, old_pwd)
@@ -44,3 +62,18 @@ def change_password(request, old_pwd, new_pwd):
         return "ok"
 
     api_error(1001)
+
+
+@api_func_anonymous
+def set_delegates(delegates, request):
+    email = api_helper.get_session_user(request)
+    user = model_manager.get_user(email)
+    ids = delegates.split(';')
+    UserDelegate.objects.filter(owner=user).exclude(delegate_id__in=ids).delete()
+    for user_id in ids:
+        try:
+            UserDelegate(owner=user, delegate_id=user_id).save()
+        except:
+            pass
+
+    return 'ok'
