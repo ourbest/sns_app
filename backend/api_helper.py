@@ -1,4 +1,5 @@
 import re
+
 import requests
 
 from backend.models import User, AppUser
@@ -122,3 +123,25 @@ def to_share_url(user, url, share_type=0):
             u = '%s/%s' % (u, qq.cutt_user_id)
 
     return u if u else url
+
+
+def add_qun(device_task):
+    device = device_task.device
+
+    sns_users = device.snsuser_set.filter(type=0)
+
+    groups = dict()
+    for user in sns_users:
+        user_groups = user.snsusergroup_set.filter(status=0, active=1)
+        if user_groups:
+            groups[user.login_name] = [group.sns_group_id for group in user_groups]
+
+    idx = 0
+    user_lines = []
+    group_lines = []
+    for login_name, groups in groups.items():
+        idx += 1
+        user_lines.append('QQ_%s=%s' % (idx, login_name))
+        for group in groups:
+            group_lines.append('QUN_%s=%s' % (idx, group))
+    return '%s\n%s' % ('\n'.join(user_lines), '\n'.join(group_lines))

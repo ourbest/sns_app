@@ -126,10 +126,10 @@ def _make_task_content(device_task):
         # 加群
         ids = [x.group_id for x in model_manager.get_qun_idle(device_task.task.creator, 200, device_task.device)]
         shuffle(ids)
-        data = '\n'.join(ids)
+        data = '5\n' + ('\n'.join(ids))
     elif device_task.task.type_id == 3:
         # 分发
-        data = api_helper.to_share_url(device_task.device.owner, data)
+        data = api_helper.to_share_url(device_task.device.owner, data) + api_helper.add_qun(device_task)
     return '[task]\nid=%s\ntype=%s\n[data]\n%s' % (device_task.task_id, device_task.task.type_id, data)
 
 
@@ -691,7 +691,11 @@ def users(request, app_id):
 
 
 @api_func_anonymous
-def devices(request, email):
+def devices(request, email, i_uid):
+    if i_uid:
+        return [{'id': x.id, 'label': x.label, 'num': x.phone_num}
+                for x in PhoneDevice.objects.filter(owner_id=i_uid)]
+
     email = email if email else get_session_user(request)
     if email:
         return [{'id': x.id, 'label': x.label, 'num': x.phone_num}

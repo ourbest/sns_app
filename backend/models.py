@@ -297,6 +297,22 @@ class UserDelegate(models.Model):
         unique_together = ('owner', 'delegate')
 
 
+class Tag(models.Model):
+    """
+    提炼的标签列表
+    """
+    name = models.CharField(max_length=10, primary_key=True)
+
+
+class GroupTag(models.Model):
+    group = models.ForeignKey(SnsGroup)
+    tag = models.CharField(max_length=10)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('group', 'tag')
+
+
 # 用户
 
 
