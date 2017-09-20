@@ -144,4 +144,4 @@ def add_qun(device_task):
         user_lines.append('QQ_%s=%s' % (idx, login_name))
         for group in groups:
             group_lines.append('QUN_%s=%s' % (idx, group))
-    return '%s\n%s' % ('\n'.join(user_lines), '\n'.join(group_lines))
+    return '\n%s\n%s' % ('\n'.join(user_lines), '\n'.join(group_lines))
