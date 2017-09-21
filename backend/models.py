@@ -102,6 +102,9 @@ class SnsUser(models.Model):
     owner = models.ForeignKey(User, null=True, verbose_name='所有者')
     app = models.ForeignKey(App, verbose_name='生活圈')
     bot_login_token = models.BinaryField(null=True, blank=True)
+    dist = models.IntegerField(default=1)
+    friend = models.IntegerField(default=1)
+    search = models.IntegerField(default=0)
 
     def __str__(self):
         return self.name
@@ -122,6 +125,7 @@ class SnsGroup(models.Model):
     status = models.IntegerField('状态', default=0, help_text='0 - 未使用 1 - 已分配 -1 - 忽略')
     app = models.ForeignKey(App, verbose_name='生活圈', null=True)
     created_at = models.DateTimeField(verbose_name='添加时间', auto_now_add=True)
+    quiz = models.CharField(verbose_name='问题答案', max_length=50, null=True, blank=True)
 
     def __str__(self):
         return '%s (%s)' % (self.group_name, self.group_id)

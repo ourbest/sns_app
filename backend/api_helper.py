@@ -28,7 +28,10 @@ def sns_user_to_json(sns_user):
         'login': sns_user.login_name,
         'password': sns_user.passwd,
         'phone': sns_user.phone,
-        'memo': sns_user.memo
+        'memo': sns_user.memo,
+        'dist': sns_user.dist,
+        'search': sns_user.search,
+        'friend': sns_user.friend,
     } if sns_user else {}
 
 
@@ -53,6 +56,15 @@ def qun_to_json(x):
             'phone': x.sns_user.device.phone_num
         },
         'member_count': x.sns_group.group_user_count
+    }
+
+
+def sns_group_to_json(x):
+    return {
+        'id': x.group_id,
+        'name': x.group_name,
+        'member_count': x.group_user_count,
+        'quiz': x.quiz,
     }
 
 

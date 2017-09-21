@@ -127,7 +127,7 @@ def set_qun_manual(qun):
     qun.save()
     # db = SnsGroup()
     # 删除无效群的数据
-    qun.snsgroupsplit_set.all().delete()
+    qun.snsgroupsplit_set.update(status=-1)
 
 
 def get_qun_idle(user, size, device):

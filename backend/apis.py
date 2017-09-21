@@ -126,7 +126,9 @@ def _make_task_content(device_task):
         # 加群
         ids = [x.group_id for x in model_manager.get_qun_idle(device_task.task.creator, 200, device_task.device)]
         shuffle(ids)
-        data = '5\n' + ('\n'.join(ids))
+        if not data:
+            data = '5\n'
+        data += '\n'.join(ids)
     elif device_task.task.type_id == 3:
         # 分发
         data = api_helper.to_share_url(device_task.device.owner, data) + api_helper.add_qun(device_task)
@@ -219,6 +221,7 @@ def my_qq(request, email):
     return [{
         'phone': x.phone,
         'login_name': x.login_name,
+        'passwd': x.passwd,
         'type': x.type,
         'name': x.name
     } for x in SnsUser.objects.filter(owner__email=email).order_by("phone")]
@@ -229,6 +232,44 @@ def my_qun(request):
     return [qun_to_json(x) for x in
             SnsUserGroup.objects.filter(sns_user__owner__email=get_session_user(request), active=1,
                                         status=0).select_related("sns_group", "sns_user", "sns_user__device")]
+
+
+@api_func_anonymous
+def my_pending_qun(request, i_size, i_page):
+    if i_size == 0:
+        i_size = 50
+
+    if i_page == 0:
+        i_page = 1
+
+    i_page -= 1
+
+    query = SnsGroupSplit.objects.filter(user__email=get_session_user(request),
+                                         status__in=(0, 1, 2)).select_related("group")
+    return {
+        'total': len(query),
+        'page': i_page + 1,
+        'items': [api_helper.sns_group_to_json(x.group) for x in query[i_page * i_size:(i_page + 1) * i_size]]
+    }
+
+
+@api_func_anonymous
+def my_quiz_qun(request, i_size, i_page):
+    if i_size == 0:
+        i_size = 50
+
+    if i_page == 0:
+        i_page = 1
+
+    i_page -= 1
+
+    query = SnsGroupSplit.objects.filter(user__email=get_session_user(request),
+                                         status=-1).select_related("group")
+    return {
+        'total': len(query),
+        'page': i_page + 1,
+        'items': [api_helper.sns_group_to_json(x.group) for x in query[i_page * i_size:(i_page + 1) * i_size]]
+    }
 
 
 @api_func_anonymous

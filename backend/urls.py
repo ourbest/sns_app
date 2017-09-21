@@ -22,6 +22,8 @@ urlpatterns = [
     # my ====
     url(r'^my/qq$', apis.my_qq),
     url(r'^my/qun$', apis.my_qun),
+    url(r'^my/pending/qun$', apis.my_pending_qun),
+    url(r'^my/quiz/qun$', apis.my_quiz_qun),
     url(r'^my/qun/lost$', apis.my_lost_qun),
     url(r'^my/tasks$', apis.my_tasks),
     url(r'^my/online$', apis.online_phones),
