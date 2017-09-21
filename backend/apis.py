@@ -124,10 +124,13 @@ def _make_task_content(device_task):
     data = device_task.data
     if device_task.task.type_id == 2:
         # 加群
+        model_manager.reset_qun_status(device_task)
         ids = [x.group_id for x in model_manager.get_qun_idle(device_task.task.creator, 200, device_task.device)]
         shuffle(ids)
         if not data:
             data = '5\n'
+        else:
+            data = data.strip() + '\n'
         data += '\n'.join(ids)
     elif device_task.task.type_id == 3:
         # 分发
