@@ -225,14 +225,28 @@ def my_qq(request, email):
 
 
 @api_func_anonymous
-def my_qun(request):
-    return [qun_to_json(x) for x in
-            SnsUserGroup.objects.filter(sns_user__owner__email=get_session_user(request), active=1,
-                                        status=0).select_related("sns_group", "sns_user", "sns_user__device")]
+def my_qun(request, i_page, i_size, keyword):
+    query = SnsUserGroup.objects.filter(sns_user__owner__email=get_session_user(request),
+                                        status=0).select_related("sns_group", "sns_user", "sns_user__device")
+    if i_page != 0:
+        if i_size == 0:
+            i_size = 50
+
+    if keyword:
+        query = query.filter(sns_group__group_id__contains=keyword)
+
+    query = query[(i_page - 1) * i_size:i_page * i_size]
+
+    return [qun_to_json(x) for x in query]
 
 
 @api_func_anonymous
-def my_pending_qun(request, i_size, i_page):
+def my_qun_cnt(request):
+    return SnsUserGroup.objects.filter(sns_user__owner__email=get_session_user(request), status=0).count()
+
+
+@api_func_anonymous
+def my_pending_qun(request, i_size, i_page, keyword):
     if i_size == 0:
         i_size = 50
 
@@ -243,6 +257,8 @@ def my_pending_qun(request, i_size, i_page):
 
     query = SnsGroupSplit.objects.filter(user__email=get_session_user(request),
                                          status__in=(0, 1, 2)).select_related("group")
+    if keyword:
+        query = query.filter(group__group_id__contains=keyword)
     return {
         'total': len(query),
         'page': i_page + 1,
@@ -251,7 +267,7 @@ def my_pending_qun(request, i_size, i_page):
 
 
 @api_func_anonymous
-def my_quiz_qun(request, i_size, i_page):
+def my_quiz_qun(request, i_size, i_page, keyword):
     if i_size == 0:
         i_size = 50
 
@@ -262,6 +278,9 @@ def my_quiz_qun(request, i_size, i_page):
 
     query = SnsGroupSplit.objects.filter(user__email=get_session_user(request),
                                          status=-1).select_related("group")
+
+    if keyword:
+        query = query.filter(group__group_id__contains=keyword)
     return {
         'total': len(query),
         'page': i_page + 1,
@@ -775,6 +794,19 @@ def update_account_attr(sns_id, name, value):
         sns_user.save()
 
     return sns_user_to_json(sns_user)
+
+
+@api_func_anonymous
+def update_user_group_attr(sns_id, name, value):
+    if value.isdigit():
+        value = int(value)
+
+    sns_user = SnsUserGroup.objects.filter(id=sns_id).first()
+    if sns_user:
+        setattr(sns_user, name, value)
+        sns_user.save()
+
+    return 'ok'
 
 
 @api_func_anonymous
