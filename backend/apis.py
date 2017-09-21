@@ -221,13 +221,7 @@ def my_qq(request, email):
     if not email:
         email = get_session_user(request)
 
-    return [{
-        'phone': x.phone,
-        'login_name': x.login_name,
-        'passwd': x.passwd,
-        'type': x.type,
-        'name': x.name
-    } for x in SnsUser.objects.filter(owner__email=email).order_by("phone")]
+    return [sns_user_to_json(x) for x in SnsUser.objects.filter(owner__email=email).order_by("phone")]
 
 
 @api_func_anonymous
@@ -765,6 +759,19 @@ def update_account(sns_id, password, name):
         sns_user.passwd = password
         if name:
             sns_user.name = name
+        sns_user.save()
+
+    return sns_user_to_json(sns_user)
+
+
+@api_func_anonymous
+def update_account_attr(sns_id, name, value):
+    if value.isdigit():
+        value = int(value)
+
+    sns_user = SnsUser.objects.filter(id=sns_id).first()
+    if sns_user:
+        setattr(sns_user, name, value)
         sns_user.save()
 
     return sns_user_to_json(sns_user)

@@ -2,7 +2,7 @@ import re
 
 import requests
 
-from backend.models import User, AppUser
+from backend.models import User, AppUser, TaskGroup
 
 DEFAULT_APP = 1519662
 
@@ -140,13 +140,21 @@ def to_share_url(user, url, share_type=0):
 def add_qun(device_task):
     device = device_task.device
 
-    sns_users = device.snsuser_set.filter(type=0)
+    sns_users = device.snsuser_set.filter(type=0, dist=1)
 
     groups = dict()
     for user in sns_users:
         user_groups = user.snsusergroup_set.filter(status=0, active=1)
         if user_groups:
-            groups[user.login_name] = [group.sns_group_id for group in user_groups]
+            group_ids = []
+            for group in user_groups:
+                try:
+                    TaskGroup(task=device_task.task, sns_user=user, group_id=group.sns_group_id).save()
+                    group_ids.append(group.sns_group_id)
+                except:
+                    pass
+            if group_ids:
+                groups[user.login_name] = group_ids
 
     idx = 0
     user_lines = []

@@ -39,6 +39,7 @@ urlpatterns = [
     url(r'^accounts$', apis.accounts),
     url(r'^account/info$', apis.account),
     url(r'^account/update$', apis.update_account),
+    url(r'^account/update/attr$', apis.update_account_attr),
     url(r'^account/qun$', apis.account_qun),
     url(r'^split/phone/qq$', apis.split_qun_to_device),
     url(r'^reset/phone/qq$', apis.reset_phone_split),

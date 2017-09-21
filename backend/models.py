@@ -317,6 +317,19 @@ class GroupTag(models.Model):
         unique_together = ('group', 'tag')
 
 
+class TaskGroup(models.Model):
+    """
+    此次分发设计到的群，避免发多次
+    """
+    task = models.ForeignKey(SnsTask)
+    group = models.ForeignKey(SnsGroup)
+    sns_user = models.ForeignKey(SnsUser)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('task', 'group')
+
+
 # 用户
 
 
