@@ -59,7 +59,7 @@ def upload(type, id, task_id, request):
         ad.save()
 
         if task_id.isdigit():
-            device_task = SnsTaskDevice.objects.filter(device__label=id, id=task_id).first()
+            device_task = SnsTaskDevice.objects.filter(device__label=id, task_id=task_id).first()
             if device_task:
                 if device_task.status != 2:
                     model_manager.mark_task_finish(device_task)
