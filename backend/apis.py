@@ -115,6 +115,8 @@ def import_add_result(device_task, lines):
                 model_manager.set_qun_applying(device_task.device, qun)
             elif status in ('需要回答问题',):
                 model_manager.set_qun_manual(qun)
+            elif status in ('无需验证未加入',):
+                pass
         except:
             logger.warning('error import line %s' % line, exc_info=1)
 
@@ -243,7 +245,7 @@ def my_qun(request, i_page, i_size, keyword):
 
 @api_func_anonymous
 def my_qun_cnt(request):
-    return SnsUserGroup.objects.filter(sns_user__owner__email=get_session_user(request), status=0).count()
+    return str(SnsUserGroup.objects.filter(sns_user__owner__email=get_session_user(request), status=0).count())
 
 
 @api_func_anonymous
@@ -802,7 +804,7 @@ def update_user_group_attr(sns_id, name, value):
     if value.isdigit():
         value = int(value)
 
-    sns_user = SnsUserGroup.objects.filter(id=sns_id).first()
+    sns_user = SnsGroup.objects.filter(group_id=sns_id).first()
     if sns_user:
         setattr(sns_user, name, value)
         sns_user.save()
