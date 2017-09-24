@@ -1,11 +1,7 @@
-import logging
-
 from dj.utils import api_func_anonymous, api_error
 
 from backend import api_helper, model_manager
 from backend.models import UserDelegate, User
-
-logger = logging.getLogger('backend')
 
 
 @api_func_anonymous

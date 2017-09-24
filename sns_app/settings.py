@@ -13,6 +13,8 @@ https://docs.djangoproject.com/en/1.10/ref/settings/
 import os
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
+import logzero
+
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # Quick-start development settings - unsuitable for production
@@ -25,6 +27,8 @@ SECRET_KEY = 'y50q+a@-%b#6+3x7qwp^u*8nl8ljp--anr!y6)&a&mm@6&8ry!'
 DEBUG = True
 
 ALLOWED_HOSTS = []
+
+logzero.logfile("logs/sns.log", maxBytes=1e6, backupCount=3)
 
 # Application definition
 
