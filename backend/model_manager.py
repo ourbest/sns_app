@@ -34,6 +34,11 @@ def get_online(email):
         Q(active_at__gt=(timezone.now() - timedelta(seconds=300))) | Q(status=1))
 
 
+def get_online_by_id(uid):
+    return ActiveDevice.objects.filter(device__owner_id=uid).filter(
+        Q(active_at__gt=(timezone.now() - timedelta(seconds=300))) | Q(status=1))
+
+
 def get_qq(qq_id):
     return SnsUser.objects.filter(login_name=qq_id, type=0).first()
 

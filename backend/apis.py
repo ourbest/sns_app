@@ -753,12 +753,14 @@ def users(request, app_id):
 @api_func_anonymous
 def devices(request, email, i_uid):
     if i_uid:
-        return [{'id': x.id, 'label': x.label, 'num': x.phone_num}
+        online = {x.device_id for x in model_manager.get_online_by_id(i_uid)}
+        return [{'id': x.id, 'label': x.label, 'num': x.phone_num, 'online': x.id in online}
                 for x in PhoneDevice.objects.filter(owner_id=i_uid)]
 
     email = email if email else get_session_user(request)
     if email:
-        return [{'id': x.id, 'label': x.label, 'num': x.phone_num}
+        online = {x.device_id for x in model_manager.get_online(email)}
+        return [{'id': x.id, 'label': x.label, 'num': x.phone_num, 'online': x.id in online}
                 for x in PhoneDevice.objects.filter(owner__email=email)]
 
 
@@ -905,10 +907,6 @@ def file_content(i_file_id, i_att):
 @api_func_anonymous
 def online_phones(request):
     return [device_to_json(x.device) for x in model_manager.get_online(get_session_user(request))]
-
-
-def _after_upload_file(ftype, fid, local_file):
-    pass
 
 
 def _upload_to_qiniu(device_id, task, type, name, file):
