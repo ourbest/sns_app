@@ -46,13 +46,9 @@ def upload(type, id, task_id, request):
             for chunk in upload_file.chunks():
                 out.write(chunk)
 
-    executor.submit(_after_upload, id, name, task_id, tmp_file, type)
-    return "ok"
-
-
-def _after_upload(id, name, task_id, tmp_file, type):
     key = _upload_to_qiniu(id, task_id, type, name, tmp_file)
     device = model_manager.get_phone(id)
+    device_task = None
     if device:
         ad = model_manager.get_active_device(device)
         if not ad:
@@ -82,6 +78,23 @@ def _after_upload(id, name, task_id, tmp_file, type):
                 elif device_task.task.type_id == 2:  # 加群
                     with open(tmp_file, 'rt', encoding='utf-8') as f:
                         import_add_result(device_task, f.read())
+
+    executor.submit(_after_upload, device_task, task_id, tmp_file, device)
+    return "ok"
+
+
+def _after_upload(device_task, task_id, tmp_file, device):
+    if device_task:
+        if device_task.task.type_id == 4:  # 统计
+            with open(tmp_file, 'rt', encoding='utf-8') as f:
+                import_qun_stat(f.read(), id)
+        elif device_task.task.type_id == 1:  # 查群
+            with open(tmp_file, 'rt', encoding='utf-8') as f:
+                import_qun(device_task.task.app_id, f.read(), None)
+        elif device_task.task.type_id == 2:  # 加群
+            with open(tmp_file, 'rt', encoding='utf-8') as f:
+                import_add_result(device_task, f.read())
+
     if type == 'result':
         if task_id == 'stat':
             with open(tmp_file, 'rt', encoding='utf-8') as f:
