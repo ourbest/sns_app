@@ -1,8 +1,8 @@
 import os
 import re
 from collections import defaultdict
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
-from random import shuffle
 from urllib.parse import quote
 
 import requests
@@ -13,6 +13,7 @@ from django.core.files.uploadedfile import TemporaryUploadedFile
 from django.db.models import Sum
 from django.http import HttpResponseRedirect
 from django.utils import timezone
+from logzero import logger
 from qiniu import Auth, put_file, etag
 
 from backend import model_manager, api_helper
@@ -20,7 +21,7 @@ from backend.api_helper import get_session_user, get_session_app, sns_user_to_js
 from backend.models import User, App, SnsGroup, SnsGroupSplit, PhoneDevice, SnsUser, SnsUserGroup, SnsGroupLost, \
     SnsTaskDevice, DeviceFile, SnsTaskType, SnsTask, ActiveDevice, SnsApplyTaskLog
 
-from logzero import logger
+executor = ThreadPoolExecutor(max_workers=2)
 
 
 @api_func_anonymous
@@ -45,10 +46,13 @@ def upload(type, id, task_id, request):
             for chunk in upload_file.chunks():
                 out.write(chunk)
 
+    executor.submit(_after_upload, id, name, task_id, tmp_file, type)
+    return "ok"
+
+
+def _after_upload(id, name, task_id, tmp_file, type):
     key = _upload_to_qiniu(id, task_id, type, name, tmp_file)
-
     device = model_manager.get_phone(id)
-
     if device:
         ad = model_manager.get_active_device(device)
         if not ad:
@@ -78,7 +82,6 @@ def upload(type, id, task_id, request):
                 elif device_task.task.type_id == 2:  # 加群
                     with open(tmp_file, 'rt', encoding='utf-8') as f:
                         import_add_result(device_task, f.read())
-
     if type == 'result':
         if task_id == 'stat':
             with open(tmp_file, 'rt', encoding='utf-8') as f:
@@ -86,9 +89,7 @@ def upload(type, id, task_id, request):
         elif task_id == 'qun':
             with open(tmp_file, 'rt', encoding='utf-8') as f:
                 import_qun(device.owner.app_id, f.read())
-
     os.remove(tmp_file)
-    return "ok"
 
 
 def import_add_result(device_task, lines):
@@ -128,16 +129,10 @@ def _make_task_content(device_task):
     if device_task.task.type_id == 2:
         # 加群
         model_manager.reset_qun_status(device_task)
-        ids = [x.group_id for x in model_manager.get_qun_idle(device_task.task.creator, 200, device_task.device)]
-        shuffle(ids)
-        if not data:
-            data = '5\n'
-        else:
-            data = data.strip() + '\n'
-        data += '\n'.join(ids)
+        data = api_helper.add_add_qun(device_task)
     elif device_task.task.type_id == 3:
         # 分发
-        data = api_helper.to_share_url(device_task.device.owner, data) + api_helper.add_qun(device_task)
+        data = api_helper.to_share_url(device_task.device.owner, data) + api_helper.add_dist_qun(device_task)
     return '[task]\nid=%s\ntype=%s\n[data]\n%s' % (device_task.task_id, device_task.task.type_id, data)
 
 
@@ -339,36 +334,70 @@ def my_lost_qun(request):
 
 
 @api_func_anonymous
-def import_phone(ids):
+def import_qun_join(request, ids):
+    """
+    qun
+    :param request:
+    :param ids:
+    :return:
+    """
+    self = model_manager.get_user(get_session_user(request))
+    total = 0
+    for line in ids.split('\n'):
+        line = line.strip()
+        if line:
+            account = re.split('\s+', line)
+            if len(account) == 2 and account[0].isdigit():
+                [qun_num, phone] = account
+                split = SnsGroupSplit.objects.filter(group_id=qun_num, user=self).first()
+                device = model_manager.get_phone(phone)
+                if not split:
+                    split = SnsGroupSplit(group_id=qun_num, user=self, status=2, phone=device)
+                else:
+                    split.user = self
+                    split.phone = device
+                    if split.status <= 1:
+                        split.status = 2
+                split.save()
+                total += 1
+
+    return {
+        'total': total,
+        'message': '成功'
+    }
+
+
+@api_func_anonymous
+def import_phone(request, ids):
     """
     device_id phone owner
     :param request:
     :param ids:
     :return:
     """
+    self = get_session_user(request)
     total = 0
     for line in ids.split('\n'):
         line = line.strip()
         if line:
             account = re.split('\s+', line)
             db = PhoneDevice.objects.filter(label=account[0]).first()
-            if not db:
-                user = None
-                if len(account) > 2:
-                    user = User.objects.filter(email=account[2]).first()
+            user = User.objects.filter(email=account[2]).first() if len(account) > 2 else  self
 
-                device = PhoneDevice(label=account[0], phone_num=account[1], status=0)
+            label = account[0]
+            phone_num = label if len(account) == 1 else account[1]
+
+            if not db:
+                device = PhoneDevice(label=label, phone_num=phone_num, status=0)
                 if user:
                     device.owner_id = user.id
 
                 device.save()
                 total += 1
             else:
-                device.phone_num = account[1]
-                if len(account) > 2:
-                    user = User.objects.filter(email=account[2]).first()
-                    if user:
-                        device.owner_id = user.id
+                device.phone_num = phone_num
+                if user:
+                    device.owner_id = user.id
 
                 db.save()
 
@@ -557,6 +586,62 @@ def import_qun(app, ids, request):
                         db.save()
             except:
                 logger.warning("error save %s" % account)
+
+    return {
+        'count': cnt,
+        'total': total,
+        'message': '成功'
+    }
+
+
+@api_func_anonymous
+def import_qun_split(app, ids, request):
+    """
+    群号 邮箱 手机号 群名 群人数
+    :param app:
+    :param ids:
+    :param request:
+    :return:
+    """
+    if not app:
+        app = get_session_app(request)
+    cnt = 0
+    total = 0
+    exists = {x.group_id for x in SnsGroup.objects.filter(app_id=app)}
+    for line in ids.split('\n'):
+        line = line.strip()
+        if line:
+            total += 1
+            account = re.split('\s+', line)
+            qun_id = account[0]
+            qun_name = 'NA' if len(account) < 4 else account[3]
+            member_cnt = 0 if len(account) < 5 or not account[4].isdigit() else int(account[4])
+            user_email = get_session_user(request) if len(account) < 2 else account[1]
+            phone = None if len(account) < 3 else account[2]
+
+            try:
+                if not qun_id.isdigit() and qun_id in exists:
+                    continue
+
+                qun_id = account[0]
+                db = SnsGroup(group_id=qun_id, group_name=qun_name, type=0, app_id=app,
+                              group_user_count=member_cnt)
+                db.save()
+                cnt += 1
+            except:
+                logger.warning("error save %s" % account, exc_info=1)
+                db = None
+
+            # if not db:
+            #     db = model_manager.get_qun(qun_id)
+            split = SnsGroupSplit(group_id=qun_id, user=model_manager.get_user(user_email))
+            if phone:
+                split.phone = model_manager.get_phone(phone)
+
+            try:
+                split.save()
+            except:
+                logger.warning('error save split %s' % split, exc_info=1)
 
     return {
         'count': cnt,

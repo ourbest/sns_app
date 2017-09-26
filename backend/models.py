@@ -236,6 +236,7 @@ class SnsTask(models.Model):
     status = models.IntegerField(default=0)
     app = models.ForeignKey(App, null=True)
     creator = models.ForeignKey(User, null=True)
+    schedule_at = models.DateTimeField(null=True)
 
 
 class SnsTaskDevice(models.Model):
@@ -249,6 +250,7 @@ class SnsTaskDevice(models.Model):
     started_at = models.DateTimeField(null=True, blank=True)
     finish_at = models.DateTimeField(null=True, blank=True)
     data = models.TextField(blank=True, null=True)
+    schedule_at = models.DateTimeField(null=True)
 
 
 class DeviceFile(models.Model):

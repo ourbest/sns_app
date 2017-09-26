@@ -1,7 +1,9 @@
 import re
+from random import shuffle
 
 import requests
 
+from backend import model_manager
 from backend.models import User, AppUser, TaskGroup
 
 DEFAULT_APP = 1519662
@@ -137,7 +139,7 @@ def to_share_url(user, url, share_type=0):
     return u if u else url
 
 
-def add_qun(device_task):
+def add_dist_qun(device_task):
     device = device_task.device
 
     sns_users = device.snsuser_set.filter(type=0, dist=1)
@@ -165,3 +167,43 @@ def add_qun(device_task):
         for group in groups:
             group_lines.append('QUN_%s=%s' % (idx, group))
     return '\n%s\n%s' % ('\n'.join(user_lines), '\n'.join(group_lines))
+
+
+def add_add_qun(device_task):
+    device = device_task.device
+    data = device_task.data
+
+    cnt = 5
+
+    sns_users = device.snsuser_set.filter(type=0, friend=1)
+    idx = 0
+
+    ids = [x.group_id for x in
+           model_manager.get_qun_idle(device_task.task.creator, len(sns_users) * cnt * 5, device_task.device)]
+    shuffle(ids)
+    if not data:
+        data = 'COUNT=%s\n' % cnt
+    else:
+        data = data.strip() + '\n'
+    # data += '\n'.join(ids)
+    groups = dict()
+    for user in sns_users:
+        group_ids = []
+
+        for i in range(0, cnt * 5):
+            if idx < len(ids):
+                group_ids.append(ids[idx])
+                idx += 1
+
+        if group_ids:
+            groups[user.login_name] = group_ids
+
+    idx = 0
+    user_lines = []
+    group_lines = []
+    for login_name, groups in groups.items():
+        idx += 1
+        user_lines.append('QQ_%s=%s' % (idx, login_name))
+        for group in groups:
+            group_lines.append('QUN_%s=%s' % (idx, group))
+    return data + '%s\n%s' % ('\n'.join(user_lines), '\n'.join(group_lines))

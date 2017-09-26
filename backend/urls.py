@@ -18,6 +18,8 @@ urlpatterns = [
     url(r'^import/stat$', apis.import_qun_stat),
     url(r'^import/useless_qun$', apis.import_useless_qun),
     url(r'^import/phone$', apis.import_phone),
+    url(r'^import/split$', apis.import_qun_split),
+    url(r'^import/join$', apis.import_qun_join),
 
     # my ====
     url(r'^my/qq$', apis.my_qq),
