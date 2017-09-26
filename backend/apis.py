@@ -84,10 +84,11 @@ def upload(type, id, task_id, request):
 
 
 def _after_upload(device_task, task_id, tmp_file, device):
+    logger.info('after upload import temp file %s' % tmp_file)
     if device_task:
         if device_task.task.type_id == 4:  # 统计
             with open(tmp_file, 'rt', encoding='utf-8') as f:
-                import_qun_stat(f.read(), id)
+                import_qun_stat(f.read(), device.label)
         elif device_task.task.type_id == 1:  # 查群
             with open(tmp_file, 'rt', encoding='utf-8') as f:
                 import_qun(device_task.task.app_id, f.read(), None)
