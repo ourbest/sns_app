@@ -522,7 +522,7 @@ def import_qun_stat(ids, device_id):
 
                     if qun.status != 2:
                         qun.status = 2
-
+                    qun.group_name = qun_name
                     qun.group_user_count = qun_user_cnt
                     qun.save()
 
