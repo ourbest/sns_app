@@ -975,6 +975,7 @@ def my_tasks(request):
         'status': x.status,
         'type': x.type.name,
         'create_time': times.to_str(x.created_at),
+        'schedule_time': times.to_str(x.schedule_at),
         'creator': x.creator.name,
         'data': x.data,
         'status_text': TASK_STATUS_TEXT[x.status],
