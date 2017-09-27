@@ -35,6 +35,7 @@ urlpatterns = [
     url(r'^device/qun$', apis.device_qun),
     url(r'^device/create$', apis.device_create),
     url(r'^device/tasks$', apis.device_tasks),
+    url(r'^device/transfer$', apis.device_transfer),
 
     url(r'^qq/create$', apis.qq_create),
     url(r'^split/qq$', apis.split_qq),

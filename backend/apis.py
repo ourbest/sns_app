@@ -309,7 +309,7 @@ def device_qun(device):
 
 @api_func_anonymous
 def device_create(request, phone):
-    dev = PhoneDevice.objects.filter(label=phone).first()
+    dev = model_manager.get_phone(phone)
     if not dev:
         email = get_session_user(request)
         if email:
@@ -317,6 +317,20 @@ def device_create(request, phone):
             if owner:
                 PhoneDevice(label=phone, phone_num=phone, owner=owner).save()
     return "ok"
+
+
+@api_func_anonymous
+def device_transfer(label, to_user):
+    user = model_manager.get_user(to_user)
+    if not user:
+        api_error(1, '错误的邮箱')
+
+    dev = model_manager.get_phone(label)
+    if dev:
+        dev.owner = user
+        dev.save()
+
+    return 'ok'
 
 
 @api_func_anonymous
