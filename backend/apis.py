@@ -164,7 +164,8 @@ def task(id):
         for x in SnsTaskDevice.objects.filter(device__label=id, status=1):
             model_manager.mark_task_cancel(x)
 
-        device_task = SnsTaskDevice.objects.filter(device__label=id, status=0).first()
+        device_task = SnsTaskDevice.objects.filter(device__label=id, status=0,
+                                                   schedule_at__lte=timezone.now()).first()
         if device_task:
             device_task.status = 1
             device_task.started_at = timezone.now()
@@ -937,23 +938,33 @@ def task_types():
 
 
 @api_func_anonymous
-def create_task(type, params, phone, request):
+def update_task_status(device_task_id, i_status):
+    db = SnsTaskDevice.objects.filter(pk=device_task_id).first()
+    if db and db.status != i_status:
+        db.status = i_status
+        db.save()
+        model_manager.check_task_status(db.task)
+
+
+@api_func_anonymous
+def create_task(type, params, phone, request, date):
     labels = re.split(';', phone)
     devices = model_manager.get_phones(labels)
+    scheduler_date = timezone.make_aware(datetime.strptime(date, '%Y-%m-%d %H:%M')) if date else None
     if devices:
         task_type = model_manager.get_task_type(type)
         task = SnsTask(name=task_type.name, type=task_type,
-                       app_id=get_session_app(request), status=0,
+                       app_id=get_session_app(request), status=0, schedule_at=scheduler_date,
                        data=params, creator=model_manager.get_user(get_session_user(request)))
         task.save()
         for device in devices:
-            SnsTaskDevice(task=task, device=device, data=task.data).save()
+            SnsTaskDevice(task=task, device=device, schedule_at=scheduler_date, data=task.data).save()
 
         return "ok"
     api_error(1001, '不存在的手机')
 
 
-TASK_STATUS_TEXT = ['已创建', '执行中', '已完成', '已中断']
+TASK_STATUS_TEXT = ['等待执行', '执行中', '已完成', '已中断', '已取消']
 
 
 @api_func_anonymous

@@ -77,6 +77,9 @@ def check_task_status(task):
     if not in_prog:
         task.status = 2
         task.save()
+    elif task.status == 2:
+        task.status = 0
+        task.save()
 
 
 def set_qun_useless(db):
