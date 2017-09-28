@@ -19,7 +19,7 @@ from qiniu import Auth, put_file, etag
 from backend import model_manager, api_helper
 from backend.api_helper import get_session_user, get_session_app, sns_user_to_json, device_to_json, qun_to_json
 from backend.models import User, App, SnsGroup, SnsGroupSplit, PhoneDevice, SnsUser, SnsUserGroup, SnsTaskDevice, \
-    DeviceFile, SnsTaskType, SnsTask, ActiveDevice, SnsApplyTaskLog, DistTaskLog, UserActionLog
+    DeviceFile, SnsTaskType, SnsTask, ActiveDevice, SnsApplyTaskLog, DistTaskLog, UserActionLog, SnsGroupLost
 
 executor = ThreadPoolExecutor(max_workers=2)
 
@@ -176,7 +176,8 @@ def _make_task_content(device_task):
         data = api_helper.add_add_qun(device_task)
     elif device_task.task.type_id == 3:
         # 分发
-        data = api_helper.to_share_url(device_task.device.owner, data) + api_helper.add_dist_qun(device_task)
+        data = api_helper.to_share_url(device_task.device.owner, data,
+                                       device_task.device.label) + api_helper.add_dist_qun(device_task)
     return '[task]\nid=%s\ntype=%s\n[data]\n%s' % (device_task.task_id, device_task.task.type_id, data)
 
 
@@ -284,6 +285,27 @@ def my_qun(request, i_page, i_size, keyword):
 
 
 @api_func_anonymous
+def my_kicked_qun(request, i_page, i_size, keyword):
+    query = SnsGroupLost.objects.filter(sns_user__owner__email=get_session_user(request),
+                                        status=0).order_by("-pk").select_related("group", "sns_user",
+                                                                                 "sns_user__device")
+    if i_page != 0:
+        if i_size == 0:
+            i_size = 50
+
+    if keyword:
+        query = query.filter(group__group_id__contains=keyword)
+
+    cnt = query.count()
+    query = query[(i_page - 1) * i_size:i_page * i_size]
+
+    return {
+        'total': cnt,
+        'items': [api_helper.lost_qun_to_json(x) for x in query],
+    }
+
+
+@api_func_anonymous
 def my_qun_cnt(request):
     return str(SnsUserGroup.objects.filter(sns_user__owner__email=get_session_user(request), status=0).count())
 
@@ -363,7 +385,9 @@ def device_transfer(label, to_user):
             dev.owner = user
             dev.save()
 
-            UserActionLog(action='转交', memo=user.name, user=owner).save()
+            SnsUser.objects.filter(device=dev).update(owner=user)
+
+            UserActionLog(action='转交', memo='%s转交给%s' % (label, user.name), user=owner).save()
 
     return 'ok'
 

@@ -2,6 +2,7 @@ import re
 from random import shuffle
 
 import requests
+from dj import times
 
 from backend import model_manager
 from backend.models import User, AppUser, TaskGroup
@@ -58,6 +59,23 @@ def qun_to_json(x):
             'phone': x.sns_user.device.phone_num
         },
         'member_count': x.sns_group.group_user_count
+    }
+
+
+def lost_qun_to_json(x):
+    return {
+        'id': x.group.group_id,
+        'name': x.group.group_name,
+        'qq': {
+            'id': x.sns_user.login_name,
+            'name': x.sns_user.name
+        },
+        'device': {
+            'label': x.sns_user.device.label,
+            'phone': x.sns_user.device.phone_num
+        },
+        'member_count': x.group.group_user_count,
+        'lost_time': times.to_str(x.created_at),
     }
 
 
@@ -128,13 +146,17 @@ def save_cutt_id(user, cutt_id, user_type):
     db.save()
 
 
-def to_share_url(user, url, share_type=0):
+def to_share_url(user, url, share_type=0, label=None):
     u = re.findall(r'https?://.+?/weizhan/article/\d+/\d+/\d+', url)
     if u:
         u = u[0]
         qq = user.appuser_set.filter(type=share_type).first()
         if qq:
             u = '%s/%s' % (u, qq.cutt_user_id)
+            u.replace('http://tz.', 'https://tz.')
+            if label:
+                suffix = label if len(label) != 11 else '%s___%s' % (label[0:4], label[-4:])
+                u += '?l=' + suffix
 
     return u if u else url
 

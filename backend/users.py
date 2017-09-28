@@ -65,11 +65,14 @@ def set_delegates(delegates, request):
     email = api_helper.get_session_user(request)
     user = model_manager.get_user(email)
     ids = delegates.split(';')
-    UserDelegate.objects.filter(owner=user).exclude(delegate_id__in=ids).delete()
-    for user_id in ids:
-        try:
-            UserDelegate(owner=user, delegate_id=user_id).save()
-        except:
-            pass
+    if ids and ids[0] != '':
+        UserDelegate.objects.filter(owner=user).exclude(delegate_id__in=ids).delete()
+        for user_id in ids:
+            try:
+                UserDelegate(owner=user, delegate_id=user_id).save()
+            except:
+                pass
+    else:
+        UserDelegate.objects.filter(owner=user).delete()
 
     return 'ok'
