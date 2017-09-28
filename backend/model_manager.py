@@ -5,7 +5,7 @@ from django.db.models import Q
 from django.utils import timezone
 
 from backend.models import PhoneDevice, SnsTaskType, App, User, ActiveDevice, SnsUser, SnsGroup, UserAuthApp, \
-    MenuItemPerm
+    MenuItemPerm, SnsGroupLost
 from backend.models import SnsUserGroup, SnsGroupSplit
 
 
@@ -153,6 +153,20 @@ def get_or_create_qq(device, qq):
                      owner=device.owner, app_id=device.owner.app_id)
         db.save()
     return db
+
+
+def set_qun_kicked(sns_user_group):
+    """
+    被踢
+    :param sns_user_group:
+    :return:
+    """
+    SnsGroupLost(group_id=sns_user_group.sns_group_id, sns_user=sns_user_group.sns_user).save()
+    # SnsGroupSplit.objects.filter(group_id=group.group_id, status__gte=0).update(status=-1)
+    SnsGroupSplit.objects.filter(group_id=sns_user_group.sns_group_id).delete()
+    sns_user_group.status = -1
+    sns_user_group.active = 0
+    sns_user_group.save()
 
 
 def get_or_create_qun(device, qun_num):

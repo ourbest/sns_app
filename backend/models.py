@@ -332,6 +332,18 @@ class TaskGroup(models.Model):
         unique_together = ('task', 'group')
 
 
+class DistTaskLog(models.Model):
+    """
+    分发群日志
+    """
+    task = models.ForeignKey(SnsTaskDevice)
+    group = models.ForeignKey(SnsGroup)
+    sns_user = models.ForeignKey(SnsUser)
+    created_at = models.DateTimeField(auto_now_add=True)
+    status = models.CharField(max_length=10)
+    success = models.IntegerField()
+
+
 # 用户
 
 

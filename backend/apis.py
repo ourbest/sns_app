@@ -18,8 +18,8 @@ from qiniu import Auth, put_file, etag
 
 from backend import model_manager, api_helper
 from backend.api_helper import get_session_user, get_session_app, sns_user_to_json, device_to_json, qun_to_json
-from backend.models import User, App, SnsGroup, SnsGroupSplit, PhoneDevice, SnsUser, SnsUserGroup, SnsGroupLost, \
-    SnsTaskDevice, DeviceFile, SnsTaskType, SnsTask, ActiveDevice, SnsApplyTaskLog
+from backend.models import User, App, SnsGroup, SnsGroupSplit, PhoneDevice, SnsUser, SnsUserGroup, SnsTaskDevice, \
+    DeviceFile, SnsTaskType, SnsTask, ActiveDevice, SnsApplyTaskLog, DistTaskLog
 
 executor = ThreadPoolExecutor(max_workers=2)
 
@@ -69,15 +69,18 @@ def upload(type, id, task_id, request):
                                          file_name=name, type=type, device_task=device_task)
                 device_file.save()
 
-                if device_task.task.type_id == 4:  # 统计
-                    with open(tmp_file, 'rt', encoding='utf-8') as f:
-                        import_qun_stat(f.read(), id)
-                elif device_task.task.type_id == 1:  # 查群
-                    with open(tmp_file, 'rt', encoding='utf-8') as f:
-                        import_qun(device_task.task.app_id, f.read(), None)
-                elif device_task.task.type_id == 2:  # 加群
-                    with open(tmp_file, 'rt', encoding='utf-8') as f:
-                        import_add_result(device_task, f.read())
+                # if device_task.task.type_id == 4:  # 统计
+                #     with open(tmp_file, 'rt', encoding='utf-8') as f:
+                #         import_qun_stat(f.read(), id)
+                # elif device_task.task.type_id == 1:  # 查群
+                #     with open(tmp_file, 'rt', encoding='utf-8') as f:
+                #         import_qun(device_task.task.app_id, f.read(), None)
+                # elif device_task.task.type_id == 2:  # 加群
+                #     with open(tmp_file, 'rt', encoding='utf-8') as f:
+                #         import_add_result(device_task, f.read())
+                # elif device_task.task.type_id == 3: # 分发
+                #     with open(tmp_file, 'rt', encoding='utf-8') as f:
+                #         import_add_result(device_task, f.read())
 
     executor.submit(_after_upload, device_task, task_id, tmp_file, device)
     return "ok"
@@ -95,7 +98,9 @@ def _after_upload(device_task, task_id, tmp_file, device):
         elif device_task.task.type_id == 2:  # 加群
             with open(tmp_file, 'rt', encoding='utf-8') as f:
                 import_add_result(device_task, f.read())
-
+        elif device_task.task.type_id == 3:  # 分发
+            with open(tmp_file, 'rt', encoding='utf-8') as f:
+                import_dist_result(device_task, f.read())
     if type == 'result':
         if task_id == 'stat':
             with open(tmp_file, 'rt', encoding='utf-8') as f:
@@ -104,6 +109,31 @@ def _after_upload(device_task, task_id, tmp_file, device):
             with open(tmp_file, 'rt', encoding='utf-8') as f:
                 import_qun(device.owner.app_id, f.read())
     os.remove(tmp_file)
+
+
+def import_dist_result(device_task, lines):
+    """
+    1列群号，2列结果，3列QQ号，结果：已分发、被禁言、被踢出
+    :param device_task:
+    :param lines:
+    :return:
+    """
+    for line in lines.split('\n'):
+        line = line.strip()
+        try:
+            [qun_id, status, qq_id] = re.split('\s+', line)
+            qun = model_manager.get_qun(qun_id)
+            qq = model_manager.get_qq(qq_id)
+
+            DistTaskLog(task=device_task, group=qun, sns_user=qq, status=status,
+                        success=1 if status == '已分发' else 0).save()
+
+            if status == '被踢出':
+                ug = qun.snsusergroup_set.filter(sns_user=qq).first()
+                if ug:
+                    model_manager.set_qun_kicked(ug)
+        except:
+            logger.warning('error import line %s' % line, exc_info=1)
 
 
 def import_add_result(device_task, lines):
@@ -559,12 +589,7 @@ def import_qun_stat(ids, device_id):
                 lost = 0
                 if group.sns_group_id not in all_group_ids:
                     # 被踢了
-                    SnsGroupLost(group_id=group.sns_group_id, sns_user=sns_user).save()
-                    # SnsGroupSplit.objects.filter(group_id=group.group_id, status__gte=0).update(status=-1)
-                    SnsGroupSplit.objects.filter(group_id=group.sns_group_id).delete()
-                    group.status = -1
-                    group.active = 0
-                    group.save()
+                    model_manager.set_qun_kicked(group)
                     lost += 1
                 logger.info("total lost %s", lost)
 
