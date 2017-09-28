@@ -35,6 +35,7 @@ urlpatterns = [
     url(r'^device/qun$', apis.device_qun),
     url(r'^device/create$', apis.device_create),
     url(r'^device/tasks$', apis.device_tasks),
+    url(r'^device/update/attr$', apis.update_device_attr),
     url(r'^device/transfer$', apis.device_transfer),
 
     url(r'^qq/create$', apis.qq_create),
@@ -45,6 +46,7 @@ urlpatterns = [
     url(r'^account/info$', apis.account),
     url(r'^account/update$', apis.update_account),
     url(r'^account/update/attr$', apis.update_account_attr),
+    url(r'^account/transfer$', apis.qq_transfer),
     url(r'^account/qun$', apis.account_qun),
     url(r'^split/phone/qq$', apis.split_qun_to_device),
     url(r'^reset/phone/qq$', apis.reset_phone_split),

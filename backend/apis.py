@@ -19,7 +19,7 @@ from qiniu import Auth, put_file, etag
 from backend import model_manager, api_helper
 from backend.api_helper import get_session_user, get_session_app, sns_user_to_json, device_to_json, qun_to_json
 from backend.models import User, App, SnsGroup, SnsGroupSplit, PhoneDevice, SnsUser, SnsUserGroup, SnsTaskDevice, \
-    DeviceFile, SnsTaskType, SnsTask, ActiveDevice, SnsApplyTaskLog, DistTaskLog
+    DeviceFile, SnsTaskType, SnsTask, ActiveDevice, SnsApplyTaskLog, DistTaskLog, UserActionLog
 
 executor = ThreadPoolExecutor(max_workers=2)
 
@@ -358,8 +358,42 @@ def device_transfer(label, to_user):
 
     dev = model_manager.get_phone(label)
     if dev:
-        dev.owner = user
-        dev.save()
+        owner = dev.owner
+        if owner.email != to_user:
+            dev.owner = user
+            dev.save()
+
+            UserActionLog(action='转交', memo=user.name, user=owner).save()
+
+    return 'ok'
+
+
+@api_func_anonymous
+def qq_transfer(qq, phone):
+    """
+    转移
+    :param qq:
+    :param phone:
+    :return:
+    """
+    device = model_manager.get_phone(phone)
+    sns_user = model_manager.get_qq(qq)
+
+    if not sns_user:
+        api_error(1, '错误的QQ')
+    elif not device:
+        api_error(1, '没找到电话记录')
+
+    if sns_user.phone != phone:
+        old_phone = sns_user.phone
+        owner = sns_user.owner
+        sns_user.phone = phone
+        sns_user.device = device
+        sns_user.owner = device.owner
+
+        sns_user.save()
+
+        UserActionLog(action='转绑', memo='从%s变成%s' % (old_phone, phone), user=owner).save()
 
     return 'ok'
 
@@ -708,7 +742,7 @@ def import_qun_split(app, ids, request):
 def split_qq(app, request):
     if not app:
         app = get_session_app(request)
-    users = [x for x in User.objects.filter(app_id=app, status=0) if x.phonedevice_set.count() > 0]
+    users = [x for x in User.objects.filter(app_id=app, status=0) if x.phonedevice_set.filter(status=0).count() > 0]
     idx = 0
     forward = True
 
@@ -890,17 +924,23 @@ def users(request, app_id):
 
 
 @api_func_anonymous
-def devices(request, email, i_uid):
+def devices(request, email, i_uid, i_active):
     if i_uid:
         online = {x.device_id for x in model_manager.get_online_by_id(i_uid)}
-        return [{'id': x.id, 'label': x.label, 'num': x.phone_num, 'online': x.id in online}
-                for x in PhoneDevice.objects.filter(owner_id=i_uid)]
+        query = PhoneDevice.objects.filter(owner_id=i_uid)
+        if i_active:
+            query = query.filter(status=0)
+        return [{'id': x.id, 'label': x.label, 'num': x.phone_num, 'online': x.id in online, 'status': x.status}
+                for x in query]
 
     email = email if email else get_session_user(request)
     if email:
         online = {x.device_id for x in model_manager.get_online(email)}
-        return [{'id': x.id, 'label': x.label, 'num': x.phone_num, 'online': x.id in online}
-                for x in PhoneDevice.objects.filter(owner__email=email)]
+        query = PhoneDevice.objects.filter(owner__email=email)
+        if i_active:
+            query = query.filter(status=0)
+        return [{'id': x.id, 'label': x.label, 'num': x.phone_num, 'online': x.id in online, 'status': x.status}
+                for x in query]
 
 
 @api_func_anonymous
@@ -938,6 +978,19 @@ def update_account_attr(sns_id, name, value):
         sns_user.save()
 
     return sns_user_to_json(sns_user)
+
+
+@api_func_anonymous
+def update_device_attr(i_device_id, name, value):
+    if value.isdigit():
+        value = int(value)
+
+    device = PhoneDevice.objects.filter(id=i_device_id).first()
+    if device:
+        setattr(device, name, value)
+        device.save()
+
+    return 'ok'
 
 
 @api_func_anonymous
