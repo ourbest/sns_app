@@ -417,7 +417,7 @@ def qq_transfer(qq, phone):
 
         sns_user.save()
 
-        UserActionLog(action='转绑', memo='从%s变成%s' % (old_phone, phone), user=owner).save()
+        UserActionLog(action='转绑', memo='%s从%s变成%s' % (qq, old_phone, phone), user=owner).save()
 
     return 'ok'
 
