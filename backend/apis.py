@@ -177,7 +177,7 @@ def _make_task_content(device_task):
     elif device_task.task.type_id == 3:
         # 分发
         data = api_helper.to_share_url(device_task.device.owner, data,
-                                       device_task.device.label) + api_helper.add_dist_qun(device_task)
+                                       label=device_task.device.label) + api_helper.add_dist_qun(device_task)
     return '[task]\nid=%s\ntype=%s\n[data]\n%s' % (device_task.task_id, device_task.task.type_id, data)
 
 
