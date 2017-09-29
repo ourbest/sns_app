@@ -649,6 +649,7 @@ def import_qun_stat(ids, device_id):
                     # 新增
                     qun = SnsGroup.objects.filter(group_id=qun_num, type=0).first()
                     if not qun:
+                        qun_user_cnt = 0 if not qun_user_cnt.isdigit() else int(qun_user_cnt)
                         qun = SnsGroup(group_id=qun_num, group_name=qun_name, type=0, app_id=sns_user.app_id,
                                        group_user_count=qun_user_cnt, status=2)
                         qun.save()
@@ -1189,3 +1190,22 @@ def _get_content(qiniu_key):
     resp = requests.get('%s%s' % (settings.QINIU_URL, qiniu_key))
     resp.encoding = 'utf-8'
     return resp.text
+
+
+@api_func_anonymous
+def temp_func(request):
+    with open('logs/a.txt', 'rt', encoding='utf8') as f:
+        lines = f.read()
+
+        for line in lines.split('\n'):
+            line = line.strip()
+            if line:
+                [name, phone, qq] = re.split('\s', line)
+                sns_user = SnsUser.objects.filter(login_name=qq).first()
+                if sns_user.device.label != phone:
+                    device = PhoneDevice.objects.filter(label=phone).first()
+                    sns_user.device = device
+                    sns_user.phone = phone
+                    sns_user.save()
+
+    return ''

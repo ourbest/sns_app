@@ -77,4 +77,6 @@ urlpatterns = [
     url(r'^team/devices$', apis.team_devices),
     url(r'^team/qq$', apis.team_qq),
     url(r'^team/qun', apis.team_qun),
+
+    url(r'^tmp', apis.temp_func),
 ]
