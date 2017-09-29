@@ -275,7 +275,7 @@ def team_qq(request):
 
 
 @api_func_anonymous
-def my_qun(request, i_page, i_size, keyword):
+def my_qun(request, i_page, i_size, keyword, qq, phone):
     query = SnsUserGroup.objects.filter(sns_user__owner__email=get_session_user(request),
                                         status=0).select_related("sns_group", "sns_user", "sns_user__device")
     if i_page != 0:
@@ -285,13 +285,19 @@ def my_qun(request, i_page, i_size, keyword):
     if keyword:
         query = query.filter(sns_group__group_id__contains=keyword)
 
+    if qq:
+        query = query.filter(sns_user__login_name=qq)
+
+    if phone:
+        query = query.filter(sns_user__device__label=phone)
+
     query = query[(i_page - 1) * i_size:i_page * i_size]
 
     return [qun_to_json(x) for x in query]
 
 
 @api_func_anonymous
-def team_qun(request, i_page, i_size, keyword, owner):
+def team_qun(request, i_page, i_size, keyword, owner, qq, phone):
     query = SnsUserGroup.objects.filter(sns_user__owner__app_id=get_session_app(request),
                                         status=0).select_related("sns_group", "sns_user", "sns_user__owner",
                                                                  "sns_user__device")
@@ -303,6 +309,12 @@ def team_qun(request, i_page, i_size, keyword, owner):
 
     if keyword:
         query = query.filter(sns_group__group_id__contains=keyword)
+
+    if phone:
+        query = query.filter(sns_user__device__label=phone)
+
+    if qq:
+        query = query.filter(sns_user__login_name=qq)
 
     total = query.count()
     query = query[(i_page - 1) * i_size:i_page * i_size]
@@ -335,8 +347,14 @@ def my_kicked_qun(request, i_page, i_size, keyword):
 
 
 @api_func_anonymous
-def my_qun_cnt(request):
-    return str(SnsUserGroup.objects.filter(sns_user__owner__email=get_session_user(request), status=0).count())
+def my_qun_cnt(request, qq, phone):
+    query = SnsUserGroup.objects.filter(sns_user__owner__email=get_session_user(request), status=0)
+    if qq:
+        query = query.filter(sns_user__login_name=qq)
+
+    if phone:
+        query = query.filter(sns_user__device__label=phone)
+    return str(query.count())
 
 
 @api_func_anonymous
@@ -1200,9 +1218,13 @@ def temp_func(request):
         for line in lines.split('\n'):
             line = line.strip()
             if line:
-                [name, phone, qq] = re.split('\s', line)
+                [qq, phone, name] = re.split('\s', line)
                 sns_user = SnsUser.objects.filter(login_name=qq).first()
-                if sns_user.device.label != phone:
+                if not sns_user:
+                    device = PhoneDevice.objects.filter(label=phone).first()
+                    SnsUser(phone=device.label, device=device, app_id=device.owner.app_id,
+                            owner=device.owner, login_name=qq, name=qq, passwd='-').save()
+                elif sns_user.device.label != phone:
                     device = PhoneDevice.objects.filter(label=phone).first()
                     sns_user.device = device
                     sns_user.phone = phone
