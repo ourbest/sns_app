@@ -72,4 +72,9 @@ urlpatterns = [
     url(r'^user/delegates$', users.delegates),
     url(r'^user/delegated$', users.delegated),
     url(r'^user/delegate/update$', users.set_delegates),
+
+    #===team
+    url(r'^team/devices$', apis.team_devices),
+    url(r'^team/qq$', apis.team_qq),
+    url(r'^team/qun', apis.team_qun),
 ]

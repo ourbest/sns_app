@@ -269,6 +269,12 @@ def my_qq(request, email):
 
 
 @api_func_anonymous
+def team_qq(request):
+    return [sns_user_to_json(x, owner=1) for x in
+            SnsUser.objects.filter(owner__app_id=get_session_app(request)).select_related("owner").order_by("phone")]
+
+
+@api_func_anonymous
 def my_qun(request, i_page, i_size, keyword):
     query = SnsUserGroup.objects.filter(sns_user__owner__email=get_session_user(request),
                                         status=0).select_related("sns_group", "sns_user", "sns_user__device")
@@ -282,6 +288,29 @@ def my_qun(request, i_page, i_size, keyword):
     query = query[(i_page - 1) * i_size:i_page * i_size]
 
     return [qun_to_json(x) for x in query]
+
+
+@api_func_anonymous
+def team_qun(request, i_page, i_size, keyword, owner):
+    query = SnsUserGroup.objects.filter(sns_user__owner__app_id=get_session_app(request),
+                                        status=0).select_related("sns_group", "sns_user", "sns_user__owner",
+                                                                 "sns_user__device")
+    if owner:
+        query = query.filter(sns_user__owner__name=owner)
+    if i_page != 0:
+        if i_size == 0:
+            i_size = 50
+
+    if keyword:
+        query = query.filter(sns_group__group_id__contains=keyword)
+
+    total = query.count()
+    query = query[(i_page - 1) * i_size:i_page * i_size]
+
+    return {
+        'total': total,
+        'items': [qun_to_json(x, owner=1) for x in query],
+    }
 
 
 @api_func_anonymous
@@ -960,11 +989,22 @@ def devices(request, email, i_uid, i_active):
     email = email if email else get_session_user(request)
     if email:
         online = {x.device_id for x in model_manager.get_online(email)}
-        query = PhoneDevice.objects.filter(owner__email=email)
+        query = PhoneDevice.objects.filter(owner__email=email).select_related('owner')
         if i_active:
             query = query.filter(status=0)
-        return [{'id': x.id, 'label': x.label, 'num': x.phone_num, 'online': x.id in online, 'status': x.status}
+        return [{'id': x.id, 'label': x.label, 'owner': x.owner.name,
+                 'num': x.phone_num, 'online': x.id in online, 'status': x.status}
                 for x in query]
+
+
+@api_func_anonymous
+def team_devices(request):
+    app = get_session_app(request)
+    online = {x.device_id for x in model_manager.get_team_online(app)}
+    query = PhoneDevice.objects.filter(owner__app_id=app).select_related('owner')
+    return [{'id': x.id, 'label': x.label, 'owner': x.owner.name,
+             'num': x.phone_num, 'online': x.id in online, 'status': x.status}
+            for x in query]
 
 
 @api_func_anonymous

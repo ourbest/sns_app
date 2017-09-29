@@ -23,8 +23,8 @@ def get_session_app(request):
         return DEFAULT_APP
 
 
-def sns_user_to_json(sns_user):
-    return {
+def sns_user_to_json(sns_user, owner=0):
+    ret = {
         'id': sns_user.id,
         'name': sns_user.name,
         'type': sns_user.type,
@@ -37,6 +37,10 @@ def sns_user_to_json(sns_user):
         'friend': sns_user.friend,
     } if sns_user else {}
 
+    if sns_user and owner:
+        ret['owner'] = sns_user.owner.name
+    return ret
+
 
 def device_to_json(x):
     return {
@@ -46,20 +50,14 @@ def device_to_json(x):
     }
 
 
-def qun_to_json(x):
-    return {
-        'id': x.sns_group.group_id,
-        'name': x.sns_group.group_name,
-        'qq': {
-            'id': x.sns_user.login_name,
-            'name': x.sns_user.name
-        },
-        'device': {
-            'label': x.sns_user.device.label,
-            'phone': x.sns_user.device.phone_num
-        },
-        'member_count': x.sns_group.group_user_count
-    }
+def qun_to_json(x, owner=0):
+    ret = {'id': x.sns_group.group_id, 'name': x.sns_group.group_name,
+           'qq': {'id': x.sns_user.login_name, 'name': x.sns_user.name},
+           'device': {'label': x.sns_user.device.label, 'phone': x.sns_user.device.phone_num},
+           'member_count': x.sns_group.group_user_count}
+    if owner:
+        ret['owner'] = x.sns_user.owner.name
+    return ret
 
 
 def lost_qun_to_json(x):
