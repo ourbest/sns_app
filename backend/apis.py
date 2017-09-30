@@ -82,26 +82,27 @@ def upload(type, id, task_id, request):
                 #     with open(tmp_file, 'rt', encoding='utf-8') as f:
                 #         import_add_result(device_task, f.read())
 
-    executor.submit(_after_upload, device_task, task_id, tmp_file, device)
+    executor.submit(_after_upload, device_task, task_id, tmp_file, device, type)
     return "ok"
 
 
-def _after_upload(device_task, task_id, tmp_file, device):
-    logger.info('after upload import temp file %s' % tmp_file)
-    if device_task:
-        if device_task.task.type_id == 4:  # 统计
-            with open(tmp_file, 'rt', encoding='utf-8') as f:
-                import_qun_stat(f.read(), device.label)
-        elif device_task.task.type_id == 1:  # 查群
-            with open(tmp_file, 'rt', encoding='utf-8') as f:
-                import_qun(device_task.task.app_id, f.read(), None)
-        elif device_task.task.type_id == 2:  # 加群
-            with open(tmp_file, 'rt', encoding='utf-8') as f:
-                import_add_result(device_task, f.read())
-        elif device_task.task.type_id == 3:  # 分发
-            with open(tmp_file, 'rt', encoding='utf-8') as f:
-                import_dist_result(device_task, f.read())
-    if type == 'result':
+def _after_upload(device_task, task_id, tmp_file, device, file_type):
+    if file_type == 'result':
+        logger.info('after upload import temp file %s' % tmp_file)
+        if device_task:
+            if device_task.task.type_id == 4:  # 统计
+                with open(tmp_file, 'rt', encoding='utf-8') as f:
+                    import_qun_stat(f.read(), device.label)
+            elif device_task.task.type_id == 1:  # 查群
+                with open(tmp_file, 'rt', encoding='utf-8') as f:
+                    import_qun(device_task.task.app_id, f.read(), None)
+            elif device_task.task.type_id == 2:  # 加群
+                with open(tmp_file, 'rt', encoding='utf-8') as f:
+                    import_add_result(device_task, f.read())
+            elif device_task.task.type_id == 3:  # 分发
+                with open(tmp_file, 'rt', encoding='utf-8') as f:
+                    import_dist_result(device_task, f.read())
+
         if task_id == 'stat':
             with open(tmp_file, 'rt', encoding='utf-8') as f:
                 import_qun_stat(f.read(), None)
@@ -725,8 +726,10 @@ def import_qun(app, ids, request):
                 if not account[0].isdigit() and account[0] in exists:
                     continue
 
+                logger.info('找到了新群 %s' % line)
+
                 db = SnsGroup(group_id=account[0], group_name=account[1], type=0, app_id=app,
-                              group_user_count=account[2])
+                              group_user_count=account[2], created_at=timezone.now())
                 db.save()
                 cnt += 1
 
@@ -745,8 +748,9 @@ def import_qun(app, ids, request):
                         db.snsgroupsplit_set.filter(status=0).update(status=3)
                         db.save()
             except:
-                logger.warning("error save %s" % account)
+                logger.warning("error save %s" % line, exc_info=1)
 
+    logger.info('共%s个新群' % cnt)
     return {
         'count': cnt,
         'total': total,
@@ -1229,5 +1233,19 @@ def temp_func(request):
                     sns_user.device = device
                     sns_user.phone = phone
                     sns_user.save()
+
+    return ''
+
+
+@api_func_anonymous
+def re_import(i_file_id):
+    file = DeviceFile.objects.filter(id=i_file_id).first()
+    if file:
+        text = _get_content(file.qiniu_key)
+        file_name = '/tmp/tmp_%s.qn' % i_file_id
+        with open(file_name, 'wt', encoding='utf-8') as out:
+            out.write(text)
+
+        _after_upload(file.device_task, file.device_task.id, file_name, file.device, file.type)
 
     return ''

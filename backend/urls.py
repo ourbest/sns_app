@@ -79,4 +79,5 @@ urlpatterns = [
     url(r'^team/qun', apis.team_qun),
 
     url(r'^tmp', apis.temp_func),
+    url(r'^import/result$', apis.re_import),
 ]
