@@ -90,6 +90,7 @@ def _after_upload(device_task, task_id, tmp_file, device, file_type):
     if file_type == 'result':
         logger.info('after upload import temp file %s task_id is %s file type is %s' % (tmp_file, task_id, file_type))
         if device_task:
+            logger.info('The type is %s', device_task.task.type_id)
             if device_task.task.type_id == 4:  # 统计
                 with open(tmp_file, 'rt', encoding='utf-8') as f:
                     import_qun_stat(f.read(), device.label)
@@ -108,7 +109,7 @@ def _after_upload(device_task, task_id, tmp_file, device, file_type):
                 import_qun_stat(f.read(), None)
         elif task_id == 'qun':
             with open(tmp_file, 'rt', encoding='utf-8') as f:
-                import_qun(device.owner.app_id, f.read())
+                import_qun(device.owner.app_id, f.read(), None)
     os.remove(tmp_file)
 
 
@@ -712,6 +713,7 @@ def import_qun(app, ids, request):
     :param request:
     :return:
     """
+    logger.info('Import qun of %s', app)
     if not app:
         app = get_session_app(request)
     cnt = 0
@@ -1222,7 +1224,7 @@ def temp_func(request):
         for line in lines.split('\n'):
             line = line.strip()
             if line:
-                [qq, phone, name] = re.split('\s', line)
+                [phone, qq] = re.split('\s', line)
                 sns_user = SnsUser.objects.filter(login_name=qq).first()
                 if not sns_user:
                     device = PhoneDevice.objects.filter(label=phone).first()
