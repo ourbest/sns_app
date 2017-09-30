@@ -634,7 +634,7 @@ def import_qun_stat(ids, device_id):
     for line in ids.split('\n'):
         line = line.strip()
         if line:
-            account = re.split('\s+', line)
+            account = line.split('\t')
             if len(account) == 4 and account[0].isdigit():
                 total += 1
                 to_save[account[3]].append((account[0], account[1], account[2]))
@@ -721,7 +721,7 @@ def import_qun(app, ids, request):
         line = line.strip()
         if line:
             total += 1
-            account = re.split('\s+', line)
+            account = line.split('\t') # re.split('\s+', line) ## 群名称有可能有空格
             try:
                 if not account[0].isdigit() and account[0] in exists:
                     continue
