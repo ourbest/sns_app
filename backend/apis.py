@@ -88,7 +88,7 @@ def upload(type, id, task_id, request):
 
 def _after_upload(device_task, task_id, tmp_file, device, file_type):
     if file_type == 'result':
-        logger.info('after upload import temp file %s' % tmp_file)
+        logger.info('after upload import temp file %s task_id is %s file type is %s' % (tmp_file, task_id, file_type))
         if device_task:
             if device_task.task.type_id == 4:  # 统计
                 with open(tmp_file, 'rt', encoding='utf-8') as f:
