@@ -207,16 +207,18 @@ def add_add_qun(device_task):
         data = data.strip() + '\n'
     # data += '\n'.join(ids)
     groups = dict()
-    for user in sns_users:
-        group_ids = []
+    while idx < len(ids):
+        for user in sns_users:
+            group_ids = [] if user.login_name not in groups else groups[user.login_name]
+            for i in range(0, cnt):
+                if idx < len(ids):
+                    group_ids.append(ids[idx])
+                    idx += 1
+                else:
+                    break
 
-        for i in range(0, cnt * 5):
-            if idx < len(ids):
-                group_ids.append(ids[idx])
-                idx += 1
-
-        if group_ids:
-            groups[user.login_name] = group_ids
+            if group_ids:
+                groups[user.login_name] = group_ids
 
     idx = 0
     user_lines = []

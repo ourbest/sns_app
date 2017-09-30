@@ -855,6 +855,9 @@ def split_qq(app, request):
         SnsGroupSplit(group=x, user=user).save()
         x.save()
 
+    for u in users:
+        split_qun_to_device(None, u.email)
+
     return 'ok'
 
 
@@ -902,7 +905,8 @@ def export_qun(request, others, filter, device):
 def split_qun_to_device(request, email):
     user = email if email else get_session_user(request)
     if user:
-        phones = PhoneDevice.objects.filter(owner__email=user, status=0)
+        phones = [x for x in PhoneDevice.objects.filter(owner__email=user, status=0) if
+                  x.snsuser_set.filter(friend=1).count() > 0]
         idx = 0
         forward = True
         for x in SnsGroupSplit.objects.filter(user__email=user, phone__isnull=True):
