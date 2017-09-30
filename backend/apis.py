@@ -670,7 +670,7 @@ def import_qun_stat(ids, device_id):
                     if not qun:
                         qun_user_cnt = 0 if not qun_user_cnt.isdigit() else int(qun_user_cnt)
                         qun = SnsGroup(group_id=qun_num, group_name=qun_name, type=0, app_id=sns_user.app_id,
-                                       group_user_count=qun_user_cnt, status=2)
+                                       group_user_count=qun_user_cnt, status=2, created_at=timezone.now())
                         qun.save()
                     else:
                         if qun.status != 2:
@@ -789,7 +789,7 @@ def import_qun_split(app, ids, request):
 
                 qun_id = account[0]
                 db = SnsGroup(group_id=qun_id, group_name=qun_name, type=0, app_id=app,
-                              group_user_count=member_cnt)
+                              group_user_count=member_cnt, created_at=timezone.now())
                 db.save()
                 cnt += 1
             except:

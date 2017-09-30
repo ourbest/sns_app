@@ -178,7 +178,7 @@ def get_or_create_qun(device, qun_num):
     db = SnsGroup.objects.filter(group_id=qun_num).first()
     if not db:
         db = SnsGroup(group_id=qun_num, group_name=qun_num, type=0, app_id=device.owner.app_id,
-                      group_user_count=0, status=1)
+                      group_user_count=0, status=1, created_at=timezone.now())
         db.save()
     return db
 
