@@ -28,7 +28,7 @@ DEBUG = True
 
 ALLOWED_HOSTS = []
 
-logzero.logfile("logs/sns.log", maxBytes=1e6, backupCount=3)
+logzero.logfile("logs/sns.log", maxBytes=1e8, backupCount=3)
 
 # Application definition
 
@@ -81,6 +81,10 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+    },
+    'zhiyue': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': os.path.join(BASE_DIR, 'db2.sqlite3'),
     }
 }
 
@@ -126,7 +130,7 @@ QINIU_BUCKET = ''
 
 FILE_UPLOAD_HANDLERS = ["django.core.files.uploadhandler.TemporaryFileUploadHandler"]
 
-JS_VER = 'cbaf2fe8df8c565a0a7b'
+JS_VER = '6b021d4f77f70d477c45'
 QINIU_URL = 'http://jwres.cutt.com/'
 
 try:

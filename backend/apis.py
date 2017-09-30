@@ -3,6 +3,7 @@ import re
 import threading
 from collections import defaultdict
 from datetime import datetime
+from shutil import copyfile
 from urllib.parse import quote
 
 import requests
@@ -85,7 +86,9 @@ def upload(type, id, task_id, request):
         thread = threading.Thread(target=re_import, args=(device_file.id,))
         thread.start()
     else:
-        thread = threading.Thread(target=_after_upload, args=(device_task, task_id, tmp_file, device, type))
+        dest = '/tmp/' + timezone.now().timestamp()
+        copyfile(tmp_file, dest)
+        thread = threading.Thread(target=_after_upload, args=(device_task, task_id, dest, device, type))
         thread.start()
 
     return "ok"
@@ -1160,6 +1163,22 @@ def my_tasks(request):
         'data': x.data,
         'status_text': TASK_STATUS_TEXT[x.status],
     } for x in SnsTask.objects.filter(creator__email=get_session_user(request)).select_related(
+        'creator', 'type').order_by('-pk')[:50]]
+
+
+@api_func_anonymous
+def team_tasks(request):
+    return [{
+        'id': x.id,
+        'name': x.name,
+        'status': x.status,
+        'type': x.type.name,
+        'create_time': times.to_str(x.created_at),
+        'schedule_time': times.to_str(x.schedule_at),
+        'creator': x.creator.name,
+        'data': x.data,
+        'status_text': TASK_STATUS_TEXT[x.status],
+    } for x in SnsTask.objects.filter(creator__app_id=get_session_app(request)).select_related(
         'creator', 'type').order_by('-pk')[:50]]
 
 

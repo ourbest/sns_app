@@ -1,6 +1,6 @@
 from django.conf.urls import url
 
-from backend import apis, users
+from backend import apis, users, zhiyue
 
 app_name = 'backend'
 urlpatterns = [
@@ -77,7 +77,11 @@ urlpatterns = [
     url(r'^team/devices$', apis.team_devices),
     url(r'^team/qq$', apis.team_qq),
     url(r'^team/qun', apis.team_qun),
+    url(r'^team/tasks', apis.team_tasks),
 
     url(r'^tmp', apis.temp_func),
     url(r'^import/result$', apis.re_import),
+
+    ##### zhiyue
+    url(r'^zhiyue/share', zhiyue.user_share),
 ]
