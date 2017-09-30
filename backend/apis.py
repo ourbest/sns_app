@@ -1,7 +1,7 @@
 import os
 import re
+import threading
 from collections import defaultdict
-from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from urllib.parse import quote
 
@@ -20,8 +20,6 @@ from backend import model_manager, api_helper
 from backend.api_helper import get_session_user, get_session_app, sns_user_to_json, device_to_json, qun_to_json
 from backend.models import User, App, SnsGroup, SnsGroupSplit, PhoneDevice, SnsUser, SnsUserGroup, SnsTaskDevice, \
     DeviceFile, SnsTaskType, SnsTask, ActiveDevice, SnsApplyTaskLog, DistTaskLog, UserActionLog, SnsGroupLost
-
-executor = ThreadPoolExecutor(max_workers=2)
 
 
 @api_func_anonymous
@@ -82,7 +80,8 @@ def upload(type, id, task_id, request):
                 #     with open(tmp_file, 'rt', encoding='utf-8') as f:
                 #         import_add_result(device_task, f.read())
 
-    executor.submit(_after_upload, device_task, task_id, tmp_file, device, type)
+    thread = threading.Thread(target=_after_upload, args=(device_task, task_id, tmp_file, device, type))
+    thread.start()
     return "ok"
 
 
@@ -652,6 +651,13 @@ def import_qun_stat(ids, device_id):
             sns_user.save()
 
         if sns_user:
+
+            if sns_user.device != device:
+                sns_user.device = device
+                sns_user.owner = device.owner
+                sns_user.phone = device.label
+                sns_user.save()
+
             all_groups = sns_user.snsusergroup_set.all()
             all_group_ids = set()
             for (qun_num, qun_name, qun_user_cnt) in accounts:
@@ -723,7 +729,7 @@ def import_qun(app, ids, request):
         line = line.strip()
         if line:
             total += 1
-            account = line.split('\t') # re.split('\s+', line) ## 群名称有可能有空格
+            account = line.split('\t')  # re.split('\s+', line) ## 群名称有可能有空格
             try:
                 if not account[0].isdigit() and account[0] in exists:
                     continue
