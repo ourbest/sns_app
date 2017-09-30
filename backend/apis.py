@@ -47,6 +47,7 @@ def upload(type, id, task_id, request):
     key = _upload_to_qiniu(id, task_id, type, name, tmp_file)
     device = model_manager.get_phone(id)
     device_task = None
+    device_file = None
     if device:
         ad = model_manager.get_active_device(device)
         if not ad:
@@ -80,8 +81,13 @@ def upload(type, id, task_id, request):
                 #     with open(tmp_file, 'rt', encoding='utf-8') as f:
                 #         import_add_result(device_task, f.read())
 
-    thread = threading.Thread(target=_after_upload, args=(device_task, task_id, tmp_file, device, type))
-    thread.start()
+    if device_file:
+        thread = threading.Thread(target=re_import, args=(device_file.id,))
+        thread.start()
+    else:
+        thread = threading.Thread(target=_after_upload, args=(device_task, task_id, tmp_file, device, type))
+        thread.start()
+
     return "ok"
 
 
@@ -94,6 +100,7 @@ def _after_upload(device_task, task_id, tmp_file, device, file_type):
                 with open(tmp_file, 'rt', encoding='utf-8') as f:
                     import_qun_stat(f.read(), device.label)
             elif device_task.task.type_id == 1:  # 查群
+                logger.info('查群结果')
                 with open(tmp_file, 'rt', encoding='utf-8') as f:
                     import_qun(device_task.task.app_id, f.read(), None)
             elif device_task.task.type_id == 2:  # 加群
