@@ -105,7 +105,7 @@ def _after_upload(device_task, task_id, tmp_file, device, file_type):
             elif device_task.task.type_id == 1:  # 查群
                 logger.info('查群结果')
                 with open(tmp_file, 'rt', encoding='utf-8') as f:
-                    import_qun(device_task.task.app_id, f.read(), None)
+                    import_qun(device_task.task.app_id, f.read(), None, device_task.device.owner.email)
             elif device_task.task.type_id == 2:  # 加群
                 with open(tmp_file, 'rt', encoding='utf-8') as f:
                     import_add_result(device_task, f.read())
@@ -118,7 +118,7 @@ def _after_upload(device_task, task_id, tmp_file, device, file_type):
                 import_qun_stat(f.read(), None)
         elif task_id == 'qun':
             with open(tmp_file, 'rt', encoding='utf-8') as f:
-                import_qun(device.owner.app_id, f.read(), None)
+                import_qun(device.owner.app_id, f.read(), None, device.owner.email)
     os.remove(tmp_file)
 
 
@@ -131,20 +131,21 @@ def import_dist_result(device_task, lines):
     """
     for line in lines.split('\n'):
         line = line.strip()
-        try:
-            [qun_id, status, qq_id] = re.split('\s+', line)
-            qun = model_manager.get_qun(qun_id)
-            qq = model_manager.get_qq(qq_id)
+        if line:
+            try:
+                [qun_id, status, qq_id] = re.split('\s+', line)
+                qun = model_manager.get_qun(qun_id)
+                qq = model_manager.get_qq(qq_id)
 
-            DistTaskLog(task=device_task, group=qun, sns_user=qq, status=status,
-                        success=1 if status == '已分发' else 0).save()
+                DistTaskLog(task=device_task, group=qun, sns_user=qq, status=status,
+                            success=1 if status == '已分发' else 0).save()
 
-            if status == '被踢出':
-                ug = qun.snsusergroup_set.filter(sns_user=qq).first()
-                if ug:
-                    model_manager.set_qun_kicked(ug)
-        except:
-            logger.warning('error import line %s' % line, exc_info=1)
+                if status == '被踢出':
+                    ug = qun.snsusergroup_set.filter(sns_user=qq).first()
+                    if ug:
+                        model_manager.set_qun_kicked(ug)
+            except:
+                logger.warning('error import line %s' % line, exc_info=1)
 
 
 def import_add_result(device_task, lines):
@@ -721,7 +722,7 @@ def import_qun_stat(ids, device_id):
 
 
 @api_func_anonymous
-def import_qun(app, ids, request):
+def import_qun(app, ids, request, email):
     """
     群号 群名 群人数 qq号[可选]
     :param app:
@@ -732,6 +733,14 @@ def import_qun(app, ids, request):
     logger.info('Import qun of %s', app)
     if not app:
         app = get_session_app(request)
+
+    if not email:
+        email = get_session_user(request)
+
+    login_user = None
+    if email:
+        login_user = model_manager.get_user(login_user)
+
     cnt = 0
     total = 0
     exists = {x.group_id for x in SnsGroup.objects.filter(app_id=app)}
@@ -747,7 +756,7 @@ def import_qun(app, ids, request):
                 logger.info('找到了新群 %s' % line)
 
                 db = SnsGroup(group_id=account[0], group_name=account[1], type=0, app_id=app,
-                              group_user_count=account[2], created_at=timezone.now())
+                              group_user_count=account[2], created_at=timezone.now(), from_user=login_user)
                 db.save()
                 cnt += 1
 

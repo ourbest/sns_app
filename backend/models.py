@@ -126,6 +126,7 @@ class SnsGroup(models.Model):
     app = models.ForeignKey(App, verbose_name='生活圈', null=True)
     created_at = models.DateTimeField(verbose_name='添加时间', auto_now_add=True)
     quiz = models.CharField(verbose_name='问题答案', max_length=50, null=True, blank=True)
+    from_user = models.ForeignKey(User, verbose_name='爬群用户', null=True, blank=True)
 
     def __str__(self):
         return '%s (%s)' % (self.group_name, self.group_id)
