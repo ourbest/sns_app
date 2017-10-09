@@ -12,7 +12,7 @@ from dj.utils import api_func_anonymous, api_error
 from django.conf import settings
 from django.core.files.uploadedfile import TemporaryUploadedFile
 from django.db.models import Sum
-from django.http import HttpResponseRedirect
+from django.http import HttpResponseRedirect, HttpResponse
 from django.utils import timezone
 from logzero import logger
 from qiniu import Auth, put_file, etag
@@ -1296,3 +1296,8 @@ def re_import(i_file_id):
         _after_upload(file.device_task, file.device_task.id, file_name, file.device, file.type)
 
     return ''
+
+
+@api_func_anonymous
+def report_progress(request):
+    return HttpResponse('')

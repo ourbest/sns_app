@@ -28,7 +28,7 @@ DEBUG = True
 
 ALLOWED_HOSTS = []
 
-logzero.logfile("logs/sns.log", maxBytes=1e8, backupCount=3)
+logzero.logfile("logs/sns.log", maxBytes=1e9, backupCount=3)
 
 # Application definition
 

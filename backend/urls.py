@@ -6,6 +6,7 @@ app_name = 'backend'
 urlpatterns = [
     url(r'^upload$', apis.upload),
     url(r'^task$', apis.task),
+    url(r'^report$', apis.report_progress),
     # url(r'^image$', apis.image),
     url(r'^qr$', apis.qq_qr),
     url(r'^menu$', apis.get_menu),
