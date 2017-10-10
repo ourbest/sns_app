@@ -1,13 +1,14 @@
+import random
 from collections import defaultdict
 from datetime import timedelta
 
 from django.db.models import Q
 from django.utils import timezone
+from logzero import logger
 
 from backend.models import PhoneDevice, SnsTaskType, App, User, ActiveDevice, SnsUser, SnsGroup, UserAuthApp, \
     MenuItemPerm, SnsGroupLost
 from backend.models import SnsUserGroup, SnsGroupSplit
-from logzero import logger
 
 
 def get_phone(label):
@@ -144,6 +145,10 @@ def set_qun_manual(qun):
     qun.snsgroupsplit_set.update(status=-1)
 
 
+def mark_qun_cancel():
+    SnsGroupSplit.objects.filter(status=0, group__group_user_count__range=[1, 10]).update(status=-1)
+
+
 def get_qun_idle(user, size, device):
     ret = SnsGroupSplit.objects.filter(phone=device, status=0)[:size]
     ids = [x.pk for x in ret]
@@ -176,11 +181,27 @@ def set_qun_kicked(sns_user_group):
     sns_user_group.save()
 
 
+def deal_kicked(owner):
+    """
+    被踢了的群重新分配账号去加
+    :return:
+    """
+    devices = list(PhoneDevice.objects.filter(owner=owner, status=0))
+    for x in SnsGroupLost.objects.filter(status=0, sns_user__owner=owner).select_related('sns_user'):
+        device = random.choice(devices)
+        if len(devices) > 1:
+            while device.pk == x.sns_user.device_id:
+                device = random.choice(devices)
+
+        if x.group.group_user_count >= 10 or x.group.group_user_count == 0:
+            SnsGroupSplit(group_id=x.group_id, user_id=device.owner_id, phone=device).save()
+
+
 def get_or_create_qun(device, qun_num):
     db = SnsGroup.objects.filter(group_id=qun_num).first()
     if not db:
         db = SnsGroup(group_id=qun_num, group_name=qun_num, type=0, app_id=device.owner.app_id,
-                      group_user_count=0, status=1, created_at=timezone.now())
+                      group_user_count=0, status=1, created_at=timezone.now(), from_user_id=device.owner_id)
         db.save()
     return db
 

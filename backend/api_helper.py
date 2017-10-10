@@ -229,3 +229,14 @@ def add_add_qun(device_task):
         for group in groups:
             group_lines.append('QUN_%s=%s' % (idx, group))
     return data + '%s\n%s' % ('\n'.join(user_lines), '\n'.join(group_lines))
+
+
+def merge_task_log(task, log_content):
+    pass
+
+
+def merge_task_result(task, result_content):
+    file_path = './logs/result/%s.txt' % task.id
+    with open(file_path, "at") as file:
+        file.write(result_content)
+        file.write('\n')

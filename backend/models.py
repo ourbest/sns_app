@@ -192,7 +192,7 @@ class SnsGroupSplit(models.Model):
     """
     group = models.ForeignKey(SnsGroup, verbose_name='群')
     user = models.ForeignKey(User, verbose_name='推广人')
-    status = models.IntegerField('状态', default=0, help_text='0 默认 1 已发送 2 已申请 3 已通过')
+    status = models.IntegerField('状态', default=0, help_text='0 默认 1 已发送 2 已申请 3 已通过 -1 忽略')
     created_at = models.DateTimeField('添加时间', auto_now_add=True)
     updated_at = models.DateTimeField('修改时间', auto_now=True, null=True)
     phone = models.ForeignKey(PhoneDevice, null=True, verbose_name='设备')
@@ -252,6 +252,7 @@ class SnsTaskDevice(models.Model):
     finish_at = models.DateTimeField(null=True, blank=True)
     data = models.TextField(blank=True, null=True)
     schedule_at = models.DateTimeField(null=True)
+    progress = models.IntegerField(default=0)
 
 
 class DeviceFile(models.Model):

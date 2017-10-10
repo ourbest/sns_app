@@ -97,28 +97,25 @@ def upload(type, id, task_id, request):
 def _after_upload(device_task, task_id, tmp_file, device, file_type):
     if file_type == 'result':
         logger.info('after upload import temp file %s task_id is %s file type is %s' % (tmp_file, task_id, file_type))
-        if device_task:
-            logger.info('The type is %s', device_task.task.type_id)
-            if device_task.task.type_id == 4:  # 统计
-                with open(tmp_file, 'rt', encoding='utf-8') as f:
-                    import_qun_stat(f.read(), device.label)
-            elif device_task.task.type_id == 1:  # 查群
-                logger.info('查群结果')
-                with open(tmp_file, 'rt', encoding='utf-8') as f:
-                    import_qun(device_task.task.app_id, f.read(), None, device_task.device.owner.email)
-            elif device_task.task.type_id == 2:  # 加群
-                with open(tmp_file, 'rt', encoding='utf-8') as f:
-                    import_add_result(device_task, f.read())
-            elif device_task.task.type_id == 3:  # 分发
-                with open(tmp_file, 'rt', encoding='utf-8') as f:
-                    import_dist_result(device_task, f.read())
+        with open(tmp_file, 'rt', encoding='utf-8') as f:
+            upload_file_content = f.read()
+            if device_task:
+                logger.info('The type is %s', device_task.task.type_id)
+                if device_task.task.type_id == 4:  # 统计
+                    import_qun_stat(upload_file_content, device.label)
+                elif device_task.task.type_id == 1:  # 查群
+                    logger.info('查群结果')
+                    import_qun(device_task.task.app_id, upload_file_content, None, device_task.device.owner.email)
+                elif device_task.task.type_id == 2:  # 加群
+                    import_add_result(device_task, upload_file_content)
+                elif device_task.task.type_id == 3:  # 分发
+                    import_dist_result(device_task, upload_file_content)
+                api_helper.merge_task_result(device_task.task, upload_file_content)
 
-        if task_id == 'stat':
-            with open(tmp_file, 'rt', encoding='utf-8') as f:
-                import_qun_stat(f.read(), None)
-        elif task_id == 'qun':
-            with open(tmp_file, 'rt', encoding='utf-8') as f:
-                import_qun(device.owner.app_id, f.read(), None, device.owner.email)
+            if task_id == 'stat':
+                import_qun_stat(upload_file_content, None)
+            elif task_id == 'qun':
+                import_qun(device.owner.app_id, upload_file_content, None, device.owner.email)
     os.remove(tmp_file)
 
 
@@ -129,6 +126,7 @@ def import_dist_result(device_task, lines):
     :param lines:
     :return:
     """
+    kicked = False
     for line in lines.split('\n'):
         line = line.strip()
         if line:
@@ -144,8 +142,12 @@ def import_dist_result(device_task, lines):
                     ug = qun.snsusergroup_set.filter(sns_user=qq).first()
                     if ug:
                         model_manager.set_qun_kicked(ug)
+                    kicked = True
             except:
                 logger.warning('error import line %s' % line, exc_info=1)
+
+    if kicked:
+        model_manager.deal_kicked(device_task.device.owner)
 
 
 def import_add_result(device_task, lines):
@@ -204,7 +206,7 @@ def task(id):
             ad.active_at = timezone.now()
             ad.status = 0
 
-        for x in SnsTaskDevice.objects.filter(device__label=id, status=1):
+        for x in SnsTaskDevice.objects.filter(device__label=id, status__in=(1, 10)):
             model_manager.mark_task_cancel(x)
 
         device_task = SnsTaskDevice.objects.filter(device__label=id, status=0,
@@ -663,6 +665,9 @@ def import_qun_stat(ids, device_id):
 
         if sns_user:
 
+            if not device:
+                device = sns_user.device
+
             if sns_user.device != device:
                 sns_user.device = device
                 sns_user.owner = device.owner
@@ -688,7 +693,8 @@ def import_qun_stat(ids, device_id):
                     if not qun:
                         qun_user_cnt = 0 if not qun_user_cnt.isdigit() else int(qun_user_cnt)
                         qun = SnsGroup(group_id=qun_num, group_name=qun_name, type=0, app_id=sns_user.app_id,
-                                       group_user_count=qun_user_cnt, status=2, created_at=timezone.now())
+                                       group_user_count=qun_user_cnt, status=2, created_at=timezone.now(),
+                                       from_user_id=device.owner_id)
                         qun.save()
                     else:
                         if qun.status != 2:
@@ -717,6 +723,9 @@ def import_qun_stat(ids, device_id):
                     model_manager.set_qun_kicked(group)
                     lost += 1
                 logger.info("total lost %s", lost)
+
+                if lost:
+                    model_manager.deal_kicked(device.owner)
 
     logger.info('Import done total %s', total)
 
@@ -1160,7 +1169,7 @@ def create_task(type, params, phone, request, date):
     api_error(1001, '不存在的手机')
 
 
-TASK_STATUS_TEXT = ['等待执行', '执行中', '已完成', '已中断', '已取消']
+TASK_STATUS_TEXT = ['等待执行', '执行中', '已完成', '已中断', '已取消', '', '', '', '', '', '终止中']
 
 
 @api_func_anonymous
@@ -1299,5 +1308,11 @@ def re_import(i_file_id):
 
 
 @api_func_anonymous
-def report_progress(request):
+def report_progress(id, q, t):
+    device_task = SnsTaskDevice.objects.filter(device__label=id, task_id=t).first()
+    if device_task:
+        device_task.progress = q
+        device_task.save()
+        if device_task.status == 10:
+            return HttpResponse('command=stop')
     return HttpResponse('')
