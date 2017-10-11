@@ -57,6 +57,7 @@ class PhoneDevice(models.Model):
     status = models.IntegerField('状态', default=0)
     owner = models.ForeignKey(User, null=True, blank=True, verbose_name='所有者')
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='添加时间')
+    memo = models.CharField('备注', null=True, blank=True, max_length=50)
 
     def __str__(self):
         return self.label

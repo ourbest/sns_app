@@ -46,7 +46,8 @@ def device_to_json(x):
     return {
         'id': x.id,
         'label': x.label,
-        'num': x.phone_num
+        'num': x.phone_num,
+        'memo': x.memo
     }
 
 
@@ -240,3 +241,9 @@ def merge_task_result(task, result_content):
     with open(file_path, "at") as file:
         file.write(result_content)
         file.write('\n')
+
+
+def get_result_content(task_id):
+    file_path = './logs/result/%s.txt' % task_id
+    with open(file_path, "rt") as file:
+        return file.read()

@@ -29,21 +29,26 @@ def get_menu(request):
 
 
 @api_func_anonymous
-def upload(type, id, task_id, request):
+def upload(type, id, task_id, content, name, request):
     logger.info("upload %s %s %s" % (type, id, task_id))
-    if 'file' not in request.FILES:
+
+    tmp_file = "/tmp/%s/%s" % (task_id, name)
+    if content:
+        with open(tmp_file, "wt") as out:
+            out.write(content)
+    elif 'file' not in request.FILES:
         api_error(1000, '没有上传的文件')
-
-    upload_file = request.FILES['file']
-
-    name = os.path.basename(upload_file.name)
-    if isinstance(upload_file, TemporaryUploadedFile):
-        tmp_file = upload_file.temporary_file_path()
     else:
-        tmp_file = "/tmp/%s/%s" % (task_id, name)
-        with open(tmp_file, "wb") as out:
-            for chunk in upload_file.chunks():
-                out.write(chunk)
+        upload_file = request.FILES['file']
+
+        name = os.path.basename(upload_file.name)
+        if isinstance(upload_file, TemporaryUploadedFile):
+            tmp_file = upload_file.temporary_file_path()
+        else:
+            tmp_file = "/tmp/%s/%s" % (task_id, name)
+            with open(tmp_file, "wb") as out:
+                for chunk in upload_file.chunks():
+                    out.write(chunk)
 
     key = _upload_to_qiniu(id, task_id, type, name, tmp_file)
     device = model_manager.get_phone(id)
@@ -1240,7 +1245,9 @@ def task_files(i_task_id, file_type):
 
 
 @api_func_anonymous
-def file_content(i_file_id, i_att):
+def file_content(i_file_id, i_att, i_result_id):
+    if i_result_id:
+        return HttpResponse(api_helper.get_result_content(i_result_id))
     df = DeviceFile.objects.filter(id=i_file_id).first()
     if i_att != 1 and df and df.type != 'image':
         return _get_content(df.qiniu_key)
@@ -1308,11 +1315,23 @@ def re_import(i_file_id):
 
 
 @api_func_anonymous
-def report_progress(id, q, t):
+def report_progress(id, q, t, p):
+    if not id or not q or not t:
+        return HttpResponse('')
     device_task = SnsTaskDevice.objects.filter(device__label=id, task_id=t).first()
     if device_task:
-        device_task.progress = q
-        device_task.save()
+        if p.isdigit() and device_task.progress != int(p):
+            device_task.progress = int(p)
+            device_task.save()
+
+        ad = model_manager.get_active_device(device_task.device)
+        if not ad:
+            ad = ActiveDevice(device=device_task.device, status=1, active_at=timezone.now())
+        else:
+            ad.active_at = timezone.now()
+            ad.status = 1
+        ad.save()
+
         if device_task.status == 10:
             return HttpResponse('command=stop')
     return HttpResponse('')
