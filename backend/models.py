@@ -7,6 +7,8 @@ class App(models.Model):
     """
     app_id = models.IntegerField('ID', primary_key=True)
     app_name = models.CharField('名称', max_length=32)
+    stage = models.CharField('所处时期', max_length=20, default='准备期')
+    self_qun = models.IntegerField('自行导入群', default=1)
 
     def __str__(self):
         return '%s (%s)' % (self.app_name, self.app_id)

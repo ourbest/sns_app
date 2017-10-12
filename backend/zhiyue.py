@@ -1,8 +1,10 @@
+import re
+
 from dj import times
 from dj.utils import api_func_anonymous
 
 from backend.api_helper import get_session_app
-from backend.zhiyue_models import ShareArticleLog
+from backend.zhiyue_models import ShareArticleLog, ClipItem
 
 
 @api_func_anonymous
@@ -26,3 +28,13 @@ def find_url(x):
     # return url[0] if url else ''
     return 'http://www.cutt.com/weizhan/article/%s/%s/%s' % (
         x.article.item.clipId, x.article.item_id, x.article.partnerId)
+
+
+@api_func_anonymous
+def get_url_title(url):
+    u = re.findall('https?://.+/weizhan/article/\d+/(\d+)/\d+', url)
+    if u:
+        article_id = u[0]
+        item = ClipItem.objects.using('zhiyue').filter(itemId=article_id).first()
+        return item.title
+    return None

@@ -150,7 +150,7 @@ def mark_qun_cancel():
 
 
 def get_qun_idle(user, size, device):
-    ret = SnsGroupSplit.objects.filter(phone=device, status=0)[:size]
+    ret = SnsGroupSplit.objects.filter(phone=device, status=0).order_by("-group__group_user_count")[:size]
     ids = [x.pk for x in ret]
 
     SnsGroupSplit.objects.filter(pk__in=ids).update(status=1)

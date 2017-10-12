@@ -30,7 +30,7 @@ def sns_user_to_json(sns_user, owner=0):
         'type': sns_user.type,
         'login': sns_user.login_name,
         'password': sns_user.passwd,
-        'phone': sns_user.phone,
+        'phone': '%s%s' % (sns_user.phone, '' if not sns_user.device.memo else '(%s)' % sns_user.device.memo),
         'memo': sns_user.memo,
         'dist': sns_user.dist,
         'search': sns_user.search,

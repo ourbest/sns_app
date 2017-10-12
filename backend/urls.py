@@ -85,4 +85,5 @@ urlpatterns = [
 
     ##### zhiyue
     url(r'^zhiyue/share', zhiyue.user_share),
+    url(r'^zhiyue/title', zhiyue.get_url_title),
 ]

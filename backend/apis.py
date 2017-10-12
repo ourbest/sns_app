@@ -1,3 +1,4 @@
+import csv
 import os
 import re
 import threading
@@ -211,7 +212,7 @@ def task(id):
             ad.active_at = timezone.now()
             ad.status = 0
 
-        for x in SnsTaskDevice.objects.filter(device__label=id, status__in=(1, 10)):
+        for x in SnsTaskDevice.objects.filter(device__label=id, status__in=(1, 10, 11, 12)):
             model_manager.mark_task_cancel(x)
 
         device_task = SnsTaskDevice.objects.filter(device__label=id, status=0,
@@ -377,7 +378,7 @@ def my_qun_cnt(request, qq, phone):
 
 
 @api_func_anonymous
-def my_pending_qun(request, i_size, i_page, keyword):
+def my_pending_qun(request, i_size, i_page, keyword, i_export):
     if i_size == 0:
         i_size = 50
 
@@ -388,6 +389,16 @@ def my_pending_qun(request, i_size, i_page, keyword):
 
     query = SnsGroupSplit.objects.filter(user__email=get_session_user(request),
                                          status__in=(0, 1, 2)).select_related("group")
+
+    if i_export == 1:
+        resp = HttpResponse(content_type='text/csv')
+        resp['Content-Disposition'] = 'attachment; filename="pending.csv"'
+
+        writer = csv.writer(resp)
+        for x in query:
+            writer.writerow([x.group_id])
+        return resp
+
     if keyword:
         query = query.filter(group__group_id__contains=keyword)
     return {
@@ -758,6 +769,9 @@ def import_qun(app, ids, request, email):
     cnt = 0
     total = 0
     exists = {x.group_id for x in SnsGroup.objects.filter(app_id=app)}
+
+    the_app = model_manager.get_app(app)
+
     for line in ids.split('\n'):
         line = line.strip()
         if line:
@@ -788,10 +802,16 @@ def import_qun(app, ids, request, email):
                         db.status = 2
                         db.snsgroupsplit_set.filter(status=0).update(status=3)
                         db.save()
+                elif login_user and the_app and the_app.self_qun == 1:
+                    SnsGroupSplit(group=db, user=login_user).save()
             except:
                 logger.warning("error save %s" % line, exc_info=1)
 
     logger.info('共%s个新群' % cnt)
+
+    if the_app and the_app.self_qun == 1:
+        split_qun_to_device(request, email)
+
     return {
         'count': cnt,
         'total': total,
@@ -1051,7 +1071,8 @@ def devices(request, email, i_uid, i_active):
         query = PhoneDevice.objects.filter(owner_id=i_uid)
         if i_active:
             query = query.filter(status=0)
-        return [{'id': x.id, 'label': x.label, 'num': x.phone_num, 'online': x.id in online, 'status': x.status}
+        return [{'id': x.id, 'label': x.label, 'memo': x.memo, 'num': x.phone_num, 'online': x.id in online,
+                 'status': x.status}
                 for x in query]
 
     email = email if email else get_session_user(request)
@@ -1060,7 +1081,7 @@ def devices(request, email, i_uid, i_active):
         query = PhoneDevice.objects.filter(owner__email=email).select_related('owner')
         if i_active:
             query = query.filter(status=0)
-        return [{'id': x.id, 'label': x.label, 'owner': x.owner.name,
+        return [{'id': x.id, 'label': x.label, 'owner': x.owner.name, 'memo': x.memo,
                  'num': x.phone_num, 'online': x.id in online, 'status': x.status}
                 for x in query]
 
@@ -1070,7 +1091,7 @@ def team_devices(request):
     app = get_session_app(request)
     online = {x.device_id for x in model_manager.get_team_online(app)}
     query = PhoneDevice.objects.filter(owner__app_id=app).select_related('owner')
-    return [{'id': x.id, 'label': x.label, 'owner': x.owner.name,
+    return [{'id': x.id, 'label': x.label, 'owner': x.owner.name, 'memo': x.memo,
              'num': x.phone_num, 'online': x.id in online, 'status': x.status}
             for x in query]
 
@@ -1174,7 +1195,7 @@ def create_task(type, params, phone, request, date):
     api_error(1001, '不存在的手机')
 
 
-TASK_STATUS_TEXT = ['等待执行', '执行中', '已完成', '已中断', '已取消', '', '', '', '', '', '终止中']
+TASK_STATUS_TEXT = ['等待执行', '执行中', '已完成', '已中断', '已取消', '', '', '', '', '', '暂停中', '等待继续', '取消中']
 
 
 @api_func_anonymous
@@ -1212,7 +1233,7 @@ def team_tasks(request):
 @api_func_anonymous
 def task_devices(task_id):
     return [{
-        'device': x.device.label,
+        'device': '%s%s' % (x.device.label, '' if not x.device.memo else '(%s)' % x.device.memo),
         'create_time': times.to_str(x.created_at),
         'finish_time': times.to_str(x.finish_at),
         'status': x.status,
@@ -1333,5 +1354,12 @@ def report_progress(id, q, t, p):
         ad.save()
 
         if device_task.status == 10:
-            return HttpResponse('command=stop')
+            return HttpResponse('command=暂停')
+        elif device_task.status == 11:
+            device_task.status = 1
+            device_task.save()
+            return HttpResponse('command=继续')
+        elif device_task.status == 12:
+            return HttpResponse('command=停止')
+
     return HttpResponse('')
