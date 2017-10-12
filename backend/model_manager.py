@@ -187,14 +187,20 @@ def deal_kicked(owner):
     :return:
     """
     devices = list(PhoneDevice.objects.filter(owner=owner, status=0))
-    for x in SnsGroupLost.objects.filter(status=0, sns_user__owner=owner).select_related('sns_user'):
+    q = SnsGroupLost.objects.filter(status=0, sns_user__owner=owner).select_related('sns_user')
+    for x in q:
         device = random.choice(devices)
         if len(devices) > 1:
             while device.pk == x.sns_user.device_id:
                 device = random.choice(devices)
 
         if x.group.group_user_count >= 10 or x.group.group_user_count == 0:
-            SnsGroupSplit(group_id=x.group_id, user_id=device.owner_id, phone=device).save()
+            try:
+                SnsGroupSplit(group_id=x.group_id, user_id=device.owner_id, phone=device).save()
+            except:
+                pass
+
+    q.update(status=1)
 
 
 def get_or_create_qun(device, qun_num):
