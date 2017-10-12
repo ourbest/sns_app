@@ -188,7 +188,11 @@ def deal_kicked(owner):
     """
     devices = list(PhoneDevice.objects.filter(owner=owner, status=0))
     q = SnsGroupLost.objects.filter(status=0, sns_user__owner=owner).select_related('sns_user')
+    all = {x.group_id for x in SnsGroupSplit.objects.filter(user=owner, status=0)}
     for x in q:
+        if x.group_id in all:
+            continue
+
         device = random.choice(devices)
         if len(devices) > 1:
             while device.pk == x.sns_user.device_id:
@@ -196,10 +200,7 @@ def deal_kicked(owner):
 
         if x.group.group_user_count >= 10 or x.group.group_user_count == 0:
             try:
-                db = SnsGroupSplit.objects.filter(group_id=x.group_id, user_id=device.owner_id,
-                                                      status=0).first()
-                if not db:
-                    SnsGroupSplit(group_id=x.group_id, user_id=device.owner_id, phone=device).save()
+                SnsGroupSplit(group_id=x.group_id, user_id=device.owner_id, phone=device).save()
             except:
                 pass
 
