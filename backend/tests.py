@@ -8,3 +8,11 @@ def clean_split_data():
     for x in splits:
         if not done.add(x.group_id):
             x.delete()
+
+
+def clean_split_data_1():
+    splits = SnsGroupSplit.objects.filter(status=1)
+    done = set()
+    for x in splits:
+        if not done.add(x.group_id):
+            x.delete()
