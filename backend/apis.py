@@ -387,8 +387,9 @@ def my_pending_qun(request, i_size, i_page, keyword, i_export):
 
     i_page -= 1
 
+    values = (0, 1, 2) if i_export == 0 else (0,)
     query = SnsGroupSplit.objects.filter(user__email=get_session_user(request),
-                                         status__in=(0, 1, 2)).select_related("group")
+                                         status__in=values).select_related("group")
 
     if i_export == 1:
         resp = HttpResponse(content_type='text/csv')
@@ -401,10 +402,19 @@ def my_pending_qun(request, i_size, i_page, keyword, i_export):
 
     if keyword:
         query = query.filter(group__group_id__contains=keyword)
+
+    pending = query[i_page * i_size:(i_page + 1) * i_size]
+    status_data = {x.group_id: x.status for x in pending}
+
+    def to_data(group):
+        ret = api_helper.sns_group_to_json(group)
+        ret['apply_status'] = status_data.get(group.group_id, 0)
+        return ret
+
     return {
         'total': len(query),
         'page': i_page + 1,
-        'items': [api_helper.sns_group_to_json(x.group) for x in query[i_page * i_size:(i_page + 1) * i_size]]
+        'items': [to_data(x.group) for x in pending]
     }
 
 
@@ -884,6 +894,11 @@ def split_qq(app, request):
     forward = True
 
     for x in SnsGroup.objects.filter(app_id=app, status=0).order_by("-group_user_count"):
+        if 0 < x.group_user_count <= 10:
+            x.status = -1
+            x.save()
+            continue
+
         x.status = 1
         user = users[idx]
         idx += 1 if forward else -1
