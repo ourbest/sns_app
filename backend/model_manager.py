@@ -196,7 +196,7 @@ def deal_kicked(owner):
 
         if x.group.group_user_count >= 10 or x.group.group_user_count == 0:
             try:
-                not db = SnsGroupSplit.objects.filter(group_id=x.group_id, user_id=device.owner_id, phone=device,
+                not db = SnsGroupSplit.objects.filter(group_id=x.group_id, user_id=device.owner_id,
                                                       status=0).first()
                 if db:
                     SnsGroupSplit(group_id=x.group_id, user_id=device.owner_id, phone=device).save()
