@@ -1378,3 +1378,10 @@ def report_progress(id, q, t, p):
             return HttpResponse('command=停止')
 
     return HttpResponse('')
+
+
+@api_func_anonymous
+def change_js_version(ver):
+    if ver and len(ver) == len('6f88563ddfbfa6fbca5e'):
+        settings.JS_VER = ver
+    return "ok"
