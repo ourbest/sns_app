@@ -200,6 +200,18 @@ class SnsGroupSplit(models.Model):
     updated_at = models.DateTimeField('修改时间', auto_now=True, null=True)
     phone = models.ForeignKey(PhoneDevice, null=True, verbose_name='设备')
 
+#
+# class SnsGroupApply(models.Model):
+#     """
+#     加群记录
+#     """
+#     group_split = models.ForeignKey(SnsGroupSplit, verbose_name='分配')
+#     task = models.ForeignKey(SnsTaskDevice)
+#     created_at = models.DateTimeField(auto_now_add=True)
+#     updated_at = models.DateTimeField(auto_now=True)
+#     sns_user = models.ForeignKey(SnsUser)
+#     status = models.IntegerField(default=0)
+#
 
 class SnsGroupLost(models.Model):
     """
@@ -281,6 +293,7 @@ class SnsApplyTaskLog(models.Model):
     account = models.ForeignKey(SnsUser)
     group = models.ForeignKey(SnsGroup)
     memo = models.CharField(max_length=30)
+    status = models.IntegerField(default=0)
 
 
 class MenuItem(models.Model):

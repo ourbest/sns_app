@@ -404,11 +404,13 @@ def my_pending_qun(request, i_size, i_page, keyword, i_export):
         query = query.filter(group__group_id__contains=keyword)
 
     pending = query[i_page * i_size:(i_page + 1) * i_size]
-    status_data = {x.group_id: x.status for x in pending}
+    group_splits = {x.group_id: x for x in pending}
 
     def to_data(group):
         ret = api_helper.sns_group_to_json(group)
-        ret['apply_status'] = status_data.get(group.group_id, 0)
+        ret['apply_status'] = group_splits.get(group.group_id).status
+        phone = group_splits.get(group.group_id).phone
+        ret['device'] = '%s%s' % (phone.label, '' if not phone.memo else '[%s]' % phone.memo)
         return ret
 
     return {
@@ -728,6 +730,7 @@ def import_qun_stat(ids, device_id):
                             qun.save()
 
                     SnsUserGroup(sns_group=qun, sns_user=sns_user, status=0, active=1).save()
+                    SnsApplyTaskLog.objects.filter(acount=sns_user, memo='已发送验证', group=qun).update(status=1)
                 else:
                     if found.status != 0:
                         found.status = 0
