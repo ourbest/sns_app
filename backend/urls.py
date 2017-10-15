@@ -30,6 +30,7 @@ urlpatterns = [
     url(r'^my/quiz/qun$', apis.my_quiz_qun),
     url(r'^my/qun/lost$', apis.my_lost_qun),
     url(r'^my/tasks$', apis.my_tasks),
+    url(r'^my/apply/log$', apis.my_apply_log),
     url(r'^my/qun/attr$', apis.update_user_group_attr),
     url(r'^my/online$', apis.online_phones),
     url(r'^my/kicked$', apis.my_kicked_qun),

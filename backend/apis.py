@@ -378,6 +378,40 @@ def my_qun_cnt(request, qq, phone):
 
 
 @api_func_anonymous
+def my_apply_log(request, i_size, i_page, keyword):
+    user = api_helper.get_login_user(request)
+    if i_size == 0:
+        i_size = 50
+
+    if i_page == 0:
+        i_page = 1
+
+    i_page -= 1
+
+    query = SnsApplyTaskLog.objects.filter(device__owner=user).order_by("-pk")
+    if keyword:
+        query = query.filter(group_id=keyword)
+
+    total = query.count()
+
+    rows = query.select_related('group', 'device')[i_page * i_size:(i_page + 1) * i_size]
+
+    return {
+        'total': total,
+        'page': i_page + 1,
+        'items': [{
+            'id': x.group_id,
+            'name': x.group.group_name,
+            'member_count': x.group.group_user_count,
+            'memo': x.memo,
+            'status': x.status,
+            'qq': x.account.login_name,
+            'device': x.device.friend_text
+        } for x in rows],
+    }
+
+
+@api_func_anonymous
 def my_pending_qun(request, i_size, i_page, keyword, i_export):
     if i_size == 0:
         i_size = 50
@@ -387,7 +421,7 @@ def my_pending_qun(request, i_size, i_page, keyword, i_export):
 
     i_page -= 1
 
-    values = (0, 1, 2) if i_export == 0 else (0,)
+    values = (0, 1) if i_export == 0 else (0,)
     query = SnsGroupSplit.objects.filter(user__email=get_session_user(request),
                                          status__in=values).select_related("group")
 
@@ -410,7 +444,7 @@ def my_pending_qun(request, i_size, i_page, keyword, i_export):
         ret = api_helper.sns_group_to_json(group)
         ret['apply_status'] = group_splits.get(group.group_id).status
         phone = group_splits.get(group.group_id).phone
-        ret['device'] = '%s%s' % (phone.label, '' if not phone.memo else '[%s]' % phone.memo)
+        ret['device'] = phone.friend_text  # '%s%s' % (phone.label, '' if not phone.memo else '[%s]' % phone.memo)
         return ret
 
     return {
@@ -1251,7 +1285,7 @@ def team_tasks(request):
 @api_func_anonymous
 def task_devices(task_id):
     return [{
-        'device': '%s%s' % (x.device.label, '' if not x.device.memo else '(%s)' % x.device.memo),
+        'device': x.device.friend_text, #'%s%s' % (x.device.label, '' if not x.device.memo else '(%s)' % x.device.memo),
         'create_time': times.to_str(x.created_at),
         'finish_time': times.to_str(x.finish_at),
         'status': x.status,

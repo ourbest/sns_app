@@ -247,3 +247,7 @@ def get_result_content(task_id):
     file_path = './logs/result/%s.txt' % task_id
     with open(file_path, "rt") as file:
         return file.read()
+
+
+def get_login_user(request):
+    return model_manager.get_user(get_session_user(request))

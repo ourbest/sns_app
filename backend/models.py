@@ -61,6 +61,10 @@ class PhoneDevice(models.Model):
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='添加时间')
     memo = models.CharField('备注', null=True, blank=True, max_length=50)
 
+    @property
+    def friend_text(self):
+        return '%s%s' % (self.label, '' if not self.memo else '(%s)' % self.memo)
+
     def __str__(self):
         return self.label
 
