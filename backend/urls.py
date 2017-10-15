@@ -34,6 +34,7 @@ urlpatterns = [
     url(r'^my/qun/attr$', apis.update_user_group_attr),
     url(r'^my/online$', apis.online_phones),
     url(r'^my/kicked$', apis.my_kicked_qun),
+    url(r'^my/pending/remove$', apis.my_pending_remove),
 
     url(r'^device/qun$', apis.device_qun),
     url(r'^device/create$', apis.device_create),

@@ -412,6 +412,12 @@ def my_apply_log(request, i_size, i_page, keyword):
 
 
 @api_func_anonymous
+def my_pending_remove(ids):
+    SnsGroupSplit.objects.filter(pk__in=ids.split(';')).update(status=-1)
+    return 'ok'
+
+
+@api_func_anonymous
 def my_pending_qun(request, i_size, i_page, keyword, i_export):
     if i_size == 0:
         i_size = 50
@@ -445,6 +451,7 @@ def my_pending_qun(request, i_size, i_page, keyword, i_export):
         ret['apply_status'] = group_splits.get(group.group_id).status
         phone = group_splits.get(group.group_id).phone
         ret['device'] = phone.friend_text  # '%s%s' % (phone.label, '' if not phone.memo else '[%s]' % phone.memo)
+        ret['internal_id'] = group_splits.get(group.group_id).id
         return ret
 
     return {
@@ -1285,7 +1292,8 @@ def team_tasks(request):
 @api_func_anonymous
 def task_devices(task_id):
     return [{
-        'device': x.device.friend_text, #'%s%s' % (x.device.label, '' if not x.device.memo else '(%s)' % x.device.memo),
+        'device': x.device.friend_text,
+        # '%s%s' % (x.device.label, '' if not x.device.memo else '(%s)' % x.device.memo),
         'create_time': times.to_str(x.created_at),
         'finish_time': times.to_str(x.finish_at),
         'status': x.status,

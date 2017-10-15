@@ -204,6 +204,7 @@ class SnsGroupSplit(models.Model):
     updated_at = models.DateTimeField('修改时间', auto_now=True, null=True)
     phone = models.ForeignKey(PhoneDevice, null=True, verbose_name='设备')
 
+
 #
 # class SnsGroupApply(models.Model):
 #     """
