@@ -18,10 +18,10 @@ from django.utils import timezone
 from logzero import logger
 from qiniu import Auth, put_file, etag
 
-from backend import model_manager, api_helper
+from backend import model_manager, api_helper, caches
 from backend.api_helper import get_session_user, get_session_app, sns_user_to_json, device_to_json, qun_to_json
 from backend.models import User, App, SnsGroup, SnsGroupSplit, PhoneDevice, SnsUser, SnsUserGroup, SnsTaskDevice, \
-    DeviceFile, SnsTaskType, SnsTask, ActiveDevice, SnsApplyTaskLog, DistTaskLog, UserActionLog, SnsGroupLost
+    DeviceFile, SnsTaskType, SnsTask, ActiveDevice, SnsApplyTaskLog, DistTaskLog, UserActionLog, SnsGroupLost, GroupTag
 
 
 @api_func_anonymous
@@ -295,7 +295,7 @@ def team_qq(request):
 
 
 @api_func_anonymous
-def my_qun(request, i_page, i_size, keyword, qq, phone):
+def my_qun(request, i_page, i_size, keyword, qq, phone, tag):
     query = SnsUserGroup.objects.filter(sns_user__owner__email=get_session_user(request),
                                         status=0).select_related("sns_group", "sns_user", "sns_user__device")
     if i_page != 0:
@@ -310,6 +310,9 @@ def my_qun(request, i_page, i_size, keyword, qq, phone):
 
     if phone:
         query = query.filter(sns_user__device__label=phone)
+
+    if tag:
+        query = query.filter(sns_group_id__in=[x.group_id for x in GroupTag.objects.filter(tag=tag)])
 
     query = query[(i_page - 1) * i_size:i_page * i_size]
 
@@ -367,13 +370,17 @@ def my_kicked_qun(request, i_page, i_size, keyword):
 
 
 @api_func_anonymous
-def my_qun_cnt(request, qq, phone):
+def my_qun_cnt(request, qq, phone, tag):
     query = SnsUserGroup.objects.filter(sns_user__owner__email=get_session_user(request), status=0)
     if qq:
         query = query.filter(sns_user__login_name=qq)
 
     if phone:
         query = query.filter(sns_user__device__label=phone)
+
+    if tag:
+        query = query.filter(sns_group_id__in=[x.group_id for x in GroupTag.objects.filter(tag=tag)])
+
     return str(query.count())
 
 
@@ -764,6 +771,7 @@ def import_qun_stat(ids, device_id):
                         qun = SnsGroup(group_id=qun_num, group_name=qun_name, type=0, app_id=sns_user.app_id,
                                        group_user_count=qun_user_cnt, status=2, created_at=timezone.now(),
                                        from_user_id=device.owner_id)
+                        model_manager.process_tag(qun)
                         qun.save()
                     else:
                         if qun.status != 2:
@@ -840,6 +848,7 @@ def import_qun(app, ids, request, email):
                 db = SnsGroup(group_id=account[0], group_name=account[1], type=0, app_id=app,
                               group_user_count=account[2], created_at=timezone.now(), from_user=login_user)
                 db.save()
+                model_manager.process_tag(db)
                 cnt += 1
 
                 if len(account) > 3:
@@ -906,6 +915,7 @@ def import_qun_split(app, ids, request):
                 db = SnsGroup(group_id=qun_id, group_name=qun_name, type=0, app_id=app,
                               group_user_count=member_cnt, created_at=timezone.now())
                 db.save()
+                model_manager.process_tag(db)
                 cnt += 1
             except:
                 logger.warning("error save %s" % account, exc_info=1)
@@ -1430,3 +1440,8 @@ def change_js_version(ver):
     if ver and len(ver) == len('6f88563ddfbfa6fbca5e'):
         settings.JS_VER = ver
     return "ok"
+
+
+@api_func_anonymous
+def tag_names():
+    return caches.get_tag_names()

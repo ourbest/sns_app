@@ -1,11 +1,13 @@
 import re
+from datetime import timedelta
 from random import shuffle
 
 import requests
 from dj import times
+from django.utils import timezone
 
 from backend import model_manager
-from backend.models import User, AppUser, TaskGroup
+from backend.models import User, AppUser, TaskGroup, DistTaskLog, GroupTag
 
 DEFAULT_APP = 1519662
 
@@ -146,6 +148,7 @@ def save_cutt_id(user, cutt_id, user_type):
 
 
 def to_share_url(user, url, share_type=0, label=None):
+    url = url.split('\n')[0]
     u = re.findall(r'https?://.+?/weizhan/article/\d+/\d+/\d+', url)
     if u:
         u = u[0]
@@ -166,11 +169,30 @@ def add_dist_qun(device_task):
     sns_users = device.snsuser_set.filter(type=0, dist=1)
 
     groups = dict()
+    ignore_qun = {x.group_id for x in
+                  DistTaskLog.objects.filter(success=1, group__app_id=device_task.task.app_id,
+                                             created_at__gte=timezone.now() - timedelta(hours=1))}
+
+    lines = device_task.data.split('\n')
+
+    ids = None
+    for line in lines:
+        if line.index('tag=') == 0:
+            tags = line[4:].split(';')
+            ids = {x.group_id for x in GroupTag.objects.filter(group__app_id=device_task.task.app_id, tag__in=tags)}
+
     for user in sns_users:
         user_groups = user.snsusergroup_set.filter(status=0, active=1)
         if user_groups:
             group_ids = []
             for group in user_groups:
+                if group.sns_group_id in ignore_qun:
+                    # 1小时内分发过了
+                    continue
+
+                if ids is not None and group.sns_group_id not in ids:
+                    # 按标签分发
+                    continue
                 try:
                     TaskGroup(task=device_task.task, sns_user=user, group_id=group.sns_group_id).save()
                     group_ids.append(group.sns_group_id)

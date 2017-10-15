@@ -6,8 +6,9 @@ from django.db.models import Q
 from django.utils import timezone
 from logzero import logger
 
+from backend import caches
 from backend.models import PhoneDevice, SnsTaskType, App, User, ActiveDevice, SnsUser, SnsGroup, UserAuthApp, \
-    MenuItemPerm, SnsGroupLost
+    MenuItemPerm, SnsGroupLost, Tag, GroupTag
 from backend.models import SnsUserGroup, SnsGroupSplit
 
 
@@ -213,6 +214,7 @@ def get_or_create_qun(device, qun_num):
         db = SnsGroup(group_id=qun_num, group_name=qun_num, type=0, app_id=device.owner.app_id,
                       group_user_count=0, status=1, created_at=timezone.now(), from_user_id=device.owner_id)
         db.save()
+        process_tag(db)
     return db
 
 
@@ -243,3 +245,20 @@ def get_user_menu(user):
         })
 
     return ret
+
+
+def process_tag(qun):
+    tags = caches.get_tag_names()
+    old = {x.tag for x in qun.grouptag_set.all()}
+    for tag in tags:
+        if tag not in old and tag in qun.group_name:
+            GroupTag(tag=tag, group=qun).save()
+
+
+def create_new_tag(name):
+    if name not in caches.get_tag_names():
+        Tag(name).save()
+        caches.reload_cache(Tag)
+    for g in SnsGroup.objects.all():
+        if name in g.group_name:
+            GroupTag(tag=name, group=g).save()

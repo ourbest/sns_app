@@ -10,6 +10,7 @@ urlpatterns = [
     # url(r'^image$', apis.image),
     url(r'^qr$', apis.qq_qr),
     url(r'^menu$', apis.get_menu),
+    url(r'^tags$', apis.tag_names),
 
     # imports ====
     url(r'^import/qq$', apis.import_qq),
