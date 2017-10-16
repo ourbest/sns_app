@@ -218,18 +218,23 @@ def task(id):
         device_task = SnsTaskDevice.objects.filter(device__label=id, status=0,
                                                    schedule_at__lte=timezone.now()).first()
         if device_task:
-            device_task.status = 1
-            device_task.started_at = timezone.now()
-            device_task.save()
-            ad.status = 1
-            ad.save()
-            if device_task.task.status == 0:
-                device_task.task.status = 1
-                device_task.task.save()
-            return {
-                'name': 'task.txt',
-                'content': _make_task_content(device_task)
-            }
+            try:
+                content = _make_task_content(device_task)
+                device_task.status = 1
+                device_task.started_at = timezone.now()
+                device_task.save()
+                ad.status = 1
+                ad.save()
+                if device_task.task.status == 0:
+                    device_task.task.status = 1
+                    device_task.task.save()
+                return {
+                    'name': 'task.txt',
+                    'content': content
+                }
+            except:
+                logger.warning('Error process task %s' % id, exc_info=1)
+
         else:
             ad.status = 0
         ad.save()
