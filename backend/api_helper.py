@@ -177,7 +177,7 @@ def add_dist_qun(device_task):
 
     ids = None
     for line in lines:
-        if line.index('tag=') == 0:
+        if line.find('tag=') == 0:
             tags = line[4:].split(';')
             ids = {x.group_id for x in GroupTag.objects.filter(group__app_id=device_task.task.app_id, tag__in=tags)}
 
