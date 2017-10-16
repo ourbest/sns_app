@@ -1411,10 +1411,10 @@ def re_import(i_file_id):
 
 
 @api_func_anonymous
-def report_progress(id, q, t, p):
-    if not id or not q or not t:
+def report_progress(id, q, task_id, p):
+    if not id or not q or not task_id:
         return HttpResponse('')
-    device_task = SnsTaskDevice.objects.filter(device__label=id, task_id=t).first()
+    device_task = SnsTaskDevice.objects.filter(device__label=id, task_id=task_id).first()
     if device_task:
         if p.isdigit() and device_task.progress != int(p):
             device_task.progress = int(p)
