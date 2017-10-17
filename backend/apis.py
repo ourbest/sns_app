@@ -1413,7 +1413,7 @@ def re_import(i_file_id):
 
 
 @api_func_anonymous
-def report_progress(id, q, task_id, p):
+def report_progress(id, q, task_id, p, i_status):
     if not id or not q or not task_id:
         return HttpResponse('')
     device_task = SnsTaskDevice.objects.filter(device__label=id, task_id=task_id).first()
@@ -1421,6 +1421,10 @@ def report_progress(id, q, task_id, p):
         if p.isdigit() and device_task.progress != int(p) and p != '0' and q != '0':
             device_task.progress = int(p)
             device_task.save()
+
+        if i_status == 1:
+            model_manager.mark_task_cancel(device_task)
+            api_helper.webhook(device_task, '任务出现异常，本机下线，请检查日志', force=True)
 
         ad = model_manager.get_active_device(device_task.device)
         if not ad:
@@ -1437,6 +1441,7 @@ def report_progress(id, q, task_id, p):
             device_task.save()
             return HttpResponse('command=继续')
         elif device_task.status == 12:
+            model_manager.mark_task_cancel(device_task)
             return HttpResponse('command=停止')
 
     return HttpResponse('')

@@ -288,9 +288,9 @@ def get_login_user(request):
     return model_manager.get_user(get_session_user(request))
 
 
-def webhook(device_task, msg):
+def webhook(device_task, msg, force=0):
     user = device_task.device.owner
-    if not user.notify or user.notify <= 1:
+    if not force and (not user.notify or user.notify <= 1):
         return
 
     msg = '%s%s任务%s' % (device_task.device.friend_text, device_task.task.type.name, msg)
