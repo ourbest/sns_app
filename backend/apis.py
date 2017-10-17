@@ -68,7 +68,7 @@ def upload(type, id, task_id, content, name, request):
             device_task = SnsTaskDevice.objects.filter(device__label=id, task_id=task_id).first()
             if device_task:
                 logger.debug("find device task %s" % device_task.id)
-                if device_task.status != 2:
+                if device_task.status not in (3, 2):
                     model_manager.mark_task_finish(device_task)
 
                 device_file = DeviceFile(device=device, task_id=device_task.task_id, qiniu_key=key,
@@ -227,7 +227,9 @@ def task(id):
                 ad.save()
                 if device_task.task.status == 0:
                     device_task.task.status = 1
+                    device_task.task.started_at = timezone.now()
                     device_task.task.save()
+                    api_helper.webhook_task(device_task.task, '开始执行')
                 return {
                     'name': 'task.txt',
                     'content': content

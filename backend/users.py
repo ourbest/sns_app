@@ -12,7 +12,7 @@ def user_info(request):
 
 
 @api_func_anonymous
-def update_user_info(request, name, app_id, qq_id, wx_id, i_role):
+def update_user_info(request, name, app_id, qq_id, wx_id, i_role, phone, i_notify):
     email = api_helper.get_session_user(request)
     user = model_manager.get_user(email)
     user.name = name
@@ -21,6 +21,8 @@ def update_user_info(request, name, app_id, qq_id, wx_id, i_role):
         model_manager.add_user_auth(user, app_id)
 
     user.role = i_role
+    user.notify = i_notify
+    user.phone = phone
 
     user.save()
 

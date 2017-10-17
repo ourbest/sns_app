@@ -62,9 +62,16 @@ def get_active_device(device):
 def mark_task_finish(device_task):
     _set_task_status(device_task, 2)
 
+    from backend import api_helper
+    api_helper.webhook(device_task, '执行完毕, 共耗时%s秒' %
+                       (device_task.finish_at - device_task.started_at).total_seconds())
+
 
 def mark_task_cancel(device_task):
     _set_task_status(device_task, 3)
+    from backend import api_helper
+    api_helper.webhook(device_task, '已放弃, 共耗时%s秒' %
+                       (device_task.finish_at - device_task.started_at).total_seconds())
 
 
 def _set_task_status(device_task, status):
@@ -84,7 +91,11 @@ def check_task_status(task):
             break
     if not in_prog:
         task.status = 2
+        task.finish_at = timezone.now()
         task.save()
+        from backend import api_helper
+        api_helper.webhook_task(task, '执行完毕, 共耗时%s秒' % (
+        task.finish_at - task.started_at).total_seconds() if task.started_at else 'N/A')
     elif task.status == 2:
         task.status = 0
         task.save()

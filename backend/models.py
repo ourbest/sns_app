@@ -29,6 +29,8 @@ class User(models.Model):
     created_at = models.DateTimeField('创建时间', auto_now_add=True)
     role = models.IntegerField(default=0, help_text='0-组员 1-组长')
     app = models.ForeignKey(App, verbose_name='生活圈', null=True, blank=True, default=None)
+    phone = models.CharField(max_length=20, help_text='手机号', null=True, blank=True)
+    notify = models.IntegerField(default=0, null=True)
 
     def __str__(self):
         return self.name
@@ -258,6 +260,8 @@ class SnsTask(models.Model):
     app = models.ForeignKey(App, null=True)
     creator = models.ForeignKey(User, null=True)
     schedule_at = models.DateTimeField(null=True)
+    started_at = models.DateTimeField(null=True)
+    finish_at = models.DateTimeField(null=True)
 
 
 class SnsTaskDevice(models.Model):

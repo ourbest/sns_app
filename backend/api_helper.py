@@ -1,4 +1,5 @@
 import re
+import threading
 from datetime import timedelta
 from random import shuffle
 
@@ -111,7 +112,10 @@ def user_to_json(x):
         'cutt_id': y.cutt_user_id,
     } for y in x.appuser_set.all()]
 
-    ret = {'id': x.id, 'email': x.email, 'name': x.name, 'role': x.role, 'app_users': app_users}
+    ret = {
+        'id': x.id, 'email': x.email, 'name': x.name, 'notify': 0 if not x.notify else x.notify,
+        'role': x.role, 'phone': x.phone, 'app_users': app_users
+    }
     for u in app_users:
         if u['type'] == 0:
             ret['qq_id'] = u['cutt_id']
@@ -161,6 +165,12 @@ def to_share_url(user, url, share_type=0, label=None):
                 u += '?l=' + suffix
 
     return u if u else url
+
+
+def extract_url(url):
+    url = url.split('\n')[0]
+    u = re.findall(r'https?://.+?/weizhan/article/\d+/\d+/\d+', url)
+    return u[0] if u else None
 
 
 def add_dist_qun(device_task):
@@ -276,3 +286,51 @@ def get_result_content(task_id):
 
 def get_login_user(request):
     return model_manager.get_user(get_session_user(request))
+
+
+def webhook(device_task, msg):
+    user = device_task.device.owner
+    if not user.notify or user.notify <= 1:
+        return
+
+    msg = '%s%s任务%s' % (device_task.device.friend_text, device_task.task.type.name, msg)
+    if device_task.task.id == 3:
+        msg = '%s URL: ' + extract_url(device_task.task.params)
+
+    thread = threading.Thread(target=send_msg, args=(msg, user))
+    thread.start()
+
+
+def webhook_task(task, msg):
+    user = task.creator
+    if not user.notify:
+        return
+
+    msg = '%s任务%s' % (task.type.name, msg)
+    if task.id == 3:
+        msg = '%s URL: ' + extract_url(task.params)
+
+    thread = threading.Thread(target=send_msg, args=(msg, user))
+    thread.start()
+
+
+def send_msg(msg, user):
+    # https://oapi.dingtalk.com/robot/send?access_token=114b9ee24111a47f7dd9864195f905ed766c92ddb3c1b346b70d6bf3d4a3ae0d
+    url = 'https://oapi.dingtalk.com/robot/send?access_token' \
+          '=114b9ee24111a47f7dd9864195f905ed766c92ddb3c1b346b70d6bf3d4a3ae0d'
+    dingding_msg = {
+        'msgtype': 'text',
+        'text': {
+            'content': msg
+        },
+        'at': {
+            'atMobiles': [user.phone],
+            'isAtAll': False
+        }
+    } if user.phone else {
+        'msgtype': 'text',
+        'text': {
+            'content': '%s: %s' % (user.name, msg)
+        }
+    }
+    requests.post(url, json=dingding_msg)
