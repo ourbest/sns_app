@@ -130,7 +130,7 @@ QINIU_BUCKET = ''
 
 FILE_UPLOAD_HANDLERS = ["django.core.files.uploadhandler.TemporaryFileUploadHandler"]
 
-JS_VER = 'f7e50eb6107ac1701890'
+JS_VER = '7955cba1919ce3649b40'
 QINIU_URL = 'http://jwres.cutt.com/'
 
 try:

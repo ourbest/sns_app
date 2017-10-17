@@ -176,13 +176,13 @@ def add_dist_qun(device_task):
     lines = device_task.data.split('\n')
 
     ids = None
-    use_app = False
+    user_lines = []
     for line in lines:
         if line.find('tag=') == 0:
             tags = line[4:].split(';')
             ids = {x.group_id for x in GroupTag.objects.filter(group__app_id=device_task.task.app_id, tag__in=tags)}
-        elif line.find('app=1') == 0:
-            use_app = True
+        elif line.find('app=') == 0:
+            user_lines.append(line)
 
     for user in sns_users:
         user_groups = user.snsusergroup_set.filter(status=0, active=1)
@@ -205,10 +205,7 @@ def add_dist_qun(device_task):
                 groups[user.login_name] = group_ids
 
     idx = 0
-    user_lines = []
     group_lines = []
-    if use_app:
-        user_lines.append('app=1')
 
     for login_name, groups in groups.items():
         idx += 1
