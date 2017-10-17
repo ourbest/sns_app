@@ -1416,7 +1416,7 @@ def report_progress(id, q, task_id, p):
         return HttpResponse('')
     device_task = SnsTaskDevice.objects.filter(device__label=id, task_id=task_id).first()
     if device_task:
-        if p.isdigit() and device_task.progress != int(p):
+        if p.isdigit() and device_task.progress != int(p) and p != '0' and q != '0':
             device_task.progress = int(p)
             device_task.save()
 
