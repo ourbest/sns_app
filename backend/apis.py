@@ -21,7 +21,8 @@ from qiniu import Auth, put_file, etag
 from backend import model_manager, api_helper, caches
 from backend.api_helper import get_session_user, get_session_app, sns_user_to_json, device_to_json, qun_to_json
 from backend.models import User, App, SnsGroup, SnsGroupSplit, PhoneDevice, SnsUser, SnsUserGroup, SnsTaskDevice, \
-    DeviceFile, SnsTaskType, SnsTask, ActiveDevice, SnsApplyTaskLog, DistTaskLog, UserActionLog, SnsGroupLost, GroupTag
+    DeviceFile, SnsTaskType, SnsTask, ActiveDevice, SnsApplyTaskLog, DistTaskLog, UserActionLog, SnsGroupLost, GroupTag, \
+    TaskWorkingLog
 from backend.zhiyue_models import ClipItem, DeviceUser
 
 
@@ -1424,6 +1425,12 @@ def report_progress(id, q, task_id, p, i_status):
         if p.isdigit() and device_task.progress != int(p) and p != '0' and q != '0':
             device_task.progress = int(p)
             device_task.save()
+            twl = TaskWorkingLog.objects.filter(device_task=device_task, account__login_name=q).first()
+            if not twl:
+                twl = TaskWorkingLog(device_task=device_task, account=model_manager.get_qq(q))
+
+            twl.progress = device_task.progress
+            twl.save()
 
         if i_status == 1:
             model_manager.mark_task_cancel(device_task, notify=False)

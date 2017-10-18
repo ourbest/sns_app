@@ -44,7 +44,7 @@ def get_team_online(app):
 
 def get_online_by_id(uid):
     return ActiveDevice.objects.filter(device__owner_id=uid).filter(
-        Q(active_at__gt=(timezone.now() - timedelta(seconds=300))) | Q(status=1))
+        active_at__gt=(timezone.now() - timedelta(seconds=300)))
 
 
 def get_qq(qq_id):

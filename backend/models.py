@@ -383,3 +383,16 @@ class UserActionLog(models.Model):
 
     memo = models.CharField(max_length=255)
     action_time = models.DateTimeField(auto_now_add=True)
+
+
+class TaskWorkingLog(models.Model):
+    """
+    任务工作历史
+    """
+    device_task = models.ForeignKey(SnsTaskDevice)
+    created_at = models.DateTimeField(auto_now_add=True)
+    account = models.ForeignKey(SnsUser)
+    progress = models.IntegerField(default=0)
+
+    class Meta:
+        unique_together = ('device_task', 'account')
