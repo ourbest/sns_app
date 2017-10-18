@@ -106,3 +106,11 @@ class DeviceUser(models.Model):
     class Meta:
         db_table = 'datasystem_DeviceUser'
         managed = False
+
+ITEM_TYPES = {
+    'article-mochuang': '文章页魔窗',
+    'article-down': '文章页连接下载',
+    'tongji-down': '文章页长按二维码',
+    'article-reshare': '微信文章二次分享',
+    'qqarticle-reshare': 'QQ文章二次分享',
+}
