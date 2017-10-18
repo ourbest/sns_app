@@ -281,6 +281,13 @@ def query(clz):
 
 
 def mark_task_started(device_task):
-    device_task.task.status = 1
-    device_task.task.started_at = timezone.now()
-    device_task.task.save()
+    if device_task.task.status == 0:
+        device_task.task.status = 1
+        device_task.task.started_at = timezone.now()
+        device_task.task.save()
+        from backend import api_helper
+        api_helper.webhook_task(device_task.task, '开始执行')
+
+    device_task.status = 1
+    device_task.started_at = timezone.now()
+    device_task.save()

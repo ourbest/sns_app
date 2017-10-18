@@ -221,9 +221,6 @@ def task(id):
         if device_task:
             try:
                 content = _make_task_content(device_task)
-                device_task.status = 1
-                device_task.started_at = timezone.now()
-                device_task.save()
                 ad.status = 1
                 ad.save()
                 return {
@@ -1418,9 +1415,8 @@ def report_progress(id, q, task_id, p, i_status):
         return HttpResponse('')
     device_task = SnsTaskDevice.objects.filter(device__label=id, task_id=task_id).first()
     if device_task:
-        if device_task.task.status == 0:
+        if device_task.status == 0:
             model_manager.mark_task_started(device_task)
-            api_helper.webhook_task(device_task.task, '开始执行')
 
         if p.isdigit() and device_task.progress != int(p) and p != '0' and q != '0':
             device_task.progress = int(p)
