@@ -32,3 +32,10 @@ def get_model_object_key(clz, key, loader=None):
 
 def get_tag_names():
     return get_model_objects(Tag, lambda x: x.name)
+
+
+def get_or_create(key, default_val, ex=1800):
+    data = cache.get(key)
+    if data is None:
+        cache.set(key, default_val, ex)
+    return data
