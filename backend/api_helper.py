@@ -324,7 +324,7 @@ def send_msg(msg, user):
     now = timezone.now().timestamp()
     val = caches.get_or_create(msg, now, 300)
     if val is not None and val - timezone.now().timestamp() < 10:
-        pass
+        return
 
     # https://oapi.dingtalk.com/robot/send?access_token=114b9ee24111a47f7dd9864195f905ed766c92ddb3c1b346b70d6bf3d4a3ae0d
     url = 'https://oapi.dingtalk.com/robot/send?access_token' \
