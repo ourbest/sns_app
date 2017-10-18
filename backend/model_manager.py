@@ -67,11 +67,12 @@ def mark_task_finish(device_task):
                        (device_task.finish_at - device_task.started_at).total_seconds())
 
 
-def mark_task_cancel(device_task):
+def mark_task_cancel(device_task, notify=True):
     _set_task_status(device_task, 3)
-    from backend import api_helper
-    api_helper.webhook(device_task, '已放弃, 共耗时%s秒' %
-                       (device_task.finish_at - device_task.started_at).total_seconds(), force=True)
+    if notify:
+        from backend import api_helper
+        api_helper.webhook(device_task, '已放弃, 共耗时%s秒' %
+                           (device_task.finish_at - device_task.started_at).total_seconds(), force=True)
 
 
 def _set_task_status(device_task, status):

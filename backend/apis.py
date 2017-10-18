@@ -1426,7 +1426,7 @@ def report_progress(id, q, task_id, p, i_status):
             device_task.save()
 
         if i_status == 1:
-            model_manager.mark_task_cancel(device_task)
+            model_manager.mark_task_cancel(device_task, notify=False)
             api_helper.webhook(device_task, '任务出现异常，本机下线，请检查日志', force=True)
 
         ad = model_manager.get_active_device(device_task.device)
