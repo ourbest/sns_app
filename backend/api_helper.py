@@ -173,6 +173,12 @@ def extract_url(url):
     return u[0] if u else None
 
 
+def parse_item_id(url):
+    url = url.split('\n')[0]
+    u = re.findall(r'https?://.+?/weizhan/article/\d+/(\d+)/\d+', url)
+    return u[0] if u else None
+
+
 def add_dist_qun(device_task):
     device = device_task.device
 
@@ -284,8 +290,8 @@ def get_result_content(task_id):
         return file.read()
 
 
-def get_login_user(request):
-    return model_manager.get_user(get_session_user(request))
+def get_login_user(request, email=None):
+    return model_manager.get_user(get_session_user(request) if not email else email)
 
 
 def webhook(device_task, msg, force=0):
@@ -293,9 +299,9 @@ def webhook(device_task, msg, force=0):
     if not force and (not user.notify or user.notify <= 1):
         return
 
-    msg = '%s%s任务%s' % (device_task.device.friend_text, device_task.task.type.name, msg)
+    msg = '%s：%s任务%s' % (device_task.device.friend_text, device_task.task.type.name, msg)
     if device_task.task.id == 3:
-        msg = '%s URL: ' + extract_url(device_task.task.params)
+        msg += ' URL: ' + extract_url(device_task.task.params)
 
     thread = threading.Thread(target=send_msg, args=(msg, user))
     thread.start()
@@ -306,9 +312,9 @@ def webhook_task(task, msg):
     if not user.notify:
         return
 
-    msg = '%s任务%s' % (task.type.name, msg)
-    if task.id == 3:
-        msg = '%s URL: ' + extract_url(task.params)
+    msg = '%s：任务%s' % (task.type.name, msg)
+    if task.type_id == 3:
+        msg += ' URL: ' + extract_url(task.params)
 
     thread = threading.Thread(target=send_msg, args=(msg, user))
     thread.start()

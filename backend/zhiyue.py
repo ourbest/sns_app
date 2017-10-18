@@ -3,8 +3,9 @@ import re
 from dj import times
 from dj.utils import api_func_anonymous
 
+from backend import api_helper, model_manager
 from backend.api_helper import get_session_app
-from backend.zhiyue_models import ShareArticleLog, ClipItem
+from backend.zhiyue_models import ShareArticleLog, ClipItem, WeizhanCount
 
 
 @api_func_anonymous
@@ -38,3 +39,11 @@ def get_url_title(url):
         item = ClipItem.objects.using('zhiyue').filter(itemId=article_id).first()
         return item.title
     return None
+
+
+@api_func_anonymous
+def count_weizhan(email, request):
+    the_user = api_helper.get_login_user(request, email)
+    cutt_users = [the_user.appuser_set.all()]
+    model_manager.query(WeizhanCount)
+    pass

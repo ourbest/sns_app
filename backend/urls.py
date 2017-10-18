@@ -77,6 +77,8 @@ urlpatterns = [
     url(r'^user/delegated$', users.delegated),
     url(r'^user/delegate/update$', users.set_delegates),
 
+    url(r'^share/items$', apis.get_share_items),
+
     #===team
     url(r'^team/devices$', apis.team_devices),
     url(r'^team/qq$', apis.team_qq),

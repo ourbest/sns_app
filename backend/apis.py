@@ -3,7 +3,7 @@ import os
 import re
 import threading
 from collections import defaultdict
-from datetime import datetime
+from datetime import datetime, timedelta
 from shutil import copyfile
 from urllib.parse import quote
 
@@ -12,7 +12,7 @@ from dj import times
 from dj.utils import api_func_anonymous, api_error
 from django.conf import settings
 from django.core.files.uploadedfile import TemporaryUploadedFile
-from django.db.models import Sum
+from django.db.models import Sum, Count
 from django.http import HttpResponseRedirect, HttpResponse
 from django.utils import timezone
 from logzero import logger
@@ -22,6 +22,7 @@ from backend import model_manager, api_helper, caches
 from backend.api_helper import get_session_user, get_session_app, sns_user_to_json, device_to_json, qun_to_json
 from backend.models import User, App, SnsGroup, SnsGroupSplit, PhoneDevice, SnsUser, SnsUserGroup, SnsTaskDevice, \
     DeviceFile, SnsTaskType, SnsTask, ActiveDevice, SnsApplyTaskLog, DistTaskLog, UserActionLog, SnsGroupLost, GroupTag
+from backend.zhiyue_models import ClipItem, DeviceUser
 
 
 @api_func_anonymous
@@ -225,11 +226,6 @@ def task(id):
                 device_task.save()
                 ad.status = 1
                 ad.save()
-                if device_task.task.status == 0:
-                    device_task.task.status = 1
-                    device_task.task.started_at = timezone.now()
-                    device_task.task.save()
-                    api_helper.webhook_task(device_task.task, '开始执行')
                 return {
                     'name': 'task.txt',
                     'content': content
@@ -786,7 +782,7 @@ def import_qun_stat(ids, device_id):
                             qun.save()
 
                     SnsUserGroup(sns_group=qun, sns_user=sns_user, status=0, active=1).save()
-                    SnsApplyTaskLog.objects.filter(acount=sns_user, memo='已发送验证', group=qun).update(status=1)
+                    SnsApplyTaskLog.objects.filter(account=sns_user, memo='已发送验证', group=qun).update(status=1)
                 else:
                     if found.status != 0:
                         found.status = 0
@@ -1418,6 +1414,10 @@ def report_progress(id, q, task_id, p, i_status):
         return HttpResponse('')
     device_task = SnsTaskDevice.objects.filter(device__label=id, task_id=task_id).first()
     if device_task:
+        if device_task.task.status == 0:
+            model_manager.mark_task_started(device_task)
+            api_helper.webhook_task(device_task.task, '开始执行')
+
         if p.isdigit() and device_task.progress != int(p) and p != '0' and q != '0':
             device_task.progress = int(p)
             device_task.save()
@@ -1457,3 +1457,31 @@ def change_js_version(ver):
 @api_func_anonymous
 def tag_names():
     return caches.get_tag_names()
+
+
+@api_func_anonymous
+def get_share_items(date, email, request):
+    if not email:
+        email = get_session_user(request)
+
+    the_user = model_manager.get_user(email)
+    date = timezone.make_aware(datetime.strptime(date, '%Y-%m-%d')) if date else timezone.now()
+    date = date.replace(microsecond=0, second=0, hour=0, minute=0)
+
+    ids = [x.cutt_user_id for x in the_user.appuser_set.all()]
+
+    items = {api_helper.parse_item_id(x.data) for x in
+             SnsTask.objects.filter(creator=the_user, type_id=3,
+                                    created_at__range=(date, date + timedelta(days=1)))}
+
+    q = model_manager.query(DeviceUser).filter(sourceItemId__in=items,
+                                               sourceUserId__in=ids).values('sourceItemId',
+                                                                            'sourceUserId').annotate(
+        Count('deviceUserId')).order_by('sourceItemId')
+    for x in q:
+        print(x)
+
+    return [{
+        'item_id': x.itemId,
+        'title': x.title,
+    } for x in ClipItem.objects.using(ClipItem.db_name()).filter(itemId__in=items)]

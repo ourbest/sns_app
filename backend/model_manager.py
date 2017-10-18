@@ -95,7 +95,7 @@ def check_task_status(task):
         task.save()
         from backend import api_helper
         api_helper.webhook_task(task, '执行完毕, 共耗时%s秒' % (
-        task.finish_at - task.started_at).total_seconds() if task.started_at else 'N/A')
+            task.finish_at - task.started_at).total_seconds() if task.started_at else 'N/A')
     elif task.status == 2:
         task.status = 0
         task.save()
@@ -273,3 +273,13 @@ def create_new_tag(name):
     for g in SnsGroup.objects.all():
         if name in g.group_name:
             GroupTag(tag=name, group=g).save()
+
+
+def query(clz):
+    return clz.objects.using(clz.db_name())
+
+
+def mark_task_started(device_task):
+    device_task.task.status = 1
+    device_task.task.started_at = timezone.now()
+    device_task.task.save()

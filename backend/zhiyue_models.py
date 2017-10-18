@@ -17,6 +17,10 @@ class ClipItem(models.Model):
     articleId = models.IntegerField()
     title = models.CharField(max_length=255)
 
+    @staticmethod
+    def db_name():
+        return 'zhiyue'
+
     class Meta:
         db_table = 'clip_ClipItem'
         managed = False
@@ -44,4 +48,61 @@ class ShareArticleLog(models.Model):
 
     class Meta:
         db_table = 'datasystem_ShareArticleLog'
+        managed = False
+
+
+class WeizhanCount(models.Model):
+    partnerId = models.IntegerField(primary_key=True)
+    pcPV = models.IntegerField()
+    mobilePV = models.IntegerField()
+    downPage = models.IntegerField()
+    appUser = models.IntegerField()
+    time = models.DateTimeField()
+    weizhanPv = models.IntegerField()
+
+    @staticmethod
+    def db_name():
+        return 'partner'
+
+    class Meta:
+        db_table = 'datasystem_WeizhanCount'
+        managed = False
+
+
+class DeviceUser(models.Model):
+    """
+      `partnerId` bigint(20) DEFAULT NULL,
+  `createTime` datetime DEFAULT NULL,
+  `location` varchar(255) DEFAULT NULL,
+  `deviceUserId` bigint(20) NOT NULL DEFAULT '0',
+  `deviceId` varchar(255) DEFAULT NULL,
+  `ip` varchar(255) DEFAULT NULL,
+  `deviceType` varchar(255) DEFAULT NULL,
+  `extStr` varchar(255) DEFAULT NULL,
+  `extStr2` varchar(255) DEFAULT NULL,
+  `city` varchar(255) DEFAULT NULL,
+  `updateTime` datetime DEFAULT NULL,
+  `source` varchar(255) DEFAULT NULL COMMENT 'http://jira.cutt.com/confluence/pages/viewpage.action?pageId=30834742',
+  `sourceItemId` bigint(20) DEFAULT NULL,
+  `sourceUserId` bigint(20) DEFAULT NULL,
+    """
+    partnerId = models.IntegerField()
+    createTime = models.DateTimeField()
+    location = models.CharField(max_length=255)
+    deviceUserId = models.IntegerField(primary_key=True)
+    deviceId = models.CharField(max_length=255)
+    ip = models.CharField(max_length=255)
+    deviceType = models.CharField(max_length=255)
+    extStr = models.CharField(max_length=255)
+    city = models.CharField(max_length=255)
+    source = models.CharField(max_length=255)
+    sourceItemId = models.IntegerField()
+    sourceUserId = models.IntegerField()
+
+    @staticmethod
+    def db_name():
+        return 'zhiyue'
+
+    class Meta:
+        db_table = 'datasystem_DeviceUser'
         managed = False
