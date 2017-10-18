@@ -1417,6 +1417,9 @@ def report_progress(id, q, task_id, p, i_status):
     if device_task:
         if device_task.status == 0:
             model_manager.mark_task_started(device_task)
+        elif device_task.status == 11 and p != '0':
+            device_task.status = 1
+            device_task.save()
 
         if p.isdigit() and device_task.progress != int(p) and p != '0' and q != '0':
             device_task.progress = int(p)
@@ -1437,8 +1440,6 @@ def report_progress(id, q, task_id, p, i_status):
         if device_task.status == 10:
             return HttpResponse('command=暂停')
         elif device_task.status == 11:
-            device_task.status = 1
-            device_task.save()
             return HttpResponse('command=继续')
         elif device_task.status == 12:
             model_manager.mark_task_cancel(device_task)
