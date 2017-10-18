@@ -353,9 +353,9 @@ def team_qun(request, i_page, i_size, keyword, owner, qq, phone):
 
 @api_func_anonymous
 def my_kicked_qun(request, i_page, i_size, keyword):
-    query = SnsGroupLost.objects.filter(sns_user__owner__email=get_session_user(request),
-                                        status=0).order_by("-pk").select_related("group", "sns_user",
-                                                                                 "sns_user__device")
+    query = SnsGroupLost.objects.filter(sns_user__owner__email=get_session_user(request)).order_by(
+        "-pk").select_related("group", "sns_user",
+                              "sns_user__device")
     if i_page != 0:
         if i_size == 0:
             i_size = 50
