@@ -22,7 +22,7 @@ from backend import model_manager, api_helper, caches
 from backend.api_helper import get_session_user, get_session_app, sns_user_to_json, device_to_json, qun_to_json
 from backend.models import User, App, SnsGroup, SnsGroupSplit, PhoneDevice, SnsUser, SnsUserGroup, SnsTaskDevice, \
     DeviceFile, SnsTaskType, SnsTask, ActiveDevice, SnsApplyTaskLog, DistTaskLog, UserActionLog, SnsGroupLost, GroupTag, \
-    TaskWorkingLog
+    TaskWorkingLog, AppUser
 from backend.zhiyue_models import ClipItem, DeviceUser
 
 
@@ -341,10 +341,12 @@ def team_qun(request, i_page, i_size, keyword, owner, qq, phone):
         query = query.filter(sns_user__login_name=qq)
 
     total = query.count()
+    distinct = query.values('sns_group_id').distinct().count()
     query = query[(i_page - 1) * i_size:i_page * i_size]
 
     return {
         'total': total,
+        'distinct': distinct,
         'items': [qun_to_json(x, owner=1) for x in query],
     }
 
@@ -382,7 +384,10 @@ def my_qun_cnt(request, qq, phone, tag):
     if tag:
         query = query.filter(sns_group_id__in=[x.group_id for x in GroupTag.objects.filter(tag=tag)])
 
-    return str(query.count())
+    return {
+        'total': query.count(),
+        'distinct': query.values('sns_group_id').distinct().count()
+    }
 
 
 @api_func_anonymous
@@ -1433,8 +1438,9 @@ def report_progress(id, q, task_id, p, i_status):
             twl.save()
 
         if i_status == 1:
-            model_manager.mark_task_cancel(device_task, notify=False)
-            api_helper.webhook(device_task, '任务出现异常，本机下线，请检查日志', force=True)
+            if device_task.status != 3:
+                model_manager.mark_task_cancel(device_task, notify=False)
+                api_helper.webhook(device_task, '任务出现异常，本机下线，请检查日志', force=True)
 
         ad = model_manager.get_active_device(device_task.device)
         if not ad:
@@ -1493,3 +1499,14 @@ def get_share_items(date, email, request):
         'item_id': x.itemId,
         'title': x.title,
     } for x in ClipItem.objects.using(ClipItem.db_name()).filter(itemId__in=items)]
+
+
+@api_func_anonymous
+def user_majia(request):
+    return {
+        'items': [{
+            'id': x.cutt_user_id,
+            'name': x.name,
+            'type': '微信' if x.type == 1 else 'QQ'
+        } for x in AppUser.objects.filter(user__email=get_session_user(request))]
+    }
