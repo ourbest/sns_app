@@ -279,7 +279,7 @@ def merge_task_log(task, log_content):
 
 def merge_task_result(task, result_content):
     file_path = './logs/result/%s.txt' % task.id
-    with open(file_path, "at") as file:
+    with open(file_path, 'at', encoding='utf-8') as file:
         file.write(result_content)
         file.write('\n')
 

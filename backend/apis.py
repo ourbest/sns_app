@@ -109,7 +109,7 @@ def _after_upload(device_task, task_id, tmp_file, device, file_type):
             if device_task:
                 logger.info('The type is %s', device_task.task.type_id)
                 if device_task.task.type_id == 4:  # 统计
-                    import_qun_stat(upload_file_content, device.label)
+                    import_qun_stat(upload_file_content, device.label, device_task.status)
                 elif device_task.task.type_id == 1:  # 查群
                     logger.info('查群结果')
                     import_qun(device_task.task.app_id, upload_file_content, None, device_task.device.owner.email)
@@ -120,7 +120,7 @@ def _after_upload(device_task, task_id, tmp_file, device, file_type):
                 api_helper.merge_task_result(device_task.task, upload_file_content)
 
             if task_id == 'stat':
-                import_qun_stat(upload_file_content, None)
+                import_qun_stat(upload_file_content, None, 2)
             elif task_id == 'qun':
                 import_qun(device.owner.app_id, upload_file_content, None, device.owner.email)
     os.remove(tmp_file)
@@ -713,7 +713,7 @@ def import_useless_qun(ids):
 
 
 @api_func_anonymous
-def import_qun_stat(ids, device_id):
+def import_qun_stat(ids, device_id, status):
     """
     导入群的统计数据
     这个是完整的，如果之前在的群没了，说明被踢了
@@ -721,6 +721,9 @@ def import_qun_stat(ids, device_id):
     :return:
     """
     logger.info('import stat of %s', device_id)
+    if not status:
+        status = 2
+
     to_save = defaultdict(list)
     total = 0
     for line in ids.split('\n'):
@@ -774,8 +777,8 @@ def import_qun_stat(ids, device_id):
                         qun = SnsGroup(group_id=qun_num, group_name=qun_name, type=0, app_id=sns_user.app_id,
                                        group_user_count=qun_user_cnt, status=2, created_at=timezone.now(),
                                        from_user_id=device.owner_id)
-                        model_manager.process_tag(qun)
                         qun.save()
+                        model_manager.process_tag(qun)
                     else:
                         if qun.status != 2:
                             qun.status = 2
@@ -797,16 +800,17 @@ def import_qun_stat(ids, device_id):
                     qun.group_user_count = qun_user_cnt
                     qun.save()
 
-            for group in all_groups:
-                lost = 0
-                if group.sns_group_id not in all_group_ids:
-                    # 被踢了
-                    model_manager.set_qun_kicked(group)
-                    lost += 1
-                logger.info("total lost %s", lost)
+            if status == 2:
+                for group in all_groups:
+                    lost = 0
+                    if group.sns_group_id not in all_group_ids:
+                        # 被踢了
+                        model_manager.set_qun_kicked(group)
+                        lost += 1
+                    logger.info("total lost %s", lost)
 
-                if lost:
-                    model_manager.deal_kicked(device.owner)
+                    if lost:
+                        model_manager.deal_kicked(device.owner)
 
     logger.info('Import done total %s', total)
 

@@ -184,7 +184,7 @@ def set_qun_kicked(sns_user_group):
     :param sns_user_group:
     :return:
     """
-    logger.info('群%s被踢了' % sns_user_group.sns_group_id)
+    logger.info('群%s被踢了', sns_user_group.sns_group_id)
     SnsGroupLost(group_id=sns_user_group.sns_group_id, sns_user=sns_user_group.sns_user).save()
     # SnsGroupSplit.objects.filter(group_id=group.group_id, status__gte=0).update(status=-1)
     SnsGroupSplit.objects.filter(group_id=sns_user_group.sns_group_id).delete()
@@ -264,6 +264,7 @@ def process_tag(qun):
     for tag in tags:
         if tag not in old and tag in qun.group_name:
             GroupTag(tag=tag, group=qun).save()
+            old.add(tag)
 
 
 def create_new_tag(name):
