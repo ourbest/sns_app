@@ -10,6 +10,7 @@ from backend import caches
 from backend.models import PhoneDevice, SnsTaskType, App, User, ActiveDevice, SnsUser, SnsGroup, UserAuthApp, \
     MenuItemPerm, SnsGroupLost, Tag, GroupTag
 from backend.models import SnsUserGroup, SnsGroupSplit
+from backend.zhiyue_models import AdminPartnerUser
 
 
 def get_phone(label):
@@ -278,7 +279,10 @@ def create_new_tag(name):
 
 
 def query(clz):
-    return clz.objects.using(clz.db_name())
+    name = 'zhiyue'
+    if hasattr(clz, 'db_name'):
+        name = clz.db_name()
+    return clz.objects.using(name)
 
 
 def mark_task_started(device_task):

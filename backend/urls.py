@@ -86,6 +86,7 @@ urlpatterns = [
     url(r'^team/qq$', apis.team_qq),
     url(r'^team/qun', apis.team_qun),
     url(r'^team/tasks', apis.team_tasks),
+    url(r'^team/summary/qun', apis.sum_team_qun),
 
     url(r'^tmp', apis.temp_func),
     url(r'^import/result$', apis.re_import),
@@ -94,6 +95,7 @@ urlpatterns = [
     url(r'^zhiyue/share', zhiyue.user_share),
     url(r'^zhiyue/title', zhiyue.get_url_title),
     url(r'^zhiyue/stat', zhiyue.count_user_sum),
+    url(r'^zhiyue/majia', zhiyue.get_user_majia),
 
     # internal
     url(r'^change/ver', apis.change_js_version)

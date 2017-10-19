@@ -1101,13 +1101,14 @@ def apps(request):
 
 
 @api_func_anonymous
-def app_summary(app_id):
+def app_summary(app_id, request):
     app = App.objects.filter(app_id=app_id).first()
     if app:
         cnt = SnsGroup.objects.filter(app=app).aggregate(Sum('group_user_count'))
         members = cnt['group_user_count__sum']
-        cnt2 = SnsUserGroup.objects.filter(sns_user__app=app).aggregate(Sum('sns_group__group_user_count'))
-        members2 = cnt2['sns_group__group_user_count__sum']
+        # cnt2 = SnsUserGroup.objects.filter(sns_user__app=app, status=0).aggregate(Sum('sns_group__group_user_count'))
+        # members2 = cnt2['sns_group__group_user_count__sum']
+        t = sum_app_team(app_id)
         return {
             'name': app.app_name,
             'qun_scan': SnsGroup.objects.filter(app=app).count(),
@@ -1116,8 +1117,8 @@ def app_summary(app_id):
             'total_qq': SnsUser.objects.filter(type=0, app=app).count(),
             'total_wx': SnsUser.objects.filter(type=1, app=app).count(),
             'total_device': PhoneDevice.objects.filter(owner__app=app).count(),
-            'qun_join': SnsUserGroup.objects.filter(sns_user__app=app).count(),
-            'qun_join_members': members2 if members2 else 0
+            'qun_join': t['count'],
+            'qun_join_members': t['sum']
         }
 
 
@@ -1579,3 +1580,40 @@ def add_user_majia(i_cutt_id, i_type, request):
     AppUser(cutt_user_id=i_cutt_id, type=i_type, user=user, name=zhiyue_user.name).save()
 
     return 'ok'
+
+
+@api_func_anonymous
+def sum_team_qun(request):
+    app = get_session_app(request)
+
+    return sum_app_team(app)
+
+
+def sum_app_team(app):
+    query = SnsGroup.objects.filter(app_id=app) \
+        .extra(where=['exists (select 1 from backend_snsusergroup '
+                      'where status=0 and sns_group_id=backend_snsgroup.group_id)'])
+
+    return {
+        'sum': query.aggregate(Sum('group_user_count'))['group_user_count__sum'],
+        'total': SnsUserGroup.objects.filter(sns_user__app_id=app, status=0).count(),
+        'count': query.count(),
+        'users': [
+            sum_app_user(app, x.id, lambda y: y.update({'name': x.name})) for x in User.objects.filter(app_id=app)
+        ]
+    }
+
+
+def sum_app_user(app, user_id, callback=None):
+    query = SnsGroup.objects.filter(app_id=app) \
+        .extra(where=['exists (select 1 from backend_snsusergroup '
+                      'where status=0 and sns_user_id=%s '
+                      'and sns_group_id=backend_snsgroup.group_id)' % user_id])
+    ret = {
+        'sum': query.aggregate(Sum('group_user_count'))['group_user_count__sum'],
+        'total': SnsUserGroup.objects.filter(sns_user__app_id=app, sns_user__owner_id=user_id, status=0).count(),
+        'count': query.count(),
+    }
+    if callback:
+        callback(ret)
+    return ret

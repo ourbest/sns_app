@@ -6,7 +6,8 @@ from dj.utils import api_func_anonymous
 
 from backend import api_helper, model_manager
 from backend.api_helper import get_session_app
-from backend.zhiyue_models import ShareArticleLog, ClipItem, WeizhanCount, HighValueUser
+from backend.models import AppUser
+from backend.zhiyue_models import ShareArticleLog, ClipItem, WeizhanCount, HighValueUser, AdminPartnerUser
 
 
 @api_func_anonymous
@@ -90,3 +91,27 @@ def count_user_sum(email, date, request):
         'users': x.appUserNum,
     } for x in model_manager.query(HighValueUser).filter(partnerId=the_user.app_id, time=date, userType=2,
                                                          userId__in=[x.cutt_user_id for x in cutt_users])]
+
+
+@api_func_anonymous
+def get_user_majia(request):
+    user = api_helper.get_login_user(request)
+
+    cutt = {x.user_id: x.user.name for x in model_manager.query(AdminPartnerUser).select_related('user')
+        .filter(loginUser=api_helper.get_session_user(request), partnerId=get_session_app(request))}
+
+    for x in user.appuser_set.all():
+        if x.cutt_user_id in cutt:
+            if x.name != cutt[x.cutt_user_id]:
+                x.name = cutt[x.cutt_user_id]
+                x.save()
+            del cutt[x.cutt_user_id]
+
+    for k, v in cutt.items():
+        AppUser(user=user, name=v, type=2, cutt_user_id=k).save()
+
+    return [{
+        'id': x.cutt_user_id,
+        'name': x.name,
+        'type': x.type,
+    } for x in user.appuser_set.all()]

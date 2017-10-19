@@ -396,3 +396,18 @@ class TaskWorkingLog(models.Model):
 
     class Meta:
         unique_together = ('device_task', 'account')
+
+
+class UserDailyStat(models.Model):
+    """
+    用户马甲列表
+    """
+    report_date = models.CharField(max_length=20)
+    app = models.ForeignKey(App)
+    user = models.ForeignKey(User)
+    qq_pv = models.IntegerField()
+    wx_pv = models.IntegerField()
+    qq_down = models.IntegerField()
+    wx_down = models.IntegerField()
+    qq_install = models.IntegerField()
+    wx_install = models.IntegerField()

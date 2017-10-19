@@ -137,6 +137,20 @@ class HighValueUser(models.Model):
         managed = False
 
 
+class AdminPartnerUser(models.Model):
+    loginUser = models.CharField(max_length=255)
+    user = models.ForeignKey(ZhiyueUser, db_column='userId', primary_key=True)
+    partnerId = models.IntegerField()
+
+    @staticmethod
+    def db_name():
+        return 'zhiyue'
+
+    class Meta:
+        db_table = 'partner_AdminPartnerUser'
+        managed = False
+
+
 ITEM_TYPES = {
     'article-mochuang': '文章页魔窗',
     'article-down': '文章页连接下载',
