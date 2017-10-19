@@ -12,7 +12,8 @@ from dj import times
 from dj.utils import api_func_anonymous, api_error
 from django.conf import settings
 from django.core.files.uploadedfile import TemporaryUploadedFile
-from django.db.models import Sum, connections
+from django.db.models import Sum
+
 from django.http import HttpResponseRedirect, HttpResponse
 from django.utils import timezone
 from logzero import logger
@@ -1529,6 +1530,7 @@ def get_share_items(date, email, request):
     return [{
         'item_id': x.itemId,
         'title': x.title,
+        'weizhan': data.get('%s_%s' % (x.itemId, 'article'), 0),
     } for x in ClipItem.objects.using(ClipItem.db_name()).filter(itemId__in=items)]
 
 
