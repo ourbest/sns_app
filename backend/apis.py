@@ -12,8 +12,8 @@ from dj import times
 from dj.utils import api_func_anonymous, api_error
 from django.conf import settings
 from django.core.files.uploadedfile import TemporaryUploadedFile
+from django.db import connections
 from django.db.models import Sum
-
 from django.http import HttpResponseRedirect, HttpResponse
 from django.utils import timezone
 from logzero import logger
