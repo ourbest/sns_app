@@ -296,6 +296,17 @@ def team_qq(request):
 
 
 @api_func_anonymous
+def team_qun_stat(request):
+    app_id = get_session_app(request)
+    total = SnsUserGroup.objects.filter(sns_user__owner__app=app_id, status=0).count()
+    distinct = SnsUserGroup.objects.filter(sns_user__owner__app=app_id, status=0).values(
+        'sns_group').distinct().count()
+    total_user = SnsGroup.objects.filter(app_id=app_id).extra(where=["""
+    NOT EXISTS (SELECT 1 FROM backend_snsusergroup g WHERE status = 0 and g.parent_id = backend_snsgroup.id)
+"""])
+
+
+@api_func_anonymous
 def my_qun(request, i_page, i_size, keyword, qq, phone, tag):
     query = SnsUserGroup.objects.filter(sns_user__owner__email=get_session_user(request),
                                         status=0).select_related("sns_group", "sns_user", "sns_user__device")
@@ -1416,14 +1427,14 @@ def re_import(i_file_id):
 
 
 @api_func_anonymous
-def report_progress(id, q, task_id, p, i_status):
+def report_progress(id, q, task_id, p, i_status, i_r):
     if not id or not q or not task_id:
         return HttpResponse('')
     device_task = SnsTaskDevice.objects.filter(device__label=id, task_id=task_id).first()
     if device_task:
         if device_task.status == 0:
             model_manager.mark_task_started(device_task)
-        elif device_task.status == 11 and p != '0':
+        elif device_task.status in (11, 12) and p != '0' and i_r == 1:
             device_task.status = 1
             device_task.save()
 
