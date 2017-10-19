@@ -107,6 +107,32 @@ class DeviceUser(models.Model):
         db_table = 'datasystem_DeviceUser'
         managed = False
 
+
+class HighValueUser(models.Model):
+    name = models.CharField(max_length=255)
+    userId = models.IntegerField(primary_key=True)
+    deviceUserId = models.IntegerField()
+    partnerId = models.IntegerField()
+    shareNum = models.IntegerField()
+    weizhanNum = models.IntegerField()
+    downPageNum = models.IntegerField()
+    appUserNum = models.IntegerField()
+    commentNum = models.IntegerField()
+    agreeNum = models.IntegerField()
+    viewNum = models.IntegerField()
+    secondShareNum = models.IntegerField()
+    userType = models.IntegerField(help_text='userType=1 内容产生用户 ，userType=2 内容传播用户')
+    time = models.DateTimeField()
+
+    @staticmethod
+    def db_name():
+        return 'partner'
+
+    class Meta:
+        db_table = 'datasystem_HighValueUser'
+        managed = False
+
+
 ITEM_TYPES = {
     'article-mochuang': '文章页魔窗',
     'article-down': '文章页连接下载',
