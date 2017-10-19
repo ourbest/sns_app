@@ -1520,17 +1520,33 @@ def get_share_items(date, email, request):
                 ','.join(map(str, items)), ','.join(map(str, ids)), times.to_date_str(date),
                 times.to_date_str(date_end))
 
+    device_user_query = 'select sourceItemId, count(1) as cnt from datasystem_DeviceUser ' \
+                        'where sourceItemId in (%s) and sourceUserId in (%s) ' \
+                        'and createTime between \'%s\' AND \'%s\' GROUP BY sourceItemId' % (
+                            ','.join(map(str, items)), ','.join(map(str, ids)), times.to_date_str(date),
+                            times.to_date_str(date_end))
+
     data = {}
     with connections['zhiyue'].cursor() as cursor:
         cursor.execute(query)
         rows = cursor.fetchall()
         for row in rows:
-            data['%s_%s' % (row['itemId'], row['itemType'])] = row['cnt']
+            data['%s_%s' % (row[0], row[1])] = row[2]
+
+        cursor.execute(device_user_query)
+        rows = cursor.fetchall()
+        for row in rows:
+            data['%s_du' % (row[0],)] = row[1]
 
     return [{
         'item_id': x.itemId,
         'title': x.title,
         'weizhan': data.get('%s_%s' % (x.itemId, 'article'), 0),
+        'reshare': data.get('%s_%s' % (x.itemId, 'article-reshare'), 0),
+        'download': data.get('%s_%s' % (x.itemId, 'article-down'), 0)
+                    + data.get('%s_%s' % (x.itemId, 'article-mochuang'), 0)
+                    + data.get('%s_%s' % (x.itemId, 'tongji-down'), 0),
+        'users': data.get('%s_du' % x.itemId, 0),
     } for x in ClipItem.objects.using(ClipItem.db_name()).filter(itemId__in=items)]
 
 
