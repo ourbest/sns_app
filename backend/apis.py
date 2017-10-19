@@ -12,7 +12,7 @@ from dj import times
 from dj.utils import api_func_anonymous, api_error
 from django.conf import settings
 from django.core.files.uploadedfile import TemporaryUploadedFile
-from django.db.models import Sum, Count
+from django.db.models import Sum
 from django.http import HttpResponseRedirect, HttpResponse
 from django.utils import timezone
 from logzero import logger
@@ -23,7 +23,7 @@ from backend.api_helper import get_session_user, get_session_app, sns_user_to_js
 from backend.models import User, App, SnsGroup, SnsGroupSplit, PhoneDevice, SnsUser, SnsUserGroup, SnsTaskDevice, \
     DeviceFile, SnsTaskType, SnsTask, ActiveDevice, SnsApplyTaskLog, DistTaskLog, UserActionLog, SnsGroupLost, GroupTag, \
     TaskWorkingLog, AppUser
-from backend.zhiyue_models import ClipItem, DeviceUser
+from backend.zhiyue_models import ClipItem
 
 
 @api_func_anonymous
@@ -1434,9 +1434,11 @@ def report_progress(id, q, task_id, p, i_status, i_r):
     if device_task:
         if device_task.status == 0:
             model_manager.mark_task_started(device_task)
-        elif device_task.status in (11, 12) and p != '0' and i_r == 1:
+        elif device_task.status in (10, 11, 12) and p != '0' and i_r == 1:
             device_task.status = 1
             device_task.save()
+        elif device_task.status == 12:
+            model_manager.mark_task_cancel(device_task)
 
         if p.isdigit() and device_task.progress != int(p) and p != '0' and q != '0':
             device_task.progress = int(p)
@@ -1465,8 +1467,7 @@ def report_progress(id, q, task_id, p, i_status, i_r):
             return HttpResponse('command=暂停')
         elif device_task.status == 11:
             return HttpResponse('command=继续')
-        elif device_task.status == 12:
-            model_manager.mark_task_cancel(device_task)
+        elif device_task.status == 12 or device_task.status == 3:
             return HttpResponse('command=停止')
 
     return HttpResponse('')
@@ -1493,18 +1494,18 @@ def get_share_items(date, email, request):
     date = timezone.make_aware(datetime.strptime(date, '%Y-%m-%d')) if date else timezone.now()
     date = date.replace(microsecond=0, second=0, hour=0, minute=0)
 
-    ids = [x.cutt_user_id for x in the_user.appuser_set.all()]
+    # ids = [x.cutt_user_id for x in the_user.appuser_set.all()]
 
     items = {api_helper.parse_item_id(x.data) for x in
              SnsTask.objects.filter(creator=the_user, type_id=3,
                                     created_at__range=(date, date + timedelta(days=1)))}
 
-    q = model_manager.query(DeviceUser).filter(sourceItemId__in=items,
-                                               sourceUserId__in=ids).values('sourceItemId',
-                                                                            'sourceUserId').annotate(
-        Count('deviceUserId')).order_by('sourceItemId')
-    for x in q:
-        print(x)
+    # q = model_manager.query(DeviceUser).filter(sourceItemId__in=items,
+    #                                            sourceUserId__in=ids).values('sourceItemId',
+    #                                                                         'sourceUserId').annotate(
+    #     Count('deviceUserId')).order_by('sourceItemId')
+    # for x in q:
+    #     print(x)
 
     return [{
         'item_id': x.itemId,
