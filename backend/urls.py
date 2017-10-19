@@ -37,6 +37,7 @@ urlpatterns = [
     url(r'^my/kicked$', apis.my_kicked_qun),
     url(r'^my/pending/remove$', apis.my_pending_remove),
     url(r'^my/majia$', apis.user_majia),
+    url(r'^my/majia/add$', apis.add_user_majia),
 
     url(r'^device/qun$', apis.device_qun),
     url(r'^device/create$', apis.device_create),

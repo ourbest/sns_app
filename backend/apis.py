@@ -24,7 +24,7 @@ from backend.api_helper import get_session_user, get_session_app, sns_user_to_js
 from backend.models import User, App, SnsGroup, SnsGroupSplit, PhoneDevice, SnsUser, SnsUserGroup, SnsTaskDevice, \
     DeviceFile, SnsTaskType, SnsTask, ActiveDevice, SnsApplyTaskLog, DistTaskLog, UserActionLog, SnsGroupLost, GroupTag, \
     TaskWorkingLog, AppUser
-from backend.zhiyue_models import ClipItem
+from backend.zhiyue_models import ClipItem, ZhiyueUser
 
 
 @api_func_anonymous
@@ -1527,16 +1527,21 @@ def get_share_items(date, email, request):
                             times.to_date_str(date_end))
 
     data = {}
-    with connections['zhiyue'].cursor() as cursor:
-        cursor.execute(query)
-        rows = cursor.fetchall()
-        for row in rows:
-            data['%s_%s' % (row[0], row[1])] = row[2]
 
-        cursor.execute(device_user_query)
-        rows = cursor.fetchall()
-        for row in rows:
-            data['%s_du' % (row[0],)] = row[1]
+    if not ids:
+        return []
+
+    if items:
+        with connections['zhiyue'].cursor() as cursor:
+            cursor.execute(query)
+            rows = cursor.fetchall()
+            for row in rows:
+                data['%s_%s' % (row[0], row[1])] = row[2]
+
+            cursor.execute(device_user_query)
+            rows = cursor.fetchall()
+            for row in rows:
+                data['%s_du' % (row[0],)] = row[1]
 
     return [{
         'item_id': x.itemId,
@@ -1559,3 +1564,18 @@ def user_majia(request):
             'type': '微信' if x.type == 1 else 'QQ'
         } for x in AppUser.objects.filter(user__email=get_session_user(request))]
     }
+
+
+@api_func_anonymous
+def add_user_majia(i_cutt_id, i_type, request):
+    if not i_cutt_id:
+        return 'none'
+    user = api_helper.get_login_user(request)
+    zhiyue_user = model_manager.query(ZhiyueUser).filter(userId=i_cutt_id).first()
+
+    if not zhiyue_user:
+        api_error(101, '用户不存在')
+
+    AppUser(cutt_user_id=i_cutt_id, type=i_type, user=user, name=zhiyue_user.name).save()
+
+    return 'ok'

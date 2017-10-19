@@ -6,6 +6,10 @@ class ZhiyueUser(models.Model):
     name = models.CharField(max_length=50)
     userId = models.IntegerField(primary_key=True)
 
+    @staticmethod
+    def db_name():
+        return 'zhiyue'
+
     class Meta:
         db_table = 'pojo_ZhiyueUser'
         managed = False
