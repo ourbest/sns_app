@@ -12,7 +12,7 @@ from dj import times
 from dj.utils import api_func_anonymous, api_error
 from django.conf import settings
 from django.core.files.uploadedfile import TemporaryUploadedFile
-from django.db.models import Sum
+from django.db.models import Sum, connections
 from django.http import HttpResponseRedirect, HttpResponse
 from django.utils import timezone
 from logzero import logger
@@ -71,7 +71,10 @@ def upload(type, id, task_id, content, name, request):
             if device_task:
                 logger.debug("find device task %s" % device_task.id)
                 if device_task.status not in (3, 2):
-                    model_manager.mark_task_finish(device_task)
+                    if device_task.status == 12:
+                        model_manager.mark_task_cancel(device_task)
+                    else:
+                        model_manager.mark_task_finish(device_task)
 
                 device_file = DeviceFile(device=device, task_id=device_task.task_id, qiniu_key=key,
                                          file_name=name, type=type, device_task=device_task)
@@ -1497,18 +1500,31 @@ def get_share_items(date, email, request):
     date = timezone.make_aware(datetime.strptime(date, '%Y-%m-%d')) if date else timezone.now()
     date = date.replace(microsecond=0, second=0, hour=0, minute=0)
 
-    # ids = [x.cutt_user_id for x in the_user.appuser_set.all()]
+    date_end = date + timedelta(days=3)
+    ids = [x.cutt_user_id for x in the_user.appuser_set.all()]
 
     items = {api_helper.parse_item_id(x.data) for x in
              SnsTask.objects.filter(creator=the_user, type_id=3,
                                     created_at__range=(date, date + timedelta(days=1)))}
 
-    # q = model_manager.query(DeviceUser).filter(sourceItemId__in=items,
+    # q = model_manager.query(Weizhan).filter(sourceItemId__in=items,
     #                                            sourceUserId__in=ids).values('sourceItemId',
     #                                                                         'sourceUserId').annotate(
     #     Count('deviceUserId')).order_by('sourceItemId')
     # for x in q:
     #     print(x)
+    query = 'SELECT itemId, itemType, count(1) as cnt FROM datasystem_WeizhanItemView ' \
+            'WHERE itemId in (%s) AND shareUserId in (%s) AND time BETWEEN \'%s\' AND \'%s\' ' \
+            'GROUP BY itemId, itemType' % (
+                ','.join(map(str, items)), ','.join(map(str, ids)), times.to_date_str(date),
+                times.to_date_str(date_end))
+
+    data = {}
+    with connections['zhiyue'].cursor() as cursor:
+        cursor.execute(query)
+        rows = cursor.fetchall()
+        for row in rows:
+            data['%s_%s' % (row['itemId'], row['itemType'])] = row['cnt']
 
     return [{
         'item_id': x.itemId,
