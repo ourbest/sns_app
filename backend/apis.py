@@ -1437,7 +1437,7 @@ def report_progress(id, q, task_id, p, i_status, i_r):
         elif device_task.status in (10, 11, 12) and p != '0' and i_r == 1:
             device_task.status = 1
             device_task.save()
-        elif device_task.status == 12:
+        elif device_task.status == 12 and i_r == 3:
             model_manager.mark_task_cancel(device_task)
 
         if p.isdigit() and device_task.progress != int(p) and p != '0' and q != '0':
