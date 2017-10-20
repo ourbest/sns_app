@@ -478,7 +478,8 @@ def my_pending_qun(request, i_size, i_page, keyword, i_export):
         ret = api_helper.sns_group_to_json(group)
         ret['apply_status'] = group_splits.get(group.group_id).status
         phone = group_splits.get(group.group_id).phone
-        ret['device'] = phone.friend_text  # '%s%s' % (phone.label, '' if not phone.memo else '[%s]' % phone.memo)
+        if phone:
+            ret['device'] = phone.friend_text  # '%s%s' % (phone.label, '' if not phone.memo else '[%s]' % phone.memo)
         ret['internal_id'] = group_splits.get(group.group_id).id
         return ret
 
@@ -592,6 +593,31 @@ def qq_create(request, qq, name, phone, password):
                     type=0, phone=phone, owner=owner, app_id=owner.app_id).save()
 
     return "ok"
+
+
+@api_func_anonymous
+def qq_drop(request, qq):
+    """
+    放弃QQ号，将相关群放入资源池
+    :param request:
+    :param qq:
+    :return:
+    """
+    db = model_manager.get_qq(qq)
+    # db.active = 0
+    db.status = -1
+    db.friend = 0
+    db.dist = 0
+    db.search = 0
+    db.save()
+
+    for group in db.snsusergroup_set.filter(status=0).select_related('sns_group'):
+        group.sns_group.status = 0
+        group.sns_group.save()
+
+    split_qq(None, request)
+
+    return 'ok'
 
 
 @api_func_anonymous
@@ -976,6 +1002,9 @@ def split_qq(app, request):
         if 0 < x.group_user_count <= 10:
             x.status = -1
             x.save()
+            continue
+
+        if x.snsgroupsplit_set.filter(status__in=(0, 1)).count():
             continue
 
         x.status = 1
@@ -1606,8 +1635,9 @@ def sum_app_team(app):
 
 def sum_app_user(app, user_id, callback=None):
     query = SnsGroup.objects.filter(app_id=app) \
-        .extra(where=['exists (select 1 from backend_snsusergroup '
-                      'where status=0 and sns_user_id=%s '
+        .extra(where=['exists (select 1 from backend_snsusergroup, backend_snsuser '
+                      'where backend_snsusergroup.status=0 and '
+                      'sns_user_id=backend_snsuser.id and backend_snsuser.owner_id=%s '
                       'and sns_group_id=backend_snsgroup.group_id)' % user_id])
     ret = {
         'sum': query.aggregate(Sum('group_user_count'))['group_user_count__sum'],

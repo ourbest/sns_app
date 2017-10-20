@@ -1,6 +1,6 @@
 from django.conf.urls import url
 
-from backend import apis, users, zhiyue
+from backend import apis, users, zhiyue, tasks
 
 app_name = 'backend'
 urlpatterns = [
@@ -46,6 +46,9 @@ urlpatterns = [
     url(r'^device/transfer$', apis.device_transfer),
 
     url(r'^qq/create$', apis.qq_create),
+
+    url(r'^qq/drop$', apis.qq_drop),
+
     url(r'^split/qq$', apis.split_qq),
     url(r'^users$', apis.users),
     url(r'^devices$', apis.devices),
@@ -70,6 +73,7 @@ urlpatterns = [
     url(r'^task/devices$', apis.task_devices),
     url(r'^task/files$', apis.task_files),
     url(r'^file/content$', apis.file_content),
+    url(r'^task/logs$', tasks.work_logs),
     url(r'^image$', apis.file_content),
     url(r'^user/info$', users.user_info),
     url(r'^user/update$', users.update_user_info),
@@ -81,7 +85,7 @@ urlpatterns = [
 
     url(r'^share/items$', apis.get_share_items),
 
-    #===team
+    # ===team
     url(r'^team/devices$', apis.team_devices),
     url(r'^team/qq$', apis.team_qq),
     url(r'^team/qun', apis.team_qun),

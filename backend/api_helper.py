@@ -38,6 +38,7 @@ def sns_user_to_json(sns_user, owner=0):
         'dist': sns_user.dist,
         'search': sns_user.search,
         'friend': sns_user.friend,
+        'status': sns_user.status,
     } if sns_user else {}
 
     if sns_user and owner:
