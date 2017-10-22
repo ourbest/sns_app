@@ -38,6 +38,7 @@ urlpatterns = [
     url(r'^my/pending/remove$', apis.my_pending_remove),
     url(r'^my/majia$', apis.user_majia),
     url(r'^my/majia/add$', apis.add_user_majia),
+    url(r'^my/majia/type$', users.update_majia_type),
 
     url(r'^device/qun$', apis.device_qun),
     url(r'^device/create$', apis.device_create),

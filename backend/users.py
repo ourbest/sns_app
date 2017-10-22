@@ -1,7 +1,7 @@
 from dj.utils import api_func_anonymous, api_error
 
 from backend import api_helper, model_manager
-from backend.models import UserDelegate, User
+from backend.models import UserDelegate, User, AppUser
 
 
 @api_func_anonymous
@@ -76,5 +76,15 @@ def set_delegates(delegates, request):
                 pass
     else:
         UserDelegate.objects.filter(owner=user).delete()
+
+    return 'ok'
+
+
+@api_func_anonymous
+def update_majia_type(i_id, i_type):
+    db = AppUser.objects.filter(cutt_user_id=i_id).first()
+    if db:
+        db.type = i_type
+        db.save()
 
     return 'ok'
