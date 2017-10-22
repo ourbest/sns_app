@@ -6,7 +6,7 @@ from dj.utils import api_func_anonymous
 
 from backend import api_helper, model_manager
 from backend.api_helper import get_session_app
-from backend.models import AppUser
+from backend.models import AppUser, User
 from backend.zhiyue_models import ShareArticleLog, ClipItem, WeizhanCount, HighValueUser, AdminPartnerUser
 
 
@@ -74,12 +74,15 @@ def count_user_sum(email, date, request):
     :return:
     """
     the_user = api_helper.get_login_user(request, email)
+    return get_user_stat(date, the_user)
+
+
+def get_user_stat(date, the_user):
     cutt_users = list(the_user.appuser_set.all())
     cutt_user_dict = {x.cutt_user_id: x for x in cutt_users}
     date = times.localtime(
-        datetime.now().replace(hour=0, second=0, minute=0, microsecond=0) if not date else datetime.strptime(date,
-                                                                                                             '%Y-%m-%d'))
-
+        datetime.now().replace(hour=0, second=0,
+                               minute=0, microsecond=0) if not date else datetime.strptime(date, '%Y-%m-%d'))
     return [{
         'id': x.userId,
         'name': x.name,
@@ -115,3 +118,71 @@ def get_user_majia(request):
         'name': x.name,
         'type': x.type,
     } for x in user.appuser_set.all()]
+
+
+@api_func_anonymous
+def sum_team_dist(date, request):
+    app = get_session_app(request)
+    qq_stats = []
+    wx_stats = []
+    qq_sum = {
+        'share': 0,
+        'weizhan': 0,
+        'download': 0,
+        'reshare': 0,
+        'users': 0,
+        'name': '合计',
+    }
+
+    wx_sum = {
+        'share': 0,
+        'weizhan': 0,
+        'download': 0,
+        'reshare': 0,
+        'users': 0,
+        'name': '合计',
+    }
+    for user in User.objects.filter(app=app):
+        stats = get_user_stat(date, user)
+        qq_stat = {
+            'share': 0,
+            'weizhan': 0,
+            'download': 0,
+            'reshare': 0,
+            'users': 0,
+            'name': user.name,
+        }
+
+        qq_stats.append(qq_stat)
+        wx_stat = {
+            'share': 0,
+            'weizhan': 0,
+            'download': 0,
+            'reshare': 0,
+            'users': 0,
+            'name': user.name,
+        }
+
+        wx_stats.append(wx_stat)
+        for qq in stats:
+            stat = qq_stat if qq['type'] == 'QQ' else wx_stat
+            sum = qq_sum if qq['type'] == 'QQ' else wx_sum
+            stat['share'] += qq['share']
+            stat['weizhan'] += qq['weizhan']
+            stat['download'] += qq['download']
+            stat['reshare'] += qq['reshare']
+            stat['users'] += qq['users']
+
+            sum['share'] += qq_stat['share']
+            sum['weizhan'] += qq['weizhan']
+            sum['download'] += qq['download']
+            sum['reshare'] += qq['reshare']
+            sum['users'] += qq['users']
+
+    if len(qq_stats) > 1:
+        qq_stats.append(qq_sum)
+        wx_stats.append(wx_sum)
+    return {
+        'qq': qq_stats,
+        'wx': wx_stats,
+    }
