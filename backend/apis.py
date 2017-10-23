@@ -1462,20 +1462,13 @@ def re_import(i_file_id):
 
 @api_func_anonymous
 def report_progress(id, q, task_id, p, i_status, i_r):
+    response = HttpResponse('')
     if not id or not q or not task_id:
-        return HttpResponse('')
+        return response
     device_task = SnsTaskDevice.objects.filter(device__label=id, task_id=task_id).first()
     if device_task:
         if device_task.status == 0:
             model_manager.mark_task_started(device_task)
-        elif device_task.status in (10, 11, 12) and p != '0' and i_r == 1:
-            device_task.status = 1
-            device_task.save()
-        elif device_task.status != 10 and i_r == 2:
-            device_task.status = 10
-            device_task.save()
-        elif device_task.status == 12 and i_r == 3:
-            model_manager.mark_task_cancel(device_task)
 
         if p.isdigit() and device_task.progress != int(p) and p != '0' and q != '0':
             device_task.progress = int(p)
@@ -1501,13 +1494,22 @@ def report_progress(id, q, task_id, p, i_status, i_r):
         ad.save()
 
         if device_task.status == 10:
-            return HttpResponse('command=暂停')
+            response = HttpResponse('command=暂停')
         elif device_task.status == 11:
-            return HttpResponse('command=继续')
+            response = HttpResponse('command=继续')
         elif device_task.status == 12 or device_task.status == 3:
-            return HttpResponse('command=停止')
+            response = HttpResponse('command=停止')
 
-    return HttpResponse('')
+        if device_task.status == 11 and p != '0' and i_r == 1:
+            device_task.status = 1
+            device_task.save()
+        elif device_task.status < 10 and i_r == 2:
+            device_task.status = 10
+            device_task.save()
+        elif device_task.status == 12 and i_r == 3:
+            model_manager.mark_task_cancel(device_task)
+
+    return response
 
 
 @api_func_anonymous
