@@ -1538,7 +1538,7 @@ def get_share_items(date, email, request):
 
     items = {api_helper.parse_item_id(x.data) for x in
              SnsTask.objects.filter(creator=the_user, type_id=3,
-                                    created_at__range=(date, date + timedelta(days=1)))}
+                                    schedule_at__range=(date.date(), date.date() + timedelta(days=1)))}
 
     # q = model_manager.query(Weizhan).filter(sourceItemId__in=items,
     #                                            sourceUserId__in=ids).values('sourceItemId',

@@ -82,11 +82,17 @@ def _set_task_status(device_task, status):
     device_task.save()
     device_task.device.status = 0
     device_task.device.save()
+
     check_task_status(device_task.task)
 
 
 def check_task_status(task):
     in_prog = False
+
+    if not task.started_at:
+        task.started_at = timezone.now()
+        task.save()
+
     for x in task.snstaskdevice_set.all():
         if x.status <= 1:
             in_prog = True
