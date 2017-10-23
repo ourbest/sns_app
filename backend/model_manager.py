@@ -302,3 +302,8 @@ def mark_task_started(device_task):
     device_task.status = 1
     device_task.started_at = timezone.now()
     device_task.save()
+
+
+def is_phone_online(device):
+    return ActiveDevice.objects.filter(device=device).filter(
+        Q(active_at__gt=(timezone.now() - timedelta(seconds=300))) | Q(status=1)).first() is not None

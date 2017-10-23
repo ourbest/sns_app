@@ -304,7 +304,7 @@ def webhook(device_task, msg, force=0):
     if not force and (not user.notify or user.notify <= 1):
         return
 
-    msg = '%s：%s任务%s' % (device_task.device.friend_text, device_task.task.type.name, msg)
+    msg = '%s：%s %s' % (device_task.device.friend_text, device_task.task.type.name, msg)
     if device_task.task.type_id == 3:
         msg += ' URL: ' + extract_url(device_task.task.params)
 

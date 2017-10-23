@@ -1,6 +1,6 @@
 from django.conf.urls import url
 
-from backend import apis, users, zhiyue, tasks
+from backend import apis, users, zhiyue, tasks, daemons
 
 app_name = 'backend'
 urlpatterns = [
@@ -104,5 +104,6 @@ urlpatterns = [
     url(r'^zhiyue/majia', zhiyue.get_user_majia),
 
     # internal
-    url(r'^change/ver', apis.change_js_version)
+    url(r'^change/ver', apis.change_js_version),
+    url(r'^daemon/check', daemons.check_online_task),
 ]
