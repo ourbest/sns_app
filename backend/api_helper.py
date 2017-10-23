@@ -18,6 +18,10 @@ def get_session_user(request):
 
 
 def get_session_app(request):
+    app = request.GET.get('app')
+    if app:
+        return app
+
     email = get_session_user(request)
     user = User.objects.filter(email=email).first()
     if user:
