@@ -202,7 +202,7 @@ def show_open_link(request):
     else:
         info = re.findall(r'https?://.+?/weizhan/article/\d+/(\d+)/(\d+)', url)
         if info:
-            [aid, app] = info
+            [(aid, app)] = info
             url = 'comcuttapp%s://article?id=%s' % (aid, app)
 
     return HttpResponse('<a style="font-size: 10em" href="%s">open</a>' % url)
