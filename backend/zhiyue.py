@@ -3,6 +3,7 @@ from datetime import datetime
 
 from dj import times
 from dj.utils import api_func_anonymous
+from django.http import HttpResponse
 
 from backend import api_helper, model_manager
 from backend.api_helper import get_session_app
@@ -191,3 +192,17 @@ def sum_team_dist(date, request):
         'qq': qq_stats,
         'wx': wx_stats,
     }
+
+
+def show_open_link(request):
+    url = request.GET.get('url')
+
+    if not url:
+        url = 'comcuttapp965004://article?id=31412177424'
+    else:
+        info = re.findall(r'https?://.+?/weizhan/article/\d+/(\d+)/(\d+)', url)
+        if info:
+            [aid, app] = info
+            url = 'comcuttapp%s://article?id=%s' % (aid, app)
+
+    return HttpResponse('<a style="font-size: 10em" href="%s">open</a>' % url)

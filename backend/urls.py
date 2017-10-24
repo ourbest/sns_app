@@ -102,6 +102,7 @@ urlpatterns = [
     url(r'^zhiyue/title', zhiyue.get_url_title),
     url(r'^zhiyue/stat', zhiyue.count_user_sum),
     url(r'^zhiyue/majia', zhiyue.get_user_majia),
+    url(r'^zhiyue/link', zhiyue.show_open_link),
 
     # internal
     url(r'^change/ver', apis.change_js_version),
