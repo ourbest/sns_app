@@ -411,3 +411,17 @@ class UserDailyStat(models.Model):
     wx_down = models.IntegerField()
     qq_install = models.IntegerField()
     wx_install = models.IntegerField()
+
+
+class AppDailyStat(models.Model):
+    """
+    生活圈统计
+    """
+    report_date = models.CharField(max_length=20)
+    app = models.ForeignKey(App)
+    qq_pv = models.IntegerField()
+    wx_pv = models.IntegerField()
+    qq_down = models.IntegerField()
+    wx_down = models.IntegerField()
+    qq_install = models.IntegerField()
+    wx_install = models.IntegerField()

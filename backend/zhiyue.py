@@ -5,10 +5,10 @@ from dj import times
 from dj.utils import api_func_anonymous
 from django.http import HttpResponse
 
-from backend import api_helper, model_manager
+from backend import api_helper, model_manager, stats
 from backend.api_helper import get_session_app
-from backend.models import AppUser, User
-from backend.zhiyue_models import ShareArticleLog, ClipItem, WeizhanCount, HighValueUser, AdminPartnerUser
+from backend.models import AppUser, AppDailyStat, UserDailyStat
+from backend.zhiyue_models import ShareArticleLog, ClipItem, WeizhanCount, AdminPartnerUser
 
 
 @api_func_anonymous
@@ -75,26 +75,7 @@ def count_user_sum(email, date, request):
     :return:
     """
     the_user = api_helper.get_login_user(request, email)
-    return get_user_stat(date, the_user)
-
-
-def get_user_stat(date, the_user):
-    cutt_users = list(the_user.appuser_set.all())
-    cutt_user_dict = {x.cutt_user_id: x for x in cutt_users}
-    date = times.localtime(
-        datetime.now().replace(hour=0, second=0,
-                               minute=0, microsecond=0) if not date else datetime.strptime(date, '%Y-%m-%d'))
-    return [{
-        'id': x.userId,
-        'name': x.name,
-        'type': '微信' if 1 == cutt_user_dict.get(x.userId).type else 'QQ',
-        'share': x.shareNum,
-        'weizhan': x.weizhanNum,
-        'download': x.downPageNum,
-        'reshare': x.secondShareNum,
-        'users': x.appUserNum,
-    } for x in model_manager.query(HighValueUser).filter(partnerId=the_user.app_id, time=date, userType=2,
-                                                         userId__in=[x.cutt_user_id for x in cutt_users])]
+    return stats.get_user_stat(date, the_user)
 
 
 @api_func_anonymous
@@ -122,76 +103,12 @@ def get_user_majia(request):
 
 
 @api_func_anonymous
-def weekly_report_dist(date_from, date_to, request):
-    pass
-
-
-@api_func_anonymous
-def sum_team_dist(date, request):
+def sum_team_dist(date, request, include_sum):
     app = get_session_app(request)
-    qq_stats = []
-    wx_stats = []
-    qq_sum = {
-        'share': 0,
-        'weizhan': 0,
-        'download': 0,
-        'reshare': 0,
-        'users': 0,
-        'name': '合计',
-    }
-
-    wx_sum = {
-        'share': 0,
-        'weizhan': 0,
-        'download': 0,
-        'reshare': 0,
-        'users': 0,
-        'name': '合计',
-    }
-    for user in User.objects.filter(app=app):
-        stats = get_user_stat(date, user)
-        qq_stat = {
-            'share': 0,
-            'weizhan': 0,
-            'download': 0,
-            'reshare': 0,
-            'users': 0,
-            'name': user.name,
-        }
-
-        qq_stats.append(qq_stat)
-        wx_stat = {
-            'share': 0,
-            'weizhan': 0,
-            'download': 0,
-            'reshare': 0,
-            'users': 0,
-            'name': user.name,
-        }
-
-        wx_stats.append(wx_stat)
-        for qq in stats:
-            stat = qq_stat if qq['type'] == 'QQ' else wx_stat
-            sum = qq_sum if qq['type'] == 'QQ' else wx_sum
-            stat['share'] += qq['share']
-            stat['weizhan'] += qq['weizhan']
-            stat['download'] += qq['download']
-            stat['reshare'] += qq['reshare']
-            stat['users'] += qq['users']
-
-            sum['share'] += qq_stat['share']
-            sum['weizhan'] += qq['weizhan']
-            sum['download'] += qq['download']
-            sum['reshare'] += qq['reshare']
-            sum['users'] += qq['users']
-
-    if len(qq_stats) > 1:
-        qq_stats.append(qq_sum)
-        wx_stats.append(wx_sum)
-    return {
-        'qq': qq_stats,
-        'wx': wx_stats,
-    }
+    date = times.localtime(
+        datetime.now().replace(hour=0, second=0,
+                               minute=0, microsecond=0) if not date else datetime.strptime(date, '%Y-%m-%d'))
+    return stats.app_daily_stat(app, date, include_sum)
 
 
 def show_open_link(request):
@@ -206,3 +123,39 @@ def show_open_link(request):
             url = 'comcuttapp%s://article?id=%s' % (app, aid)
 
     return HttpResponse('<a style="font-size: 10em" href="%s">open</a>' % url)
+
+
+@api_func_anonymous
+def app_report(from_date, to_date, i_app):
+    if not from_date or not to_date:
+        return
+
+    return [{
+        'date': x.report_date,
+        'qq_pv': x.qq_pv,
+        'qq_down': x.qq_down,
+        'qq_install': x.qq_install,
+        'wx_pv': x.wx_pv,
+        'wx_down': x.wx_down,
+        'wx_install': x.wx_install,
+    } for x in AppDailyStat.objects.filter(report_date__range=(from_date, to_date),
+                                           app_id=i_app).order_by("-pk")]
+
+
+@api_func_anonymous
+def app_report_user(from_date, to_date):
+    if not from_date or not to_date:
+        return
+
+    return [{
+        'date': x.report_date,
+        'app': x.app.app_name,
+        'name': x.user.name,
+        'qq_pv': x.qq_pv,
+        'qq_down': x.qq_down,
+        'qq_install': x.qq_install,
+        'wx_pv': x.wx_pv,
+        'wx_down': x.wx_down,
+        'wx_install': x.wx_install,
+    } for x in UserDailyStat.objects.filter(report_date__range=(from_date, to_date))
+        .select_related('app', 'user').order_by("-pk")]

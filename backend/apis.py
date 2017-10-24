@@ -19,7 +19,7 @@ from django.utils import timezone
 from logzero import logger
 from qiniu import Auth, put_file, etag
 
-from backend import model_manager, api_helper, caches
+from backend import model_manager, api_helper, caches, daemons
 from backend.api_helper import get_session_user, get_session_app, sns_user_to_json, device_to_json, qun_to_json
 from backend.models import User, App, SnsGroup, SnsGroupSplit, PhoneDevice, SnsUser, SnsUserGroup, SnsTaskDevice, \
     DeviceFile, SnsTaskType, SnsTask, ActiveDevice, SnsApplyTaskLog, DistTaskLog, UserActionLog, SnsGroupLost, GroupTag, \
@@ -1339,6 +1339,15 @@ def my_tasks(request):
 
 
 @api_func_anonymous
+def team_users(request):
+    return [{
+        'id': x.id,
+        'email': x.email,
+        'name': x.name,
+    } for x in User.objects.filter(app_id=get_session_app(request), status=0)]
+
+
+@api_func_anonymous
 def team_tasks(request):
     return [{
         'id': x.id,
@@ -1425,25 +1434,11 @@ def _get_content(qiniu_key):
 
 @api_func_anonymous
 def temp_func(request):
-    with open('logs/a.txt', 'rt', encoding='utf8') as f:
-        lines = f.read()
-
-        for line in lines.split('\n'):
-            line = line.strip()
-            if line:
-                [phone, qq] = re.split('\s', line)
-                sns_user = SnsUser.objects.filter(login_name=qq).first()
-                if not sns_user:
-                    device = PhoneDevice.objects.filter(label=phone).first()
-                    SnsUser(phone=device.label, device=device, app_id=device.owner.app_id,
-                            owner=device.owner, login_name=qq, name=qq, passwd='-').save()
-                elif sns_user.device.label != phone:
-                    device = PhoneDevice.objects.filter(label=phone).first()
-                    sns_user.device = device
-                    sns_user.phone = phone
-                    sns_user.save()
-
-    return ''
+    date = datetime(year=2017, month=9, day=1)
+    day1 = timedelta(days=1)
+    while date < datetime.today() - day1:
+        # daemons.daily_stat(date.strftime('%Y-%m-%d'))
+        date = date + day1
 
 
 @api_func_anonymous

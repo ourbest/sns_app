@@ -89,22 +89,27 @@ urlpatterns = [
     # ===team
     url(r'^team/devices$', apis.team_devices),
     url(r'^team/qq$', apis.team_qq),
-    url(r'^team/qun', apis.team_qun),
-    url(r'^team/tasks', apis.team_tasks),
-    url(r'^team/summary/qun', apis.sum_team_qun),
-    url(r'^team/summary/dist', zhiyue.sum_team_dist),
+    url(r'^team/qun$', apis.team_qun),
+    url(r'^team/tasks$', apis.team_tasks),
+    url(r'^team/users$', apis.team_users),
+    url(r'^team/summary/qun$', apis.sum_team_qun),
+    url(r'^team/summary/dist$', zhiyue.sum_team_dist),
 
-    url(r'^tmp', apis.temp_func),
+    url(r'^tmp$', apis.temp_func),
     url(r'^import/result$', apis.re_import),
 
     ##### zhiyue
-    url(r'^zhiyue/share', zhiyue.user_share),
-    url(r'^zhiyue/title', zhiyue.get_url_title),
-    url(r'^zhiyue/stat', zhiyue.count_user_sum),
-    url(r'^zhiyue/majia', zhiyue.get_user_majia),
-    url(r'^zhiyue/link', zhiyue.show_open_link),
+    url(r'^zhiyue/share$', zhiyue.user_share),
+    url(r'^zhiyue/title$', zhiyue.get_url_title),
+    url(r'^zhiyue/stat$', zhiyue.count_user_sum),
+    url(r'^zhiyue/majia$', zhiyue.get_user_majia),
+    url(r'^zhiyue/link$', zhiyue.show_open_link),
+
+    url(r'^zhiyue/report$', zhiyue.app_report),
+    url(r'^zhiyue/report/user$', zhiyue.app_report_user),
 
     # internal
     url(r'^change/ver', apis.change_js_version),
     url(r'^daemon/check', daemons.check_online_task),
+    url(r'^daemon/stat', daemons.daily_stat),
 ]

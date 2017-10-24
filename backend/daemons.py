@@ -1,10 +1,11 @@
-from datetime import timedelta
+from datetime import timedelta, datetime
 
+from dj import times
 from dj.utils import api_func_anonymous, logger
 from django.utils import timezone
 
-from backend import api_helper, model_manager
-from backend.models import SnsTask, SnsTaskDevice
+from backend import api_helper, model_manager, stats
+from backend.models import SnsTask, SnsTaskDevice, App, UserDailyStat, AppDailyStat
 
 
 @api_func_anonymous
@@ -25,3 +26,32 @@ def check_online_task():
             api_helper.webhook(task, '未能正常执行，请检查手机的在线状态', True)
 
     return ""
+
+
+@api_func_anonymous
+def daily_stat(date):
+    date = times.localtime(
+        datetime.now().replace(hour=0, second=0,
+                               minute=0, microsecond=0) if not date else datetime.strptime(date, '%Y-%m-%d'))
+
+    for app in App.objects.filter(stage__in=('留守期', '分发期')):
+        stat = stats.app_daily_stat(app.app_id, date, include_sum=True)
+        qq_stat = stat['qq']
+        wx_stat = stat['wx']
+
+        for index, qs in enumerate(qq_stat):
+            if qs['uid']:
+                ws = wx_stat[index]
+                UserDailyStat(report_date=date.strftime('%Y-%m-%d'),
+                              app=app, user_id=qs['uid'],
+                              qq_pv=qs['weizhan'], wx_pv=ws['weizhan'],
+                              qq_down=qs['download'], wx_down=ws['download'],
+                              qq_install=qs['users'], wx_install=ws['users']).save()
+            else:
+                ws = wx_stat[index]
+                AppDailyStat(report_date=date.strftime('%Y-%m-%d'), app=app,
+                             qq_pv=qs['weizhan'], wx_pv=ws['weizhan'],
+                             qq_down=qs['download'], wx_down=ws['download'],
+                             qq_install=qs['users'], wx_install=ws['users']).save()
+
+    return
