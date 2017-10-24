@@ -121,6 +121,11 @@ def get_user_majia(request):
 
 
 @api_func_anonymous
+def weekly_report_dist(date_from, date_to, request):
+    pass
+
+
+@api_func_anonymous
 def sum_team_dist(date, request):
     app = get_session_app(request)
     qq_stats = []
