@@ -25,7 +25,7 @@ def app_daily_stat(app, date, include_sum=False):
         'name': '合计',
         'uid': 0,
     }
-    for user in User.objects.filter(app=app):
+    for user in User.objects.filter(app=app, status=0):
         stats = get_user_stat(date, user)
         qq_stat = {
             'share': 0,

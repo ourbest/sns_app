@@ -148,6 +148,7 @@ class AsyncBot(Bot):
         return '<Bot: %s>' % (self.self.name if self.self else '[未登录]')
 
     def __init__(self):
+        self.create_ts = int(time.time() * 1000)
         self.master = False
         self.core = itchat.Core()
         itchat.instanceList.append(self)

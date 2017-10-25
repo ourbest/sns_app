@@ -6,6 +6,7 @@ __pycache__/
 .idea
 db.sqlite3
 */local_settings.py
+data
 
 # C extensions
 *.so

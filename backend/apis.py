@@ -1625,7 +1625,8 @@ def sum_app_team(app):
         'total': SnsUserGroup.objects.filter(sns_user__app_id=app, status=0).count(),
         'count': query.count(),
         'users': [
-            sum_app_user(app, x.id, lambda y: y.update({'name': x.name})) for x in User.objects.filter(app_id=app)
+            sum_app_user(app, x.id, lambda y: y.update({'name': x.name})) for x in
+            User.objects.filter(app_id=app, status=0)
         ]
     }
 

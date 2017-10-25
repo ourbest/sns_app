@@ -1,6 +1,6 @@
 from django.conf.urls import url
 
-from backend import apis, users, zhiyue, tasks, daemons
+from backend import apis, users, zhiyue, tasks, daemons, bot_apis
 
 app_name = 'backend'
 urlpatterns = [
@@ -8,7 +8,8 @@ urlpatterns = [
     url(r'^task$', apis.task),
     url(r'^report$', apis.report_progress),
     # url(r'^image$', apis.image),
-    url(r'^qr$', apis.qq_qr),
+    url(r'^qr$', bot_apis.login_qr),
+    url(r'^qr/status$', bot_apis.get_qr_status),
     url(r'^menu$', apis.get_menu),
     url(r'^tags$', apis.tag_names),
 
