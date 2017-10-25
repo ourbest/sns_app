@@ -6,6 +6,7 @@ from random import shuffle
 import requests
 from dj import times
 from django.utils import timezone
+from logzero import logger
 
 from backend import model_manager, caches
 from backend.models import User, AppUser, TaskGroup, DistTaskLog, GroupTag
@@ -200,8 +201,12 @@ def add_dist_qun(device_task):
     user_lines = []
     for line in lines:
         if line.find('tag=') == 0:
+            logger.info('按照标签分发，标签为', line)
             tags = line[4:].split(';')
-            ids = {x.group_id for x in GroupTag.objects.filter(group__app_id=device_task.task.app_id, tag__in=tags)}
+            if tags:
+                ids = {x.group_id for x in GroupTag.objects.filter(group__app_id=device_task.task.app_id, tag__in=tags)}
+                if len(ids) == 0:
+                    ids = None
         elif line.find('app=') == 0:
             user_lines.append(line)
 
