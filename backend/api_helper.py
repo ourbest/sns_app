@@ -158,17 +158,29 @@ def save_cutt_id(user, cutt_id, user_type):
 
 
 def to_share_url(user, url, share_type=0, label=None):
-    url = url.split('\n')[0]
+    lines = url.split('\n')
+    url = lines[0]
     u = re.findall(r'https?://.+?/weizhan/article/\d+/\d+/\d+', url)
     if u:
         u = u[0]
-        qq = user.appuser_set.filter(type=share_type).first()
-        if qq:
-            u = '%s/%s' % (u, qq.cutt_user_id)
-            u.replace('http://tz.', 'https://tz.')
-            if label:
-                suffix = label if len(label) != 11 else '%s___%s' % (label[0:4], label[-4:])
-                u += '?l=' + suffix
+
+        cutt_id = None
+        if lines:
+            for line in lines:
+                if line.find('cutt_id=') == 0:
+                    cutt_id = line[len('cutt_id='):]
+                    break
+
+        if not cutt_id:
+            qq = user.appuser_set.filter(type=share_type).first()
+            if qq:
+                cutt_id = qq.cutt_user_id
+
+        u = '%s/%s' % (u, cutt_id)
+        u.replace('http://tz.', 'https://tz.')
+        if label:
+            suffix = label if len(label) != 11 else '%s___%s' % (label[0:4], label[-4:])
+            u += '?l=' + suffix
 
     return u if u else url
 

@@ -19,7 +19,7 @@ from django.utils import timezone
 from logzero import logger
 from qiniu import Auth, put_file, etag
 
-from backend import model_manager, api_helper, caches, daemons
+from backend import model_manager, api_helper, caches
 from backend.api_helper import get_session_user, get_session_app, sns_user_to_json, device_to_json, qun_to_json
 from backend.models import User, App, SnsGroup, SnsGroupSplit, PhoneDevice, SnsUser, SnsUserGroup, SnsTaskDevice, \
     DeviceFile, SnsTaskType, SnsTask, ActiveDevice, SnsApplyTaskLog, DistTaskLog, UserActionLog, SnsGroupLost, GroupTag, \
@@ -1583,13 +1583,15 @@ def get_share_items(date, email, request):
 
 
 @api_func_anonymous
-def user_majia(request):
+def user_majia(request, filter):
     return {
         'items': [{
             'id': x.cutt_user_id,
             'name': x.name,
             'type': '微信' if x.type == 1 else 'QQ'
-        } for x in AppUser.objects.filter(user__email=get_session_user(request))]
+        } for x in (AppUser.objects.filter(user__email=get_session_user(request))
+                    if not filter else AppUser.objects.filter(type=filter,
+                                                              user__email=get_session_user(request)))]
     }
 
 
