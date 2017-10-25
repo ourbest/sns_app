@@ -100,7 +100,7 @@ class SnsUser(models.Model):
     """
     name = models.CharField('显示名', max_length=30)
     type = models.IntegerField('类型', default=0, help_text='0 - QQ 1 - 微信')
-    login_name = models.CharField('登录名', max_length=30)
+    login_name = models.CharField('登录名', max_length=80)
     passwd = models.CharField('密码', max_length=30)
     status = models.IntegerField('状态', default=0)
     memo = models.CharField('备注', max_length=255, null=True, blank=True)
@@ -127,7 +127,7 @@ class SnsGroup(models.Model):
     """
     qq／微信群
     """
-    group_id = models.CharField('群ID', max_length=50, primary_key=True)
+    group_id = models.CharField('群ID', max_length=80, primary_key=True)
     type = models.IntegerField('类型', default=0, help_text='0 - QQ 1 - 微信')
     group_name = models.CharField('群名', max_length=50)
     group_user_count = models.IntegerField('群用户数', default=0)
