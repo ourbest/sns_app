@@ -307,3 +307,7 @@ def mark_task_started(device_task):
 def is_phone_online(device):
     return ActiveDevice.objects.filter(device=device).filter(
         Q(active_at__gt=(timezone.now() - timedelta(seconds=300))) | Q(status=1)).first() is not None
+
+
+def get_wx(owner_id, name):
+    return SnsUser.objects.filter(name=name, type=1, owner_id=owner_id).first()
