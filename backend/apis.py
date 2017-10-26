@@ -877,7 +877,7 @@ def import_qun(app, ids, request, email):
 
     login_user = None
     if email:
-        login_user = model_manager.get_user(login_user)
+        login_user = model_manager.get_user(email)
 
     cnt = 0
     total = 0
