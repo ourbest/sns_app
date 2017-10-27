@@ -38,7 +38,8 @@ def sns_user_to_json(sns_user, owner=0):
         'type': sns_user.type,
         'login': sns_user.login_name,
         'password': sns_user.passwd,
-        'phone': '%s%s' % (sns_user.phone, '' if not sns_user.device.memo else '(%s)' % sns_user.device.memo),
+        'phone': '%s%s' % (sns_user.phone, '' if not sns_user.device or
+                                                 not sns_user.device.memo else '(%s)' % sns_user.device.memo),
         'memo': sns_user.memo,
         'dist': sns_user.dist,
         'search': sns_user.search,
@@ -213,7 +214,7 @@ def add_dist_qun(device_task):
     user_lines = []
     for line in lines:
         if line.find('tag=') == 0:
-            logger.info('按照标签分发，标签为', line)
+            logger.info('按照标签分发，标签为%s', line)
             tags = line[4:].split(';')
             if tags:
                 ids = {x.group_id for x in GroupTag.objects.filter(group__app_id=device_task.task.app_id, tag__in=tags)}
