@@ -205,7 +205,7 @@ def add_dist_qun(device_task):
     groups = dict()
     ignore_qun = {x.group_id for x in
                   DistTaskLog.objects.filter(success=1, group__app_id=device_task.task.app_id,
-                                             created_at__gte=timezone.now() - timedelta(hours=1))}
+                                             created_at__gte=timezone.now() - timedelta(minutes=5))}
 
     lines = device_task.data.split('\n')
 
