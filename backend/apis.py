@@ -139,6 +139,7 @@ def import_dist_result(device_task, lines):
     :return:
     """
     kicked = False
+    add = False
     for line in lines.split('\n'):
         line = line.strip()
         if line:
@@ -147,19 +148,23 @@ def import_dist_result(device_task, lines):
                 qun = model_manager.get_qun(qun_id)
                 qq = model_manager.get_qq(qq_id)
 
-                DistTaskLog(task=device_task, group=qun, sns_user=qq, status=status,
-                            success=1 if status == '已分发' else 0).save()
-
-                if status == '被踢出':
-                    ug = qun.snsusergroup_set.filter(sns_user=qq).first()
-                    if ug:
-                        model_manager.set_qun_kicked(ug)
-                    kicked = True
+                if status in ADD_STATUS:
+                    add = True
+                    deal_add_result(device_task, qq, qun, status)
+                else:
+                    kicked = deal_dist_result(device_task, qq, qun, status)
             except:
                 logger.warning('error import line %s' % line, exc_info=1)
 
     if kicked:
         model_manager.deal_kicked(device_task.device.owner)
+
+    if add:
+        model_manager.reset_qun_status(device_task)
+
+
+ADD_STATUS = {'付费群', '不存在', '不允许加入', '已加群', '无需验证已加入', '已发送验证', '需要回答问题', '无需验证未加入'}
+DIST_STATUS = {}
 
 
 def import_add_result(device_task, lines):
@@ -176,22 +181,41 @@ def import_add_result(device_task, lines):
             [qun_id, status, qq_id] = re.split('\s+', line)
             qun = model_manager.get_qun(qun_id)
             qq = model_manager.get_qq(qq_id)
-            SnsApplyTaskLog(device=device_task.device, device_task=device_task, account=qq, memo=status,
-                            group=qun).save()
-            if status in ('付费群', '不存在', '不允许加入'):
-                model_manager.set_qun_useless(qun)
-            elif status in ('已加群', '无需验证已加入'):
-                model_manager.set_qun_join(qq, qun)
-            elif status in ('已发送验证',):
-                model_manager.set_qun_applying(device_task.device, qun)
-            elif status in ('需要回答问题',):
-                model_manager.set_qun_manual(qun)
-            elif status in ('无需验证未加入',):
-                pass
+            deal_add_result(device_task, qq, qun, status)
         except:
             logger.warning('error import line %s' % line, exc_info=1)
 
     model_manager.reset_qun_status(device_task)
+
+
+def deal_dist_result(device_task, qq, qun, status):
+    DistTaskLog(task=device_task, group=qun, sns_user=qq, status=status,
+                success=1 if status == '已分发' else 0).save()
+
+    kicked = False
+
+    if status == '被踢出':
+        ug = qun.snsusergroup_set.filter(sns_user=qq).first()
+        if ug:
+            model_manager.set_qun_kicked(ug)
+        kicked = True
+
+    return kicked
+
+
+def deal_add_result(device_task, qq, qun, status):
+    SnsApplyTaskLog(device=device_task.device, device_task=device_task, account=qq, memo=status,
+                    group=qun).save()
+    if status in ('付费群', '不存在', '不允许加入'):
+        model_manager.set_qun_useless(qun)
+    elif status in ('已加群', '无需验证已加入'):
+        model_manager.set_qun_join(qq, qun)
+    elif status in ('已发送验证',):
+        model_manager.set_qun_applying(device_task.device, qun)
+    elif status in ('需要回答问题',):
+        model_manager.set_qun_manual(qun)
+    elif status in ('无需验证未加入',):
+        pass
 
 
 def _make_task_content(device_task):

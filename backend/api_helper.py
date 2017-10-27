@@ -245,31 +245,52 @@ def add_dist_qun(device_task):
     idx = 0
     group_lines = []
 
+    to_add_groups = get_add_groups(2, device_task)
+
     for login_name, groups in groups.items():
         idx += 1
         user_lines.append('QQ_%s=%s' % (idx, login_name))
         for group in groups:
             group_lines.append('QUN_%s=%s' % (idx, group))
+
+        if login_name in to_add_groups:
+            for group in to_add_groups.get(login_name):
+                # 在分发过程中申请加群
+                group_lines.append('ADD_%s=%s' % (idx, group))
+
     return '\n%s\n%s' % ('\n'.join(user_lines), '\n'.join(group_lines))
 
 
 def add_add_qun(device_task):
-    device = device_task.device
     data = device_task.data
 
     cnt = 5
-
-    sns_users = device.snsuser_set.filter(type=0, friend=1)
-    idx = 0
-
-    ids = [x.group_id for x in
-           model_manager.get_qun_idle(device_task.task.creator, len(sns_users) * cnt * 5, device_task.device)]
-    shuffle(ids)
     if not data:
         data = 'COUNT=%s\n' % cnt
     else:
         data = data.strip() + '\n'
     # data += '\n'.join(ids)
+
+    groups = get_add_groups(cnt, device_task)
+
+    idx = 0
+    user_lines = []
+    group_lines = []
+    for login_name, groups in groups.items():
+        idx += 1
+        user_lines.append('QQ_%s=%s' % (idx, login_name))
+        for group in groups:
+            group_lines.append('QUN_%s=%s' % (idx, group))
+    return data + '%s\n%s' % ('\n'.join(user_lines), '\n'.join(group_lines))
+
+
+def get_add_groups(cnt, device_task):
+    device = device_task.device
+    sns_users = device.snsuser_set.filter(type=0, friend=1)
+    idx = 0
+    ids = [x.group_id for x in
+           model_manager.get_qun_idle(device_task.task.creator, len(sns_users) * cnt * 5, device_task.device)]
+    shuffle(ids)
     groups = dict()
     while idx < len(ids):
         for user in sns_users:
@@ -283,16 +304,7 @@ def add_add_qun(device_task):
 
             if group_ids:
                 groups[user.login_name] = group_ids
-
-    idx = 0
-    user_lines = []
-    group_lines = []
-    for login_name, groups in groups.items():
-        idx += 1
-        user_lines.append('QQ_%s=%s' % (idx, login_name))
-        for group in groups:
-            group_lines.append('QUN_%s=%s' % (idx, group))
-    return data + '%s\n%s' % ('\n'.join(user_lines), '\n'.join(group_lines))
+    return groups
 
 
 def merge_task_log(task, log_content):
