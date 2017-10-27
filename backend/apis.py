@@ -1528,6 +1528,7 @@ def get_share_items(date, email, request):
     date = timezone.make_aware(datetime.strptime(date, '%Y-%m-%d')) if date else timezone.now()
     date = date.replace(microsecond=0, second=0, hour=0, minute=0)
 
+<<<<<<< Updated upstream
     date_end = date + timedelta(days=3)
     ids = [x.cutt_user_id for x in the_user.appuser_set.all()]
 
@@ -1580,6 +1581,9 @@ def get_share_items(date, email, request):
                     + data.get('%s_%s' % (x.itemId, 'tongji-down'), 0),
         'users': data.get('%s_du' % x.itemId, 0),
     } for x in ClipItem.objects.using(ClipItem.db_name()).filter(itemId__in=items)]
+=======
+    return stats.get_user_share_stat(date, the_user)
+>>>>>>> Stashed changes
 
 
 @api_func_anonymous
