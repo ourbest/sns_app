@@ -23,7 +23,7 @@ from backend import model_manager, api_helper, caches
 from backend.api_helper import get_session_user, get_session_app, sns_user_to_json, device_to_json, qun_to_json
 from backend.models import User, App, SnsGroup, SnsGroupSplit, PhoneDevice, SnsUser, SnsUserGroup, SnsTaskDevice, \
     DeviceFile, SnsTaskType, SnsTask, ActiveDevice, SnsApplyTaskLog, DistTaskLog, UserActionLog, SnsGroupLost, GroupTag, \
-    TaskWorkingLog, AppUser
+    TaskWorkingLog, AppUser, DeviceTaskData
 from backend.zhiyue_models import ClipItem, ZhiyueUser
 
 
@@ -200,6 +200,7 @@ def deal_dist_result(device_task, qq, qun, status):
             model_manager.set_qun_kicked(ug)
         kicked = True
 
+    model_manager.reset_qun_status(device_task)
     return kicked
 
 
@@ -252,6 +253,9 @@ def task(id):
                 content = _make_task_content(device_task)
                 ad.status = 1
                 ad.save()
+
+                DeviceTaskData(device_task=device_task, lines=content).save()
+
                 return {
                     'name': 'task.txt',
                     'content': content
@@ -1314,6 +1318,13 @@ def task_types():
         'name': x.name,
         'memo': x.memo,
     } for x in SnsTaskType.objects.all()]
+
+
+@api_func_anonymous
+def task_data(device_task_id):
+    data = DeviceTaskData.objects.filter(device_task_id=device_task_id).last()
+    if data:
+        return data.lines
 
 
 @api_func_anonymous

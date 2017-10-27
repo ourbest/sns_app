@@ -70,6 +70,7 @@ urlpatterns = [
     url(r'^apps$', apis.apps),
     url(r'^app/summary$', apis.app_summary),
     url(r'^task/types$', apis.task_types),
+    url(r'^task/data$', apis.task_data),
     url(r'^task/update/status$', apis.update_task_status),
     url(r'^task/create$', apis.create_task),
     url(r'^task/devices$', apis.task_devices),

@@ -4,6 +4,7 @@ from datetime import datetime
 from dj import times
 from dj.utils import api_func_anonymous
 from django.http import HttpResponse
+from django.utils import timezone
 
 from backend import api_helper, model_manager, stats
 from backend.api_helper import get_session_app
@@ -74,6 +75,9 @@ def count_user_sum(email, date, request):
     :param request:
     :return:
     """
+    date = times.localtime(
+        datetime.now().replace(hour=0, second=0,
+                               minute=0, microsecond=0) if not date else datetime.strptime(date, '%Y-%m-%d'))
     the_user = api_helper.get_login_user(request, email)
     return stats.get_user_stat(date, the_user)
 
