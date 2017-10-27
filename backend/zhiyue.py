@@ -83,11 +83,11 @@ def count_user_sum(email, date, request):
 
 
 @api_func_anonymous
-def get_user_majia(request):
-    user = api_helper.get_login_user(request)
+def get_user_majia(email, request):
+    user = api_helper.get_login_user(request, email)
 
     cutt = {x.user_id: x.user.name for x in model_manager.query(AdminPartnerUser).select_related('user')
-        .filter(loginUser=api_helper.get_session_user(request), partnerId=get_session_app(request))}
+        .filter(loginUser=user.email, partnerId=get_session_app(request))}
 
     for x in user.appuser_set.all():
         if x.cutt_user_id in cutt:

@@ -19,7 +19,7 @@ from django.utils import timezone
 from logzero import logger
 from qiniu import Auth, put_file, etag
 
-from backend import model_manager, api_helper, caches
+from backend import model_manager, api_helper, caches, stats
 from backend.api_helper import get_session_user, get_session_app, sns_user_to_json, device_to_json, qun_to_json
 from backend.models import User, App, SnsGroup, SnsGroupSplit, PhoneDevice, SnsUser, SnsUserGroup, SnsTaskDevice, \
     DeviceFile, SnsTaskType, SnsTask, ActiveDevice, SnsApplyTaskLog, DistTaskLog, UserActionLog, SnsGroupLost, GroupTag, \
@@ -143,6 +143,9 @@ def import_dist_result(device_task, lines):
     for line in lines.split('\n'):
         line = line.strip()
         if line:
+            if line.find('删除帐号=') == 1:
+                api_helper.webhook(device_task, '注意，%s账号从QQ移除了，请检查' % line[len('删除帐号='):], force=True)
+                continue
             try:
                 [qun_id, status, qq_id] = re.split('\s+', line)
                 qun = model_manager.get_qun(qun_id)
@@ -1569,6 +1572,8 @@ def get_share_items(date, email, request):
     items = {api_helper.parse_item_id(x.data) for x in
              SnsTask.objects.filter(creator=the_user, type_id=3,
                                     schedule_at__range=(date.date(), date.date() + timedelta(days=1)))}
+
+    items.update(stats.get_user_share(the_user.app_id, the_user, date))
 
     # q = model_manager.query(Weizhan).filter(sourceItemId__in=items,
     #                                            sourceUserId__in=ids).values('sourceItemId',
