@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 <<<<<<< Updated upstream
 from backend import model_manager
 from backend.models import User
@@ -14,6 +15,16 @@ from backend import model_manager, api_helper
 from backend.models import User, App, SnsTask
 from backend.zhiyue_models import HighValueUser, ShareArticleLog, ClipItem
 >>>>>>> Stashed changes
+=======
+from datetime import timedelta
+
+from dj import times
+from django.utils import timezone
+
+from backend import model_manager
+from backend.models import User, App
+from backend.zhiyue_models import HighValueUser, ShareArticleLog
+>>>>>>> master
 
 
 def app_daily_stat(app, date, include_sum=False):
@@ -101,8 +112,11 @@ def get_user_stat(date, the_user):
         'users': x.appUserNum,
     } for x in model_manager.query(HighValueUser).filter(partnerId=the_user.app_id, time=date, userType=2,
                                                          userId__in=[x.cutt_user_id for x in cutt_users])]
+<<<<<<< HEAD
 <<<<<<< Updated upstream
 =======
+=======
+>>>>>>> master
 
 
 def get_user_share(app_id, user, date):
@@ -116,6 +130,7 @@ def get_user_share(app_id, user, date):
 
 def gen_daily_report():
     yesterday = (timezone.now() - timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
+<<<<<<< HEAD
     date = times.to_str(yesterday, '%Y-%m-%d')
 
     # print(yesterday)
@@ -185,3 +200,9 @@ def get_user_share_stat(date, the_user):
         'users': data.get('%s_du' % x.itemId, 0),
     } for x in ClipItem.objects.using(ClipItem.db_name()).filter(itemId__in=items)]
 >>>>>>> Stashed changes
+=======
+    date = times.to_str(yesterday)
+    for app in App.objects.filter(stage__in=('分发期', '留守期')):
+        for user in app.user_set.filter(status=0):
+            pass
+>>>>>>> master

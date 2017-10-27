@@ -38,7 +38,8 @@ def sns_user_to_json(sns_user, owner=0):
         'type': sns_user.type,
         'login': sns_user.login_name,
         'password': sns_user.passwd,
-        'phone': '%s%s' % (sns_user.phone, '' if not sns_user.device.memo else '(%s)' % sns_user.device.memo),
+        'phone': '%s%s' % (sns_user.phone, '' if not sns_user.device or
+                                                 not sns_user.device.memo else '(%s)' % sns_user.device.memo),
         'memo': sns_user.memo,
         'dist': sns_user.dist,
         'search': sns_user.search,
@@ -205,7 +206,7 @@ def add_dist_qun(device_task):
     groups = dict()
     ignore_qun = {x.group_id for x in
                   DistTaskLog.objects.filter(success=1, group__app_id=device_task.task.app_id,
-                                             created_at__gte=timezone.now() - timedelta(hours=1))}
+                                             created_at__gte=timezone.now() - timedelta(minutes=5))}
 
     lines = device_task.data.split('\n')
 
@@ -213,7 +214,7 @@ def add_dist_qun(device_task):
     user_lines = []
     for line in lines:
         if line.find('tag=') == 0:
-            logger.info('按照标签分发，标签为', line)
+            logger.info('按照标签分发，标签为%s', line)
             tags = line[4:].split(';')
             if tags:
                 ids = {x.group_id for x in GroupTag.objects.filter(group__app_id=device_task.task.app_id, tag__in=tags)}
@@ -245,31 +246,52 @@ def add_dist_qun(device_task):
     idx = 0
     group_lines = []
 
+    to_add_groups = get_add_groups(2, device_task)
+
     for login_name, groups in groups.items():
         idx += 1
         user_lines.append('QQ_%s=%s' % (idx, login_name))
         for group in groups:
             group_lines.append('QUN_%s=%s' % (idx, group))
+
+        if login_name in to_add_groups:
+            for group in to_add_groups.get(login_name):
+                # 在分发过程中申请加群
+                group_lines.append('ADD_%s=%s' % (idx, group))
+
     return '\n%s\n%s' % ('\n'.join(user_lines), '\n'.join(group_lines))
 
 
 def add_add_qun(device_task):
-    device = device_task.device
     data = device_task.data
 
     cnt = 5
-
-    sns_users = device.snsuser_set.filter(type=0, friend=1)
-    idx = 0
-
-    ids = [x.group_id for x in
-           model_manager.get_qun_idle(device_task.task.creator, len(sns_users) * cnt * 5, device_task.device)]
-    shuffle(ids)
     if not data:
         data = 'COUNT=%s\n' % cnt
     else:
         data = data.strip() + '\n'
     # data += '\n'.join(ids)
+
+    groups = get_add_groups(cnt, device_task)
+
+    idx = 0
+    user_lines = []
+    group_lines = []
+    for login_name, groups in groups.items():
+        idx += 1
+        user_lines.append('QQ_%s=%s' % (idx, login_name))
+        for group in groups:
+            group_lines.append('QUN_%s=%s' % (idx, group))
+    return data + '%s\n%s' % ('\n'.join(user_lines), '\n'.join(group_lines))
+
+
+def get_add_groups(cnt, device_task):
+    device = device_task.device
+    sns_users = device.snsuser_set.filter(type=0, friend=1)
+    idx = 0
+    ids = [x.group_id for x in
+           model_manager.get_qun_idle(device_task.task.creator, len(sns_users) * cnt * 5, device_task.device)]
+    shuffle(ids)
     groups = dict()
     while idx < len(ids):
         for user in sns_users:
@@ -283,16 +305,7 @@ def add_add_qun(device_task):
 
             if group_ids:
                 groups[user.login_name] = group_ids
-
-    idx = 0
-    user_lines = []
-    group_lines = []
-    for login_name, groups in groups.items():
-        idx += 1
-        user_lines.append('QQ_%s=%s' % (idx, login_name))
-        for group in groups:
-            group_lines.append('QUN_%s=%s' % (idx, group))
-    return data + '%s\n%s' % ('\n'.join(user_lines), '\n'.join(group_lines))
+    return groups
 
 
 def merge_task_log(task, log_content):

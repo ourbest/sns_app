@@ -23,7 +23,6 @@ def clean_split_data_1(status=1):
         if len(done) == size:
             x.delete()
 
-
 def sync_split():
     groups = SnsGroup.objects.filter(status=1, app_id=1519662)
     for group in groups:

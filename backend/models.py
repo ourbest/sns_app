@@ -425,3 +425,9 @@ class AppDailyStat(models.Model):
     wx_down = models.IntegerField()
     qq_install = models.IntegerField()
     wx_install = models.IntegerField()
+
+
+class DeviceTaskData(models.Model):
+    device_task = models.ForeignKey(SnsTaskDevice)
+    created_at = models.DateTimeField(auto_now_add=True)
+    lines = models.TextField()

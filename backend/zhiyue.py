@@ -4,6 +4,7 @@ from datetime import datetime
 from dj import times
 from dj.utils import api_func_anonymous
 from django.http import HttpResponse
+from django.utils import timezone
 
 from backend import api_helper, model_manager, stats
 from backend.api_helper import get_session_app
@@ -74,16 +75,19 @@ def count_user_sum(email, date, request):
     :param request:
     :return:
     """
+    date = times.localtime(
+        datetime.now().replace(hour=0, second=0,
+                               minute=0, microsecond=0) if not date else datetime.strptime(date, '%Y-%m-%d'))
     the_user = api_helper.get_login_user(request, email)
     return stats.get_user_stat(date, the_user)
 
 
 @api_func_anonymous
-def get_user_majia(request):
-    user = api_helper.get_login_user(request)
+def get_user_majia(email, request):
+    user = api_helper.get_login_user(request, email)
 
     cutt = {x.user_id: x.user.name for x in model_manager.query(AdminPartnerUser).select_related('user')
-        .filter(loginUser=api_helper.get_session_user(request), partnerId=get_session_app(request))}
+        .filter(loginUser=user.email, partnerId=get_session_app(request))}
 
     for x in user.appuser_set.all():
         if x.cutt_user_id in cutt:
