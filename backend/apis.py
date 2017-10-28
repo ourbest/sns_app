@@ -236,7 +236,7 @@ def _make_task_content(device_task):
 
 
 @api_func_anonymous
-def task(id):
+def task(id, i_text=0):
     device = model_manager.get_phone(id)
     if device:
         ad = model_manager.get_active_device(device)
@@ -262,7 +262,7 @@ def task(id):
                 return {
                     'name': 'task.txt',
                     'content': content
-                }
+                } if i_text == 0 else HttpResponse(content)
             except:
                 logger.warning('Error process task %s' % id, exc_info=1)
 
@@ -270,7 +270,7 @@ def task(id):
             ad.status = 0
         ad.save()
 
-    return {}
+    return {} if i_text == 0 else HttpResponse('')
 
 
 @api_func_anonymous
