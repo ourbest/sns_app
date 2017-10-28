@@ -23,12 +23,29 @@ def clean_split_data_1(status=1):
         if len(done) == size:
             x.delete()
 
+
 def sync_split():
     groups = SnsGroup.objects.filter(status=1, app_id=1519662)
     for group in groups:
         if group.snsgroupsplit_set.count() == 0 and group.snsusergroup_set.count() == 0:
             group.status = 0
             group.save()
+
+
+def remove_dup_ids():
+    with open('data/ids.txt', 'rt') as file:
+        qun_ids = set()
+        for line in file:
+            qun = line.split('\t')[0]
+            if qun:
+                qun_ids.add(qun)
+
+        qun_ids_done = set()
+        for row in SnsGroupSplit.objects.filter(user_id=13, group_id__in=qun_ids):
+            if row.group_id not in qun_ids_done:
+                qun_ids_done.add(row.group_id)
+            else:
+                row.delete()
 
 
 def import_qun_test(file):
