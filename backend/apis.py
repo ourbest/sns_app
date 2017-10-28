@@ -262,7 +262,7 @@ def task(id, i_text=0):
                 return {
                     'name': 'task.txt',
                     'content': content
-                } if i_text == 0 else HttpResponse(content)
+                } if i_text == 0 else HttpResponse(content, content_type='application/octet-stream')
             except:
                 logger.warning('Error process task %s' % id, exc_info=1)
 
@@ -270,7 +270,7 @@ def task(id, i_text=0):
             ad.status = 0
         ad.save()
 
-    return {} if i_text == 0 else HttpResponse('')
+    return {} if i_text == 0 else HttpResponse('', content_type='application/octet-stream')
 
 
 @api_func_anonymous

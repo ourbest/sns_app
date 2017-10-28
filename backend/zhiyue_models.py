@@ -151,6 +151,40 @@ class AdminPartnerUser(models.Model):
         managed = False
 
 
+class PushMessage(models.Model):
+    """
+  `status` int(11) DEFAULT NULL COMMENT '-1:已取消;0:待推送;1:推送中;2:已推送;3:待审核;',
+  `type` int(11) DEFAULT NULL,
+  `appId` varchar(255) DEFAULT NULL,
+  `message` varchar(255) DEFAULT NULL,
+  `messageId` varchar(64) NOT NULL DEFAULT '',
+  `createTime` datetime DEFAULT NULL,
+  `articleId` bigint(20) DEFAULT NULL,
+  `pushTime` datetime DEFAULT NULL,
+  `scheduleTime` datetime DEFAULT NULL,
+  `topicId` bigint(20) DEFAULT NULL,
+  `clipId` bigint(20) DEFAULT NULL,
+  `colId` bigint(20) DEFAULT '0',
+  `cnt` int(11) DEFAULT '0',
+
+    """
+    messageId = models.CharField(max_length=64, primary_key=True)
+    appId = models.CharField(max_length=255)
+    message = models.CharField(max_length=255)
+    status = models.IntegerField()
+    createTime = models.DateTimeField()
+    pushTime = models.DateTimeField()
+    articleId = models.IntegerField()
+
+    @staticmethod
+    def db_name():
+        return 'zhiyue'
+
+    class Meta:
+        db_table = 'push_PushMessage'
+        managed = False
+
+
 ITEM_TYPES = {
     'article-mochuang': '文章页魔窗',
     'article-down': '文章页连接下载',
