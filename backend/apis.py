@@ -1565,65 +1565,7 @@ def get_share_items(date, email, request):
     the_user = model_manager.get_user(email)
     date = timezone.make_aware(datetime.strptime(date, '%Y-%m-%d')) if date else timezone.now()
     date = date.replace(microsecond=0, second=0, hour=0, minute=0)
-
-<<<<<<< Updated upstream
-    date_end = date + timedelta(days=3)
-    ids = [x.cutt_user_id for x in the_user.appuser_set.all()]
-
-    items = {api_helper.parse_item_id(x.data) for x in
-             SnsTask.objects.filter(creator=the_user, type_id=3,
-                                    schedule_at__range=(date.date(), date.date() + timedelta(days=1)))}
-
-    items.update(stats.get_user_share(the_user.app_id, the_user, date))
-
-    # q = model_manager.query(Weizhan).filter(sourceItemId__in=items,
-    #                                            sourceUserId__in=ids).values('sourceItemId',
-    #                                                                         'sourceUserId').annotate(
-    #     Count('deviceUserId')).order_by('sourceItemId')
-    # for x in q:
-    #     print(x)
-    query = 'SELECT itemId, itemType, count(1) as cnt FROM datasystem_WeizhanItemView ' \
-            'WHERE itemId in (%s) AND shareUserId in (%s) AND time BETWEEN \'%s\' AND \'%s\' ' \
-            'GROUP BY itemId, itemType' % (
-                ','.join(map(str, items)), ','.join(map(str, ids)), times.to_date_str(date),
-                times.to_date_str(date_end))
-
-    device_user_query = 'select sourceItemId, count(1) as cnt from datasystem_DeviceUser ' \
-                        'where sourceItemId in (%s) and sourceUserId in (%s) ' \
-                        'and createTime between \'%s\' AND \'%s\' GROUP BY sourceItemId' % (
-                            ','.join(map(str, items)), ','.join(map(str, ids)), times.to_date_str(date),
-                            times.to_date_str(date_end))
-
-    data = {}
-
-    if not ids:
-        return []
-
-    if items:
-        with connections['zhiyue'].cursor() as cursor:
-            cursor.execute(query)
-            rows = cursor.fetchall()
-            for row in rows:
-                data['%s_%s' % (row[0], row[1])] = row[2]
-
-            cursor.execute(device_user_query)
-            rows = cursor.fetchall()
-            for row in rows:
-                data['%s_du' % (row[0],)] = row[1]
-
-    return [{
-        'item_id': x.itemId,
-        'title': x.title,
-        'weizhan': data.get('%s_%s' % (x.itemId, 'article'), 0),
-        'reshare': data.get('%s_%s' % (x.itemId, 'article-reshare'), 0),
-        'download': data.get('%s_%s' % (x.itemId, 'article-down'), 0)
-                    + data.get('%s_%s' % (x.itemId, 'article-mochuang'), 0)
-                    + data.get('%s_%s' % (x.itemId, 'tongji-down'), 0),
-        'users': data.get('%s_du' % x.itemId, 0),
-    } for x in ClipItem.objects.using(ClipItem.db_name()).filter(itemId__in=items)]
-=======
     return stats.get_user_share_stat(date, the_user)
->>>>>>> Stashed changes
 
 
 @api_func_anonymous

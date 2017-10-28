@@ -1,12 +1,13 @@
 from django.conf.urls import url
 
-from backend import apis, users, zhiyue, tasks, daemons, bot_apis
+from backend import apis, users, zhiyue, tasks, daemons, bot_apis, stats
 
 app_name = 'backend'
 urlpatterns = [
     url(r'^upload$', apis.upload),
     url(r'^task$', apis.task),
     url(r'^report$', apis.report_progress),
+    url(r'^daily/report$', stats.gen_daily_report),
     # url(r'^image$', apis.image),
     url(r'^qr$', bot_apis.login_qr),
     url(r'^qr/status$', bot_apis.get_qr_status),

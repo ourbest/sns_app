@@ -1,30 +1,17 @@
-<<<<<<< HEAD
-<<<<<<< Updated upstream
-from backend import model_manager
-from backend.models import User
-from backend.zhiyue_models import HighValueUser
-=======
 from datetime import timedelta
 
 from dj import times
+from dj.utils import api_func_anonymous
 from django.db import connections
 from django.template.loader import render_to_string
 from django.utils import timezone
 
-from backend import model_manager, api_helper
-from backend.models import User, App, SnsTask
-from backend.zhiyue_models import HighValueUser, ShareArticleLog, ClipItem
->>>>>>> Stashed changes
-=======
-from datetime import timedelta
-
-from dj import times
-from django.utils import timezone
-
+from backend import api_helper
 from backend import model_manager
+from backend.models import SnsTask
 from backend.models import User, App
+from backend.zhiyue_models import ClipItem
 from backend.zhiyue_models import HighValueUser, ShareArticleLog
->>>>>>> master
 
 
 def app_daily_stat(app, date, include_sum=False):
@@ -112,11 +99,6 @@ def get_user_stat(date, the_user):
         'users': x.appUserNum,
     } for x in model_manager.query(HighValueUser).filter(partnerId=the_user.app_id, time=date, userType=2,
                                                          userId__in=[x.cutt_user_id for x in cutt_users])]
-<<<<<<< HEAD
-<<<<<<< Updated upstream
-=======
-=======
->>>>>>> master
 
 
 def get_user_share(app_id, user, date):
@@ -128,9 +110,9 @@ def get_user_share(app_id, user, date):
     return {x.article.item_id for x in data if x.article}
 
 
+@api_func_anonymous
 def gen_daily_report():
     yesterday = (timezone.now() - timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
-<<<<<<< HEAD
     date = times.to_str(yesterday, '%Y-%m-%d')
 
     # print(yesterday)
@@ -145,11 +127,11 @@ def gen_daily_report():
             'sum': app_daily_stat(app, date, True),
         })
         for user in app.user_set.filter(status=0):
-            item_stats.append(get_user_share_stat(yesterday, user))
+            item_stats += get_user_share_stat(yesterday, user)
             # sum_stats.append(get_user_stat(date, app.app_id))
 
     html = render_to_string('daily_report.html', {'stats': app_stats})
-    print(html)
+    api_helper.send_html_mail('%s线上推广日报' % date, 'yonghui.chen@cutt.com', html)
 
 
 def get_user_share_stat(date, the_user):
@@ -158,7 +140,11 @@ def get_user_share_stat(date, the_user):
     items = {api_helper.parse_item_id(x.data) for x in
              SnsTask.objects.filter(creator=the_user, type_id=3,
                                     schedule_at__range=(date.date(), date.date() + timedelta(days=1)))}
+
     items.update(get_user_share(the_user.app_id, the_user, date))
+
+    items = {x for x in items if x}
+
     # q = model_manager.query(Weizhan).filter(sourceItemId__in=items,
     #                                            sourceUserId__in=ids).values('sourceItemId',
     #                                                                         'sourceUserId').annotate(
@@ -190,19 +176,12 @@ def get_user_share_stat(date, the_user):
             for row in rows:
                 data['%s_du' % (row[0],)] = row[1]
     return [{
+        'name': the_user.name,
         'item_id': x.itemId,
         'title': x.title,
         'weizhan': data.get('%s_%s' % (x.itemId, 'article'), 0),
         'reshare': data.get('%s_%s' % (x.itemId, 'article-reshare'), 0),
-        'download': data.get('%s_%s' % (x.itemId, 'article-down'), 0)
-                    + data.get('%s_%s' % (x.itemId, 'article-mochuang'), 0)
-                    + data.get('%s_%s' % (x.itemId, 'tongji-down'), 0),
+        'download': data.get('%s_%s' % (x.itemId, 'article-down'), 0) + data.get(
+            '%s_%s' % (x.itemId, 'article-mochuang'), 0) + data.get('%s_%s' % (x.itemId, 'tongji-down'), 0),
         'users': data.get('%s_du' % x.itemId, 0),
     } for x in ClipItem.objects.using(ClipItem.db_name()).filter(itemId__in=items)]
->>>>>>> Stashed changes
-=======
-    date = times.to_str(yesterday)
-    for app in App.objects.filter(stage__in=('分发期', '留守期')):
-        for user in app.user_set.filter(status=0):
-            pass
->>>>>>> master

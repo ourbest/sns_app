@@ -134,8 +134,17 @@ QINIU_BUCKET = ''
 
 FILE_UPLOAD_HANDLERS = ["django.core.files.uploadhandler.TemporaryFileUploadHandler"]
 
+EMAIL_HOST = 'smtp.mxhichina.com'
+EMAIL_HOST_USER = 'yonghui.chen@cutt.com'
+
 JS_VER = 'a7f2393477ee60f118f7'
 QINIU_URL = 'http://jwres.cutt.com/'
+
+DEFAULT_CHARSET = 'utf-8'
+
+ADMINS = [('陈永辉', 'yonghui.chen@cutt.com')]
+
+DAILY_REPORT_EMAIL = ['yonghui.chen@cutt.com']
 
 try:
     from .local_settings import *

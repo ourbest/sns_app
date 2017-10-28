@@ -28,6 +28,13 @@ def user_share(i_uid, request):
     } for x in data]
 
 
+def get_user_share_items(app_id, uids):
+    data = ShareArticleLog.objects.using('zhiyue').select_related('user', 'article', 'article__item').filter(
+        user_id__in=uids, article__partnerId=app_id).order_by("-time")[0:50]
+
+
+
+
 def find_url(x):
     # url = re.findall('https?://.+/weizhan/article/\d+/\d+/\d+', text)
     # return url[0] if url else ''
@@ -79,6 +86,9 @@ def count_user_sum(email, date, request):
         datetime.now().replace(hour=0, second=0,
                                minute=0, microsecond=0) if not date else datetime.strptime(date, '%Y-%m-%d'))
     the_user = api_helper.get_login_user(request, email)
+    date = times.localtime(
+        datetime.now().replace(hour=0, second=0,
+                               minute=0, microsecond=0) if not date else datetime.strptime(date, '%Y-%m-%d'))
     return stats.get_user_stat(date, the_user)
 
 

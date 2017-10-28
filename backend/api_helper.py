@@ -5,6 +5,8 @@ from random import shuffle
 
 import requests
 from dj import times
+from django.conf import settings
+from django.core.mail import EmailMultiAlternatives
 from django.utils import timezone
 from logzero import logger
 
@@ -380,3 +382,9 @@ def send_msg(msg, user):
         }
     }
     requests.post(url, json=dingding_msg)
+
+
+def send_html_mail(subject, to, html_content, text_content='HTML'):
+    msg = EmailMultiAlternatives(subject, text_content, settings.EMAIL_HOST_USER, [to] if isinstance(to, str) else to)
+    msg.attach_alternative(html_content, "text/html")
+    msg.send()
