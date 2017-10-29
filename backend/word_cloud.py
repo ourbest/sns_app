@@ -7,7 +7,7 @@ from backend import model_manager
 from backend.zhiyue_models import PushMessage
 
 
-def push_cloud(app_id, img='tengzhou'):
+def push_cloud(app_id, img='tengzhou', words=200):
     image = Image.open('data/%s_map.jpg' % img)
     image.convert('1')
     tz_map = np.array(image)
@@ -15,6 +15,6 @@ def push_cloud(app_id, img='tengzhou'):
               model_manager.query(PushMessage).filter(appId=app_id, status=2).order_by('-pushTime')[:5000]]
     font = 'data/Songti.ttc'
 
-    wc = WordCloud(background_color="white", font_path=font, max_words=1000, mask=tz_map)
+    wc = WordCloud(background_color="white", font_path=font, max_words=words, mask=tz_map)
     wc.generate(' '.join(titles))
     wc.to_file('data/%s.png' % img)

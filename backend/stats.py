@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import timedelta, datetime
 
 from dj import times
 from dj.utils import api_func_anonymous
@@ -105,14 +105,15 @@ def get_user_share(app_id, user, date):
     uids = {x.cutt_user_id for x in user.appuser_set.all()}
 
     data = ShareArticleLog.objects.using('zhiyue').select_related('user', 'article', 'article__item').filter(
-        user_id__in=uids, article__partnerId=app_id).filter(time__range=(date, date + timedelta(days=1)))[0:50]
+        user_id__in=uids, article__partnerId=app_id).filter(time__range=(date.date(),
+                                                                         date.date() + timedelta(days=1)))[0:50]
 
     return {x.article.item_id for x in data if x.article}
 
 
 @api_func_anonymous
 def gen_daily_report():
-    yesterday = (timezone.now() - timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
+    yesterday = (datetime.now() - timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
     date = times.to_str(yesterday, '%Y-%m-%d')
 
     # print(yesterday)
@@ -141,7 +142,7 @@ def get_user_share_stat(date, the_user):
              SnsTask.objects.filter(creator=the_user, type_id=3,
                                     schedule_at__range=(date.date(), date.date() + timedelta(days=1)))}
 
-    items.update(get_user_share(the_user.app_id, the_user, date))
+    # items.update(get_user_share(the_user.app_id, the_user, date))
 
     items = {x for x in items if x}
 
