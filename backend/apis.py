@@ -262,6 +262,8 @@ def task(id, i_text=0):
                 ad.status = 1
                 ad.save()
 
+                logger.info("发送任务%s - %s" % (device_task.id, id))
+
                 return {
                     'name': 'task.txt',
                     'content': content
@@ -477,6 +479,13 @@ def my_apply_log(request, i_size, i_page, keyword):
 def my_pending_remove(ids):
     SnsGroupSplit.objects.filter(pk__in=ids.split(';')).update(status=-1)
     return 'ok'
+
+
+@api_func_anonymous
+def my_pending_purge(email, request):
+    user = api_helper.get_login_user(request, email)
+    api_helper.remove_dup_split(user)
+    return ""
 
 
 @api_func_anonymous

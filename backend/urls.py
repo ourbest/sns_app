@@ -30,6 +30,7 @@ urlpatterns = [
     url(r'^my/qun/cnt$', apis.my_qun_cnt),
     url(r'^my/qun$', apis.my_qun),
     url(r'^my/pending/qun$', apis.my_pending_qun),
+    url(r'^my/pending/purge$', apis.my_pending_purge),
     url(r'^my/quiz/qun$', apis.my_quiz_qun),
     url(r'^my/qun/lost$', apis.my_lost_qun),
     url(r'^my/tasks$', apis.my_tasks),

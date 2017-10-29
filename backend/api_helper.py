@@ -11,7 +11,7 @@ from django.utils import timezone
 from logzero import logger
 
 from backend import model_manager, caches
-from backend.models import User, AppUser, TaskGroup, DistTaskLog, GroupTag
+from backend.models import User, AppUser, TaskGroup, DistTaskLog, GroupTag, SnsGroupSplit
 
 DEFAULT_APP = 1519662
 
@@ -66,7 +66,9 @@ def device_to_json(x):
 def qun_to_json(x, owner=0):
     ret = {'id': x.sns_group.group_id, 'name': x.sns_group.group_name,
            'qq': {'id': x.sns_user.login_name, 'name': x.sns_user.name},
-           'device': {'label': x.sns_user.device.label, 'phone': x.sns_user.device.phone_num},
+           'device': {
+               'label': x.sns_user.device.label, 'phone': x.sns_user.device.phone_num
+           } if x.sns_user.device else None,
            'member_count': x.sns_group.group_user_count}
     if owner:
         ret['owner'] = x.sns_user.owner.name
@@ -214,6 +216,7 @@ def add_dist_qun(device_task):
 
     ids = None
     user_lines = []
+    qun = 2
     for line in lines:
         if line.find('tag=') == 0:
             logger.info('按照标签分发，标签为%s', line)
@@ -224,6 +227,8 @@ def add_dist_qun(device_task):
                     ids = None
         elif line.find('app=') == 0:
             user_lines.append(line)
+        elif line.find('apply_qun=') == 0:
+            qun = int(line[line.find('=') + 1:])
 
     for user in sns_users:
         user_groups = user.snsusergroup_set.filter(status=0, active=1)
@@ -248,7 +253,7 @@ def add_dist_qun(device_task):
     idx = 0
     group_lines = []
 
-    to_add_groups = get_add_groups(2, device_task)
+    to_add_groups = get_add_groups(qun, device_task) if qun else []
 
     for login_name, groups in groups.items():
         idx += 1
@@ -265,6 +270,15 @@ def add_dist_qun(device_task):
         logger.warning('此次任务没有Q群，请检查 %s' % device.label)
 
     return '\n%s\n%s' % ('\n'.join(user_lines), '\n'.join(group_lines))
+
+
+def remove_dup_split(user):
+    matched = set()
+    for x in SnsGroupSplit.objects.filter(user=user, status=0):
+        if x.group_id in matched:
+            x.delete()
+        else:
+            matched.add(x.group_id)
 
 
 def add_add_qun(device_task):
