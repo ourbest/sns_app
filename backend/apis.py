@@ -253,11 +253,14 @@ def task(id, i_text=0):
                                                    schedule_at__lte=timezone.now()).first()
         if device_task:
             try:
-                content = _make_task_content(device_task)
+                old_db = DeviceTaskData.objects.filter(device_task=device_task).first()
+                if old_db:
+                    content = old_db.lines
+                else:
+                    content = _make_task_content(device_task)
+                    DeviceTaskData(device_task=device_task, lines=content).save()
                 ad.status = 1
                 ad.save()
-
-                DeviceTaskData(device_task=device_task, lines=content).save()
 
                 return {
                     'name': 'task.txt',

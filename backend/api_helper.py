@@ -261,6 +261,9 @@ def add_dist_qun(device_task):
                 # 在分发过程中申请加群
                 group_lines.append('ADD_%s=%s' % (idx, group))
 
+    if len(user_lines) == 0:
+        logger.warning('此次任务没有Q群，请检查 %s' % device.label)
+
     return '\n%s\n%s' % ('\n'.join(user_lines), '\n'.join(group_lines))
 
 
