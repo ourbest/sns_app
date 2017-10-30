@@ -269,7 +269,7 @@ def add_dist_qun(device_task):
     if len(user_lines) == 0:
         logger.warning('此次任务没有Q群，请检查 %s' % device.label)
 
-    return '\n%s\n%s' % ('\n'.join(user_lines), '\n'.join(group_lines))
+    return '\napply_qun=%s\n%s\n%s' % (qun, '\n'.join(user_lines), '\n'.join(group_lines))
 
 
 def remove_dup_split(user):
