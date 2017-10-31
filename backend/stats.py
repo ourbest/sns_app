@@ -2,9 +2,9 @@ from datetime import timedelta, datetime
 
 from dj import times
 from dj.utils import api_func_anonymous
+from django.conf import settings
 from django.db import connections
 from django.template.loader import render_to_string
-from django.utils import timezone
 
 from backend import api_helper
 from backend import model_manager
@@ -132,7 +132,7 @@ def gen_daily_report():
             # sum_stats.append(get_user_stat(date, app.app_id))
 
     html = render_to_string('daily_report.html', {'stats': app_stats})
-    api_helper.send_html_mail('%s线上推广日报' % date, 'yonghui.chen@cutt.com', html)
+    api_helper.send_html_mail('%s线上推广日报' % date, settings.DAILY_REPORT_EMAIL, html)
 
 
 def get_user_share_stat(date, the_user):
