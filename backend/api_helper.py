@@ -368,7 +368,7 @@ def webhook_task(task, msg):
 
     msg = '%s：任务%s' % (task.type.name, msg)
     if task.type_id == 3:
-        msg += ' URL: ' + extract_url(task.params)
+        msg += ' URL: ' + extract_url(task.data)
 
     thread = threading.Thread(target=send_msg, args=(msg, user))
     thread.start()
