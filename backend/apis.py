@@ -146,15 +146,17 @@ def import_dist_result(device_task, lines):
                 api_helper.webhook(device_task, '注意，%s账号从QQ移除了，请检查' % line[len('删除帐号='):], force=True)
                 continue
             try:
-                [qun_id, status, qq_id] = re.split('\s+', line)
-                qun = model_manager.get_qun(qun_id)
-                qq = model_manager.get_qq(qq_id)
+                values = re.split('\s+', line)
+                if len(values) == 3:
+                    [qun_id, status, qq_id] = values
+                    qun = model_manager.get_qun(qun_id)
+                    qq = model_manager.get_qq(qq_id)
 
-                if status in ADD_STATUS:
-                    add = True
-                    deal_add_result(device_task, qq, qun, status)
-                else:
-                    kicked = deal_dist_result(device_task, qq, qun, status)
+                    if status in ADD_STATUS:
+                        add = True
+                        deal_add_result(device_task, qq, qun, status)
+                    else:
+                        kicked = deal_dist_result(device_task, qq, qun, status)
             except:
                 logger.warning('error import line %s' % line, exc_info=1)
 
