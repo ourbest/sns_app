@@ -366,7 +366,7 @@ def webhook(device_task, msg, force=0):
 
     msg = '%s：%s %s' % (device_task.device.friend_text, device_task.task.type.name, msg)
     if device_task.task.type_id == 3:
-        msg += ' URL: ' + extract_url(device_task.task.params)
+        msg += ' URL: ' + extract_url(device_task.task.data)
 
     thread = threading.Thread(target=send_msg, args=(msg, user))
     thread.start()
