@@ -204,13 +204,16 @@ def parse_item_id(url):
 
 def add_dist_qun(device_task):
     device = device_task.device
+    logger.info('%s分发任务手机（%s）', device_task.id, device.friend_text)
 
-    sns_users = device.snsuser_set.filter(type=0, dist=1)
+    sns_users = list(device.snsuser_set.filter(type=0, dist=1))
+    logger.info('%s分发%s个QQ', device_task.id, len(sns_users))
 
     groups = dict()
     ignore_qun = {x.group_id for x in
                   DistTaskLog.objects.filter(success=1, group__app_id=device_task.task.app_id,
                                              created_at__gte=timezone.now() - timedelta(minutes=5))}
+    logger.info('%s分发忽略%s个QQ群', device_task.id, len(ignore_qun))
 
     lines = device_task.data.split('\n')
 
@@ -225,6 +228,9 @@ def add_dist_qun(device_task):
                 ids = {x.group_id for x in GroupTag.objects.filter(group__app_id=device_task.task.app_id, tag__in=tags)}
                 if len(ids) == 0:
                     ids = None
+                else:
+                    logger.info('%s分发最多%s个QQ群', device_task.id, len(ids))
+
         elif line.find('app=') == 0:
             user_lines.append(line)
         elif line.find('apply_qun=') == 0:
@@ -232,7 +238,9 @@ def add_dist_qun(device_task):
 
     for user in sns_users:
         user_groups = user.snsusergroup_set.filter(status=0, active=1)
+        logger.info('%s分发预计%s个QQ群', device_task.id, len(user_groups))
         if user_groups:
+            dup = 0
             group_ids = []
             for group in user_groups:
                 if group.sns_group_id in ignore_qun:
@@ -246,9 +254,12 @@ def add_dist_qun(device_task):
                     TaskGroup(task=device_task.task, sns_user=user, group_id=group.sns_group_id).save()
                     group_ids.append(group.sns_group_id)
                 except:
+                    dup += 1
                     pass
+
             if group_ids:
                 groups[user.login_name] = group_ids
+                logger.info('%s QQ(%s)分发%s个QQ群，忽略%s个群', device_task.id, user.login_name, len(group_ids), dup)
 
     idx = 0
     group_lines = []

@@ -12,7 +12,6 @@ from dj import times
 from dj.utils import api_func_anonymous, api_error
 from django.conf import settings
 from django.core.files.uploadedfile import TemporaryUploadedFile
-from django.db import connections
 from django.db.models import Sum
 from django.http import HttpResponseRedirect, HttpResponse
 from django.utils import timezone
@@ -24,7 +23,7 @@ from backend.api_helper import get_session_user, get_session_app, sns_user_to_js
 from backend.models import User, App, SnsGroup, SnsGroupSplit, PhoneDevice, SnsUser, SnsUserGroup, SnsTaskDevice, \
     DeviceFile, SnsTaskType, SnsTask, ActiveDevice, SnsApplyTaskLog, DistTaskLog, UserActionLog, SnsGroupLost, GroupTag, \
     TaskWorkingLog, AppUser, DeviceTaskData
-from backend.zhiyue_models import ClipItem, ZhiyueUser
+from backend.zhiyue_models import ZhiyueUser
 
 
 @api_func_anonymous
@@ -489,7 +488,13 @@ def my_pending_purge(email, request):
 
 
 @api_func_anonymous
-def my_pending_qun(request, i_size, i_page, keyword, i_export):
+def my_pending_rearrange(email, request):
+    user = api_helper.get_login_user(request, email)
+    # TODO 重新分配
+
+
+@api_func_anonymous
+def my_pending_qun(request, i_size, i_page, keyword, i_export, phone):
     if i_size == 0:
         i_size = 50
 
@@ -501,6 +506,9 @@ def my_pending_qun(request, i_size, i_page, keyword, i_export):
     values = (0, 1) if i_export == 0 else (0,)
     query = SnsGroupSplit.objects.filter(user__email=get_session_user(request),
                                          status__in=values).select_related("group")
+
+    if phone:
+        query = query.filter(phone__label=phone)
 
     if i_export == 1:
         resp = HttpResponse(content_type='text/csv')
@@ -1216,6 +1224,7 @@ def login_info(request):
         ret['app_id'] = user.app.app_id
         ret['app_name'] = user.app.app_name
         ret['username'] = user.name
+        ret['role'] = user.role
     return ret
 
 
