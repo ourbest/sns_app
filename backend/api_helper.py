@@ -238,7 +238,7 @@ def add_dist_qun(device_task):
 
     for user in sns_users:
         user_groups = user.snsusergroup_set.filter(status=0, active=1)
-        logger.info('%s分发预计%s个QQ群', device_task.id, len(user_groups))
+        logger.info('%s QQ(%s)分发预计%s个QQ群', device_task.id, user.login_name, len(user_groups))
         if user_groups:
             dup = 0
             group_ids = []

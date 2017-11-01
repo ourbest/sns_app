@@ -168,7 +168,6 @@ def import_dist_result(device_task, lines):
     if add:
         model_manager.reset_qun_status(device_task)
 
-
     return kicked
 
 
@@ -503,7 +502,7 @@ def my_pending_rearrange(email, request):
 
 
 @api_func_anonymous
-def my_pending_qun(request, i_size, i_page, keyword, i_export, phone):
+def my_pending_qun(email, request, i_size, i_page, keyword, i_export, phone):
     if i_size == 0:
         i_size = 50
 
@@ -512,8 +511,11 @@ def my_pending_qun(request, i_size, i_page, keyword, i_export, phone):
 
     i_page -= 1
 
+    if not email:
+        email = get_session_user(request)
+
     values = (0, 1) if i_export == 0 else (0,)
-    query = SnsGroupSplit.objects.filter(user__email=get_session_user(request),
+    query = SnsGroupSplit.objects.filter(user__email=email,
                                          status__in=values).select_related("group")
 
     if phone:
@@ -920,7 +922,7 @@ def import_qun_stat(ids, device_id, status):
 
 
 @api_func_anonymous
-def import_qun(app, ids, request, email):
+def import_qun(app, ids, request, email, phone, edit_method, i_ignore_dup):
     """
     群号 群名 群人数 qq号[可选]
     :param app:
@@ -945,13 +947,31 @@ def import_qun(app, ids, request, email):
 
     the_app = model_manager.get_app(app)
 
+    device = model_manager.get_phone(phone) if phone else None
+
+    if "edit" == edit_method and device:
+        to_delete = SnsGroupSplit.objects.filter(user=login_user, phone=device)
+        if not i_ignore_dup:
+            to_delete = to_delete.exclude(group__in=exists)
+
+        to_delete.delete()
+
     for line in ids.split('\n'):
         line = line.strip()
         if line:
             total += 1
             account = line.split('\t')  # re.split('\s+', line) ## 群名称有可能有空格
             try:
-                if not account[0].isdigit() and account[0] in exists:
+                if not account[0].isdigit():
+                    continue
+                if account[0] in exists:
+                    if device and i_ignore_dup == 0:
+                        qun = model_manager.get_qun(account[0])
+                        if "new" == edit_method:
+                            SnsGroupSplit.objects.filter(group=qun, user=login_user, status__in=(0, 1)).delete()
+
+                        SnsGroupSplit(group=qun, user=login_user, phone=device).save()
+
                     continue
 
                 logger.info('找到了新群 %s' % line)
@@ -976,15 +996,16 @@ def import_qun(app, ids, request, email):
                         db.status = 2
                         db.snsgroupsplit_set.filter(status=0).update(status=3)
                         db.save()
-                elif login_user and the_app and the_app.self_qun == 1:
-                    SnsGroupSplit(group=db, user=login_user).save()
+                elif login_user and (device or (the_app and the_app.self_qun == 1)):
+                    SnsGroupSplit(group=db, user=login_user, phone=device).save()
             except:
                 logger.warning("error save %s" % line, exc_info=1)
 
     logger.info('共%s个新群' % cnt)
 
-    if the_app and the_app.self_qun == 1:
-        split_qun_to_device(request, email)
+    if not device:
+        if the_app and the_app.self_qun == 1:
+            split_qun_to_device(request, email)
 
     return {
         'count': cnt,
@@ -1256,7 +1277,9 @@ def devices(request, email, i_uid, i_active):
         query = PhoneDevice.objects.filter(owner_id=i_uid)
         if i_active:
             query = query.filter(status=0)
-        return [{'id': x.id, 'label': x.label, 'memo': x.memo, 'num': x.phone_num, 'online': x.id in online,
+        return [{'id': x.id, 'label': x.label, 'memo': x.memo, 'num': x.phone_num,
+                 'display': x.friend_text,
+                 'online': x.id in online,
                  'status': x.status}
                 for x in query]
 
@@ -1267,6 +1290,7 @@ def devices(request, email, i_uid, i_active):
         if i_active:
             query = query.filter(status=0)
         return [{'id': x.id, 'label': x.label, 'owner': x.owner.name, 'memo': x.memo,
+                 'display': x.friend_text,
                  'num': x.phone_num, 'online': x.id in online, 'status': x.status}
                 for x in query]
 
