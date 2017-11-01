@@ -163,7 +163,7 @@ def import_dist_result(device_task, lines):
 
     if kicked:
         model_manager.deal_kicked(device_task.device.owner)
-        api_helper.webhook(device_task, '此次分发被踢了%s个群' % kicked, force=True)
+        api_helper.webhook(device_task, '此次分发检测到被踢了%s个群' % kicked, force=True)
 
     if add:
         model_manager.reset_qun_status(device_task)
