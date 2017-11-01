@@ -142,7 +142,7 @@ def import_dist_result(device_task, lines):
     for line in lines.split('\n'):
         line = line.strip()
         if line:
-            if line.find('删除帐号=') == 1:
+            if line.find('删除帐号=') == 0:
                 api_helper.webhook(device_task, '注意，%s账号从QQ移除了，请检查' % line[len('删除帐号='):], force=True)
                 continue
             try:
