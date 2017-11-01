@@ -137,7 +137,7 @@ def import_dist_result(device_task, lines):
     :param lines:
     :return:
     """
-    kicked = False
+    kicked = 0
     add = False
     for line in lines.split('\n'):
         line = line.strip()
@@ -156,15 +156,20 @@ def import_dist_result(device_task, lines):
                         add = True
                         deal_add_result(device_task, qq, qun, status)
                     else:
-                        kicked = deal_dist_result(device_task, qq, qun, status)
+                        if deal_dist_result(device_task, qq, qun, status):
+                            kicked += 1
             except:
                 logger.warning('error import line %s' % line, exc_info=1)
 
     if kicked:
         model_manager.deal_kicked(device_task.device.owner)
+        api_helper.webhook(device_task, '此次分发被踢了%s个群' % kicked, force=True)
 
     if add:
         model_manager.reset_qun_status(device_task)
+
+
+    return kicked
 
 
 ADD_STATUS = {'付费群', '不存在', '不允许加入', '已加群', '无需验证已加入', '已发送验证', '需要回答问题', '无需验证未加入'}
@@ -182,10 +187,12 @@ def import_add_result(device_task, lines):
     for line in lines.split('\n'):
         line = line.strip()
         try:
-            [qun_id, status, qq_id] = re.split('\s+', line)
-            qun = model_manager.get_qun(qun_id)
-            qq = model_manager.get_qq(qq_id)
-            deal_add_result(device_task, qq, qun, status)
+            values = re.split('\s+', line)
+            if len(values) == 3:
+                [qun_id, status, qq_id] = values
+                qun = model_manager.get_qun(qun_id)
+                qq = model_manager.get_qq(qq_id)
+                deal_add_result(device_task, qq, qun, status)
         except:
             logger.warning('error import line %s' % line, exc_info=1)
 
