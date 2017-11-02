@@ -50,6 +50,7 @@
         <tr>
             <th>成员</th>
             <th>文章</th>
+            <th>分发时间</th>
             <th>PV</th>
             <th>二次分享</th>
             <th>下载页</th>
@@ -60,7 +61,8 @@
         {% for stat in item.items %}
             <tr>
                 <td>{{ stat.name }}</td>
-                <td>{{ stat.title }}</td>
+                <td align="left">{{ stat.title }}</td>
+                <td>{{ stat.time }}</td>
                 <td>{{ stat.weizhan }}</td>
                 <td>{{ stat.reshare }} </td>
                 <td>{{ stat.download }}</td>

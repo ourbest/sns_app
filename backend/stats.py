@@ -138,9 +138,15 @@ def gen_daily_report():
 def get_user_share_stat(date, the_user):
     date_end = date + timedelta(days=3)
     ids = [x.cutt_user_id for x in the_user.appuser_set.all()]
-    items = {api_helper.parse_item_id(x.data) for x in
-             SnsTask.objects.filter(creator=the_user, type_id=3,
-                                    schedule_at__range=(date.date(), date.date() + timedelta(days=1)))}
+    tasks = list(SnsTask.objects.filter(creator=the_user, type_id=3,
+                                        schedule_at__range=(date.date(), date.date() + timedelta(days=1))))
+    items = {api_helper.parse_item_id(x.data) for x in tasks}
+
+    task_dict = dict()
+    for x in tasks:
+        item_id = api_helper.parse_item_id(x.data)
+        if item_id and item_id not in task_dict:
+            task_dict[item_id] = x
 
     # items.update(get_user_share(the_user.app_id, the_user, date))
 
@@ -179,6 +185,7 @@ def get_user_share_stat(date, the_user):
     return [{
         'name': the_user.name,
         'item_id': x.itemId,
+        'time': times.to_str(task_dict.get(str(x.itemId)).started_at, '%H:%M'),
         'title': x.title,
         'weizhan': data.get('%s_%s' % (x.itemId, 'article'), 0),
         'reshare': data.get('%s_%s' % (x.itemId, 'article-reshare'), 0),
