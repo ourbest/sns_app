@@ -431,3 +431,12 @@ class DeviceTaskData(models.Model):
     device_task = models.ForeignKey(SnsTaskDevice)
     created_at = models.DateTimeField(auto_now_add=True)
     lines = models.TextField()
+
+
+class SnsUserKickLog(models.Model):
+    """
+    qq号从QQ中被踢掉的记录
+    """
+    device_task = models.ForeignKey(SnsTaskDevice)
+    sns_user = models.ForeignKey(SnsUser)
+    created_at = models.DateTimeField(auto_now_add=True)

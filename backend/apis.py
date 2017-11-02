@@ -22,7 +22,7 @@ from backend import model_manager, api_helper, caches, stats
 from backend.api_helper import get_session_user, get_session_app, sns_user_to_json, device_to_json, qun_to_json
 from backend.models import User, App, SnsGroup, SnsGroupSplit, PhoneDevice, SnsUser, SnsUserGroup, SnsTaskDevice, \
     DeviceFile, SnsTaskType, SnsTask, ActiveDevice, SnsApplyTaskLog, DistTaskLog, UserActionLog, SnsGroupLost, GroupTag, \
-    TaskWorkingLog, AppUser, DeviceTaskData
+    TaskWorkingLog, AppUser, DeviceTaskData, SnsUserKickLog
 from backend.zhiyue_models import ZhiyueUser
 
 
@@ -139,11 +139,31 @@ def import_dist_result(device_task, lines):
     """
     kicked = 0
     add = False
+    dist_ed_qq = set()
+
+    content = get_task_content(device_task)
+    should_done = set()
+
+    has_unknown = 0
+
+    removed = list()
+
+    for line in content.split('\n'):
+        line = line.strip()
+        if line.find('QQ_') == 0:
+            should_done.add(line.split('=')[1])
+
     for line in lines.split('\n'):
         line = line.strip()
         if line:
             if line.find('删除帐号=') == 0:
-                api_helper.webhook(device_task, '注意，%s账号从QQ移除了，请检查' % line[len('删除帐号='):], force=True)
+                qq_id = line[len('删除帐号='):]
+                if qq_id in should_done:
+                    SnsUserKickLog(sns_user=model_manager.get_qq(qq_id), device_task=device_task).save()
+                    dist_ed_qq.add(qq_id)
+                    removed.append(qq_id)
+                else:
+                    has_unknown += 1
                 continue
             try:
                 values = re.split('\s+', line)
@@ -156,17 +176,34 @@ def import_dist_result(device_task, lines):
                         add = True
                         deal_add_result(device_task, qq, qun, status)
                     else:
+                        dist_ed_qq.add(qq_id)
                         if deal_dist_result(device_task, qq, qun, status):
                             kicked += 1
             except:
                 logger.warning('error import line %s' % line, exc_info=1)
 
-    if kicked:
-        model_manager.deal_kicked(device_task.device.owner)
-        api_helper.webhook(device_task, '此次分发检测到被踢了%s个群' % kicked, force=True)
-
+    message = ''
     if add:
         model_manager.reset_qun_status(device_task)
+
+    if has_unknown:
+        #     should_done.discard(dist_ed_qq)
+        #     if has_unknown == len(should_done):
+        #         for qq_id in should_done:
+        #             SnsUserKickLog(sns_user=model_manager.get_qq(qq_id), device_task=device_task).save()
+        #             removed.add(qq_id)
+        # else:
+        removed.append('和%s个未知QQ' % has_unknown)
+
+    if len(removed):
+        message += '（%s）账号从QQ移除了😭，' % (' '.join(removed))
+
+    if kicked:
+        model_manager.deal_kicked(device_task.device.owner)
+        message += '此次分发检测到被踢了%s个群😢，' % kicked
+
+    if message:
+        api_helper.webhook(device_task, '注意：' + message + '请检查', force=True)
 
     return kicked
 
@@ -260,12 +297,7 @@ def task(id, i_text=0):
                                                    schedule_at__lte=timezone.now()).first()
         if device_task:
             try:
-                old_db = DeviceTaskData.objects.filter(device_task=device_task).first()
-                if old_db:
-                    content = old_db.lines
-                else:
-                    content = _make_task_content(device_task)
-                    DeviceTaskData(device_task=device_task, lines=content).save()
+                content = get_task_content(device_task)
                 ad.status = 1
                 ad.save()
 
@@ -283,6 +315,16 @@ def task(id, i_text=0):
         ad.save()
 
     return {} if i_text == 0 else HttpResponse('', content_type='application/octet-stream')
+
+
+def get_task_content(device_task):
+    old_db = DeviceTaskData.objects.filter(device_task=device_task).first()
+    if old_db:
+        content = old_db.lines
+    else:
+        content = _make_task_content(device_task)
+        DeviceTaskData(device_task=device_task, lines=content).save()
+    return content
 
 
 @api_func_anonymous
@@ -758,9 +800,9 @@ def import_phone(request, ids):
                 device.save()
                 total += 1
             else:
-                device.phone_num = phone_num
+                db.phone_num = phone_num
                 if user:
-                    device.owner_id = user.id
+                    db.owner_id = user.id
 
                 db.save()
 
