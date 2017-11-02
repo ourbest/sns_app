@@ -1,6 +1,5 @@
 import re
 import threading
-from datetime import timedelta
 from random import shuffle
 
 import requests
@@ -11,7 +10,7 @@ from django.utils import timezone
 from logzero import logger
 
 from backend import model_manager, caches
-from backend.models import User, AppUser, TaskGroup, DistTaskLog, GroupTag, SnsGroupSplit
+from backend.models import User, AppUser, TaskGroup, GroupTag, SnsGroupSplit
 
 DEFAULT_APP = 1519662
 
@@ -210,10 +209,10 @@ def add_dist_qun(device_task):
     logger.info('%s分发%s个QQ', device_task.id, len(sns_users))
 
     groups = dict()
-    ignore_qun = {x.group_id for x in
-                  DistTaskLog.objects.filter(success=1, group__app_id=device_task.task.app_id,
-                                             created_at__gte=timezone.now() - timedelta(minutes=5))}
-    logger.info('%s分发忽略%s个QQ群', device_task.id, len(ignore_qun))
+    # ignore_qun = {x.group_id for x in
+    #               DistTaskLog.objects.filter(success=1, group__app_id=device_task.task.app_id,
+    #                                          created_at__gte=timezone.now() - timedelta(minutes=5))}
+    ignore_qun = {}
 
     lines = device_task.data.split('\n')
 

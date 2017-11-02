@@ -196,7 +196,7 @@ def import_dist_result(device_task, lines):
         #             SnsUserKickLog(sns_user=model_manager.get_qq(qq_id), device_task=device_task).save()
         #             removed.add(qq_id)
         # else:
-        removed.append('和%s个未知QQ' % has_unknown)
+        removed.append('%s个未知QQ' % has_unknown)
 
     if len(removed):
         message += '（%s）账号从QQ移除了😭，' % (' '.join(removed))
@@ -206,7 +206,7 @@ def import_dist_result(device_task, lines):
         message += '此次分发检测到被踢了%s个群😢，' % kicked
 
     if message:
-        api_helper.webhook(device_task, '注意：' + message + '请检查', force=True)
+        api_helper.webhook(device_task, '注意：' + message + '请检查', force=len(removed) > 0)
 
     return kicked
 
