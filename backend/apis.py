@@ -170,6 +170,9 @@ def import_dist_result(device_task, lines):
                 if len(values) == 3:
                     [qun_id, status, qq_id] = values
                     qun = model_manager.get_qun(qun_id)
+                    if not qun:
+                        logger.warning('日志中的群号没有记录%s' % qun_id)
+                        continue
                     qq = model_manager.get_qq(qq_id)
 
                     if status in ADD_STATUS:
