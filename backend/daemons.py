@@ -4,8 +4,8 @@ from dj import times
 from dj.utils import api_func_anonymous, logger
 from django.utils import timezone
 
-from backend import api_helper, model_manager, stats
-from backend.models import SnsTask, SnsTaskDevice, App, UserDailyStat, AppDailyStat
+from backend import api_helper, model_manager, stats, zhiyue
+from backend.models import SnsTask, SnsTaskDevice, App, UserDailyStat, AppDailyStat, DailyActive
 
 
 @api_func_anonymous
@@ -26,6 +26,16 @@ def check_online_task():
             api_helper.webhook(task, '未能正常执行，请检查手机的在线状态', True)
 
     return ""
+
+
+@api_func_anonymous
+def save_daily_active():
+    daily_stats = zhiyue.get_app_stat()
+    for daily_stat in daily_stats:
+        iphone = int(daily_stat.get('iphone', 0))
+        android = int(daily_stat.get('android', 0))
+        DailyActive(app_id=daily_stat['app_id'], iphone=iphone,
+                    android=android, total=iphone + android).save()
 
 
 @api_func_anonymous

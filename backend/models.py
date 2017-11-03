@@ -440,3 +440,11 @@ class SnsUserKickLog(models.Model):
     device_task = models.ForeignKey(SnsTaskDevice)
     sns_user = models.ForeignKey(SnsUser)
     created_at = models.DateTimeField(auto_now_add=True)
+
+
+class DailyActive(models.Model):
+    app = models.ForeignKey(App)
+    iphone = models.IntegerField()
+    android = models.IntegerField()
+    total = models.IntegerField()
+    created_at = models.DateTimeField(auto_now_add=True)

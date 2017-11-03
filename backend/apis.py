@@ -1296,8 +1296,8 @@ def login_info(request):
 
     if email:
         user = User.objects.filter(email=email).first()
-        ret['app_id'] = user.app.app_id
-        ret['app_name'] = user.app.app_name
+        ret['app_id'] = user.app.app_id if user.app else 0
+        ret['app_name'] = user.app.app_name if user.app else '没有'
         ret['username'] = user.name
         ret['role'] = user.role
     return ret

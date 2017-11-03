@@ -112,11 +112,13 @@ urlpatterns = [
 
     url(r'^zhiyue/report$', zhiyue.app_report),
     url(r'^zhiyue/report/user$', zhiyue.app_report_user),
+    url(r'^zhiyue/active$', zhiyue.get_app_stat),
 
     # internal
     url(r'^change/ver$', apis.change_js_version),
     url(r'^daemon/check$', daemons.check_online_task),
     url(r'^daemon/stat$', daemons.daily_stat),
+    url(r'^daemon/stat/save', daemons.save_daily_active),
 
     # weixin
     url(r'^wx/contact/sync$', bot_apis.sync_contacts),

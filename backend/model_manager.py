@@ -252,8 +252,10 @@ def add_user_auth(user, app_id):
 
 def get_user_menu(user):
     ret = defaultdict(list)
-
-    for item in MenuItemPerm.objects.filter(role__lte=user.role).order_by('menu__show_order').select_related('menu'):
+    query = MenuItemPerm.objects.filter(role__lte=user.role).order_by('menu__show_order').select_related('menu')
+    if user.role >= 10:
+        query = query.filter(role__gte=10)
+    for item in query:
         items = ret[item.menu.menu_category]
         menu = item.menu
         items.append({

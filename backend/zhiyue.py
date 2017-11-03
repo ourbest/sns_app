@@ -3,12 +3,13 @@ from datetime import datetime
 
 from dj import times
 from dj.utils import api_func_anonymous
+from django.db import connections
 from django.http import HttpResponse
 from django.utils import timezone
 
 from backend import api_helper, model_manager, stats
 from backend.api_helper import get_session_app
-from backend.models import AppUser, AppDailyStat, UserDailyStat
+from backend.models import AppUser, AppDailyStat, UserDailyStat, App
 from backend.zhiyue_models import ShareArticleLog, ClipItem, WeizhanCount, AdminPartnerUser
 
 
@@ -31,8 +32,6 @@ def user_share(i_uid, request):
 def get_user_share_items(app_id, uids):
     data = ShareArticleLog.objects.using('zhiyue').select_related('user', 'article', 'article__item').filter(
         user_id__in=uids, article__partnerId=app_id).order_by("-time")[0:50]
-
-
 
 
 def find_url(x):
@@ -170,3 +169,33 @@ def app_report_user(from_date, to_date):
         'wx_install': x.wx_install,
     } for x in UserDailyStat.objects.filter(report_date__range=(from_date, to_date))
         .select_related('app', 'user').order_by("-pk")]
+
+
+@api_func_anonymous
+def get_app_stat():
+    apps = {str(x.app_id): x.app_name for x in App.objects.filter(stage__in=('分发期', '留守期'))}
+    query = '''
+        select appId,platform,count(*) from pojo_ZhiyueUser where platform in (%s)
+         and appId in (%s)
+         and lastActiveTime > current_date
+        group by appId, platform
+    ''' % ('\'iphone\', \'android\'', ','.join(apps.keys()))
+    data = []
+
+    values = dict()
+    with connections['zhiyue'].cursor() as cursor:
+        cursor.execute(query)
+        rows = cursor.fetchall()
+        for row in rows:
+            sum = values.get(row[0])
+            if not sum:
+                sum = {
+                    'app_id': row[0],
+                    'app_name': apps[row[0]],
+                }
+                values[row[0]] = sum
+                data.append(sum)
+
+            sum['%s' % row[1]] = row[2]
+
+    return data
