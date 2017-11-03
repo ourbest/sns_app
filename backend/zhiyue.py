@@ -173,6 +173,10 @@ def app_report_user(from_date, to_date):
 
 @api_func_anonymous
 def get_app_stat():
+    return do_get_app_stat()
+
+
+def do_get_app_stat():
     apps = {str(x.app_id): x.app_name for x in App.objects.filter(stage__in=('分发期', '留守期'))}
     query = '''
         select appId,platform,count(*) from pojo_ZhiyueUser where platform in (%s)

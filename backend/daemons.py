@@ -30,7 +30,7 @@ def check_online_task():
 
 @api_func_anonymous
 def save_daily_active():
-    daily_stats = zhiyue.get_app_stat()
+    daily_stats = zhiyue.do_get_app_stat()
     for daily_stat in daily_stats:
         iphone = int(daily_stat.get('iphone', 0))
         android = int(daily_stat.get('android', 0))
