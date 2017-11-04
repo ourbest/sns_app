@@ -237,3 +237,33 @@ def do_get_app_stat():
             sum['%s' % row[1]] = row[2]
 
     return sorted(data, key=lambda x: int(x['app_id']))
+
+
+@api_func_anonymous
+def get_new_device():
+    apps = {str(x.app_id): x.app_name for x in App.objects.filter(stage__in=('分发期', '留守期'))}
+    query = '''
+        select appId,platform,count(*) from pojo_ZhiyueUser where platform in (%s)
+         and appId in (%s)
+         and createTime > current_date
+        group by appId, platform
+    ''' % ('\'iphone\', \'android\'', ','.join(apps.keys()))
+    data = []
+
+    values = dict()
+    with connections['zhiyue'].cursor() as cursor:
+        cursor.execute(query)
+        rows = cursor.fetchall()
+        for row in rows:
+            sum = values.get(row[0])
+            if not sum:
+                sum = {
+                    'app_id': row[0],
+                    'app_name': apps[row[0]],
+                }
+                values[row[0]] = sum
+                data.append(sum)
+
+            sum['%s' % row[1]] = row[2]
+
+    return sorted(data, key=lambda x: int(x['app_id']))

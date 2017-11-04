@@ -113,6 +113,7 @@ urlpatterns = [
     url(r'^zhiyue/report$', zhiyue.app_report),
     url(r'^zhiyue/report/user$', zhiyue.app_report_user),
     url(r'^zhiyue/active$', zhiyue.get_app_stat),
+    url(r'^zhiyue/new$', zhiyue.get_new_device),
     url(r'^zhiyue/active/days$', zhiyue.get_stat_before_days),
     url(r'^zhiyue/active/detail$', zhiyue.get_active_detail),
 
