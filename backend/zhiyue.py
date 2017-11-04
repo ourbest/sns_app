@@ -1,5 +1,5 @@
 import re
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from dj import times
 from dj.utils import api_func_anonymous
@@ -9,7 +9,7 @@ from django.utils import timezone
 
 from backend import api_helper, model_manager, stats
 from backend.api_helper import get_session_app
-from backend.models import AppUser, AppDailyStat, UserDailyStat, App
+from backend.models import AppUser, AppDailyStat, UserDailyStat, App, DailyActive
 from backend.zhiyue_models import ShareArticleLog, ClipItem, WeizhanCount, AdminPartnerUser
 
 
@@ -176,6 +176,40 @@ def get_app_stat():
     return do_get_app_stat()
 
 
+@api_func_anonymous
+def get_stat_before_days(i_days):
+    if not i_days:
+        i_days = 1
+
+    cnt = App.objects.filter(stage__in=('分发期', '留守期')).count()
+
+    return sorted([{
+        'app_id': x.app.app_id,
+        'app_name': x.app.app_name,
+        'iphone': x.iphone,
+        'android': x.android,
+    } for x in
+        DailyActive.objects.filter(created_at__lt=timezone.now() - timedelta(days=i_days)).select_related(
+            "app").order_by(
+            "-pk")[:cnt]], key=lambda x: x['app_id'])
+
+
+@api_func_anonymous
+def get_active_detail(app_id, i_today):
+    query = DailyActive.objects.filter(app_id=app_id).extra(
+        where=[
+            'created_at>current_date' if i_today == 1
+            else 'created_at between current_date - interval 1 day and current_date'
+        ])
+
+    return [{
+        'time': times.to_str(x.created_at, '%H:%M'),
+        'iphone': x.iphone,
+        'android': x.android,
+        'total': x.total
+    } for x in query]
+
+
 def do_get_app_stat():
     apps = {str(x.app_id): x.app_name for x in App.objects.filter(stage__in=('分发期', '留守期'))}
     query = '''
@@ -202,4 +236,4 @@ def do_get_app_stat():
 
             sum['%s' % row[1]] = row[2]
 
-    return data
+    return sorted(data, key=lambda x: int(x['app_id']))

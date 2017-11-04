@@ -1246,7 +1246,10 @@ def send_qq():
 
 
 @api_func_anonymous
-def apps(request):
+def apps(request, i_dist):
+    if i_dist:
+        return [{'id': x.app_id, 'name': x.app_name} for x in
+                App.objects.filter(stage__in=['分发期', '留守期'])]
     user = model_manager.get_user(get_session_user(request))
     apps = user.userauthapp_set.all()
     ret = [{'id': user.app.app_id, 'name': user.app.app_name}]
