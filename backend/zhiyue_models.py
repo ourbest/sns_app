@@ -192,3 +192,8 @@ ITEM_TYPES = {
     'article-reshare': '微信文章二次分享',
     'qqarticle-reshare': 'QQ文章二次分享',
 }
+
+
+def get_article_title(item_id):
+    item = ClipItem.objects.using('zhiyue').filter(itemId=item_id).first()
+    return item.title if item else ''

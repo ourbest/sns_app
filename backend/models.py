@@ -454,7 +454,7 @@ class DistArticle(models.Model):
     item_id = models.IntegerField(unique=True)
     app = models.ForeignKey(App)
     title = models.CharField(max_length=255)
-    delete_flag = models.IntegerField()
+    delete_flag = models.IntegerField(default=0)
     category = models.CharField(max_length=30, null=True, blank=True)
     created_at = models.DateTimeField()
     started_at = models.DateTimeField()

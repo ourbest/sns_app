@@ -18,11 +18,11 @@ from django.utils import timezone
 from logzero import logger
 from qiniu import Auth, put_file, etag
 
-from backend import model_manager, api_helper, caches, stats
+from backend import model_manager, api_helper, caches, stats, zhiyue_models
 from backend.api_helper import get_session_user, get_session_app, sns_user_to_json, device_to_json, qun_to_json
 from backend.models import User, App, SnsGroup, SnsGroupSplit, PhoneDevice, SnsUser, SnsUserGroup, SnsTaskDevice, \
     DeviceFile, SnsTaskType, SnsTask, ActiveDevice, SnsApplyTaskLog, DistTaskLog, UserActionLog, SnsGroupLost, GroupTag, \
-    TaskWorkingLog, AppUser, DeviceTaskData, SnsUserKickLog
+    TaskWorkingLog, AppUser, DeviceTaskData, SnsUserKickLog, DistArticle
 from backend.zhiyue_models import ZhiyueUser
 
 
@@ -271,19 +271,33 @@ def deal_add_result(device_task, qq, qun, status):
 
 def _make_task_content(device_task):
     data = device_task.data
-    if device_task.task.type_id == 2:
+    task_type = device_task.task.type_id
+    if task_type == 2:
         # 加群
         model_manager.reset_qun_status(device_task)
         data = api_helper.add_add_qun(device_task)
-    elif device_task.task.type_id == 3:
+    elif task_type == 3:
         # 分发
         data = api_helper.to_share_url(device_task.device.owner, data,
                                        label=device_task.device.label) + api_helper.add_dist_qun(device_task)
-    elif device_task.task.type_id == 5:
+    elif task_type == 5:
         data = api_helper.to_share_url(device_task.device.owner, data,
                                        label=device_task.device.label,
                                        share_type=1) + api_helper.add_wx_params(device_task)
-    return '[task]\nid=%s\ntype=%s\n[data]\n%s' % (device_task.task_id, device_task.task.type_id, data)
+
+    if task_type in (3, 5):
+        item_id = api_helper.parse_item_id(data)
+        if item_id:
+            db = DistArticle.objects.filter(item_id=item_id).first()
+            if not db:
+                try:
+                    DistArticle(item_id=item_id, app_id=device_task.device.owner.app_id,
+                                started_at=timezone.now(),
+                                title=zhiyue_models.get_article_title(item_id)).save()
+                except:
+                    pass
+
+    return '[task]\nid=%s\ntype=%s\n[data]\n%s' % (device_task.task_id, task_type, data)
 
 
 @api_func_anonymous
