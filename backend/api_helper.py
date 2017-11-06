@@ -201,11 +201,27 @@ def parse_item_id(url):
     return u[0] if u else None
 
 
+def add_wx_params(device_task):
+    device = device_task.device
+    logger.info('%s微信分发任务手机（%s）', device_task.id, device.friend_text)
+
+    lines = device_task.data.split('\n')
+
+    user_lines = []
+    for line in lines:
+        if line.find('app=') == 0 or line.find('ratio=') == 0:
+            user_lines.append(line)
+
+    return '\n%s' % '\n'.join(user_lines)
+
+
 def add_dist_qun(device_task):
     device = device_task.device
     logger.info('%s分发任务手机（%s）', device_task.id, device.friend_text)
 
     sns_users = list(device.snsuser_set.filter(type=0, dist=1))
+    shuffle(sns_users)
+
     logger.info('%s分发%s个QQ', device_task.id, len(sns_users))
 
     groups = dict()
@@ -240,6 +256,9 @@ def add_dist_qun(device_task):
         logger.info('%s QQ(%s)分发预计%s个QQ群', device_task.id, user.login_name, len(user_groups))
         if user_groups:
             dup = 0
+            user_groups = list(user_groups)
+            shuffle(user_groups)
+
             group_ids = []
             for group in user_groups:
                 if group.sns_group_id in ignore_qun:
