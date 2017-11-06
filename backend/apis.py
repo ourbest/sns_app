@@ -281,7 +281,8 @@ def _make_task_content(device_task):
                                        label=device_task.device.label) + api_helper.add_dist_qun(device_task)
     elif device_task.task.type_id == 5:
         data = api_helper.to_share_url(device_task.device.owner, data,
-                                       label=device_task.device.label) + api_helper.add_wx_params(device_task)
+                                       label=device_task.device.label,
+                                       share_type=1) + api_helper.add_wx_params(device_task)
     return '[task]\nid=%s\ntype=%s\n[data]\n%s' % (device_task.task_id, device_task.task.type_id, data)
 
 

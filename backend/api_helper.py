@@ -181,7 +181,7 @@ def to_share_url(user, url, share_type=0, label=None):
                 cutt_id = qq.cutt_user_id
 
         u = '%s/%s' % (u, cutt_id)
-        u.replace('http://tz.', 'https://tz.')
+        u = u.replace('http://tz.', 'https://tz.')
         if label:
             suffix = label if len(label) != 11 else '%s___%s' % (label[0:4], label[-4:])
             u += '?l=' + suffix
