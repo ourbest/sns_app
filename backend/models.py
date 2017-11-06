@@ -448,3 +448,25 @@ class DailyActive(models.Model):
     android = models.IntegerField()
     total = models.IntegerField()
     created_at = models.DateTimeField(auto_now_add=True)
+
+
+class DistArticle(models.Model):
+    item_id = models.IntegerField(unique=True)
+    app = models.ForeignKey(App)
+    title = models.CharField(max_length=255)
+    delete_flag = models.IntegerField()
+    category = models.CharField(max_length=30, null=True, blank=True)
+    created_at = models.DateTimeField()
+    started_at = models.DateTimeField()
+
+
+class DistArticleStatDetail(models.Model):
+    article = models.ForeignKey(DistArticle)
+    hour = models.IntegerField()
+    qq_pv = models.IntegerField()
+    wx_pv = models.IntegerField()
+    qq_down = models.IntegerField()
+    wx_down = models.IntegerField()
+    qq_user = models.IntegerField()
+    wx_user = models.IntegerField()
+    created_at = models.DateTimeField()
