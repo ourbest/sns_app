@@ -292,10 +292,10 @@ def _make_task_content(device_task):
             if not db:
                 try:
                     DistArticle(item_id=item_id, app_id=device_task.device.owner.app_id,
-                                started_at=timezone.now(),
+                                started_at=timezone.now(), created_at=timezone.now(),
                                 title=zhiyue_models.get_article_title(item_id)).save()
                 except:
-                    pass
+                    logger.warning('error saving dist item %s' % item_id, exc_info=1)
 
     return '[task]\nid=%s\ntype=%s\n[data]\n%s' % (device_task.task_id, task_type, data)
 
