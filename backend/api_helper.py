@@ -10,7 +10,8 @@ from django.utils import timezone
 from logzero import logger
 
 from backend import model_manager, caches
-from backend.models import User, AppUser, TaskGroup, GroupTag, SnsGroupSplit
+from backend.models import User, AppUser, TaskGroup, GroupTag, SnsGroupSplit, DistTaskLog, SnsApplyTaskLog, SnsGroup, \
+    SnsUser, SnsUserGroup
 
 DEFAULT_APP = 1519662
 
@@ -434,3 +435,109 @@ def send_html_mail(subject, to, html_content, text_content='HTML'):
     msg = EmailMultiAlternatives(subject, text_content, settings.EMAIL_HOST_USER, [to] if isinstance(to, str) else to)
     msg.attach_alternative(html_content, "text/html")
     msg.send()
+
+
+def deal_result_line(device_task, line):
+    values = re.split('\s+', line)
+    if device_task.task.type_id in (2, 3):
+        if len(values) == 3:
+            [qun_id, status, qq_id] = values
+            qun = model_manager.get_qun(qun_id)
+            qq = model_manager.get_qq(qq_id)
+            deal_add_result(device_task, qq, qun, status)
+            if status in ADD_STATUS:
+                deal_add_result(device_task, qq, qun, status)
+            else:
+                deal_dist_result(device_task, qq, qun, status)
+    elif device_task.task.type_id == 1:  # 查群
+        account = line.split('\t')
+        try:
+            db = SnsGroup(group_id=account[0], group_name=account[1], type=0, app_id=device_task.device.owner.app_id,
+                          group_user_count=account[2], created_at=timezone.now(), from_user=device_task.device.owner)
+            db.save()
+            model_manager.process_tag(db)
+            logger.info('发现了新群 %s' % account[0])
+        except:
+            pass
+    elif device_task.task.type_id == 4:  # 统计
+        account = line.split('\t')
+        if len(account) == 4 and account[0].isdigit():
+            device = device_task.device
+            [qun_num, qun_name, qun_user_cnt, qq] = account
+            qun = SnsGroup.objects.filter(group_id=qun_num, type=0).first()
+            sns_user = SnsUser.objects.filter(login_name=qq, type=0).first()
+            logger.info("Sns user %s not found device is %s", qq, device.id)
+            if not sns_user:
+                sns_user = SnsUser(name=qq, login_name=qq, passwd='_',
+                                   phone=device.phone_num, device=device,
+                                   owner=device.owner, app=device.owner.app)
+                sns_user.save()
+            elif sns_user.device != device:
+                sns_user.device = device
+                sns_user.owner = device.owner
+                sns_user.phone = device.label
+                sns_user.save()
+
+            if not qun:
+                qun_user_cnt = 0 if not qun_user_cnt.isdigit() else int(qun_user_cnt)
+                qun = SnsGroup(group_id=qun_num, group_name=qun_name, type=0, app_id=sns_user.app_id,
+                               group_user_count=qun_user_cnt, status=2, created_at=timezone.now(),
+                               from_user_id=device_task.device.owner_id)
+                qun.save()
+                model_manager.process_tag(qun)
+            else:
+                qun.group_name = qun_name
+                qun.group_user_count = qun_user_cnt
+                qun.status = 2
+                qun.save()
+                model_manager.process_tag(qun)
+
+            found = qun.snsusergroup_set.filter(sns_user=sns_user).first()
+            if found:
+                if found.status != 0:
+                    found.status = 0
+                    found.active = 1
+                    found.save()
+            else:
+                found = SnsUserGroup(sns_group=qun, sns_user=sns_user, status=0, active=1)
+                found.save()
+
+            qun.snsgroupsplit_set.filter(phone=device).update(status=3)
+
+            SnsApplyTaskLog.objects.filter(account=sns_user, memo='已发送验证', group=qun).update(status=1)
+
+    return None
+
+
+def deal_dist_result(device_task, qq, qun, status):
+    DistTaskLog(task=device_task, group=qun, sns_user=qq, status=status,
+                success=1 if status == '已分发' else 0).save()
+
+    kicked = False
+
+    if status == '被踢出':
+        ug = qun.snsusergroup_set.filter(sns_user=qq).first()
+        if ug:
+            model_manager.set_qun_kicked(ug)
+        kicked = True
+
+    return kicked
+
+
+def deal_add_result(device_task, qq, qun, status):
+    SnsApplyTaskLog(device=device_task.device, device_task=device_task, account=qq, memo=status,
+                    group=qun).save()
+    if status in ('付费群', '不存在', '不允许加入'):
+        model_manager.set_qun_useless(qun)
+    elif status in ('已加群', '无需验证已加入'):
+        model_manager.set_qun_join(qq, qun)
+    elif status in ('已发送验证',):
+        model_manager.set_qun_applying(device_task.device, qun)
+    elif status in ('需要回答问题',):
+        model_manager.set_qun_manual(qun)
+    elif status in ('无需验证未加入',):
+        pass
+
+
+ADD_STATUS = {'付费群', '不存在', '不允许加入', '已加群', '无需验证已加入', '已发送验证', '需要回答问题', '无需验证未加入'}
+DIST_STATUS = {}

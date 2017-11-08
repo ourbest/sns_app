@@ -7,6 +7,7 @@ urlpatterns = [
     url(r'^upload$', apis.upload),
     url(r'^task$', apis.task),
     url(r'^report$', apis.report_progress),
+    url(r'^result$', apis.report_result),
     url(r'^daily/report$', stats.gen_daily_report),
     # url(r'^image$', apis.image),
     url(r'^qr$', bot_apis.login_qr),

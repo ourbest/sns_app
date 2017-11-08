@@ -70,17 +70,17 @@ def extract_all_items():
 
 
 def make_stats():
-    for item in DistArticle.objects.filter(created_at__gte=timezone.now() - timedelta(days=3)):
-        qq_stat = stats.get_item_stat(item.app_id, item.item_id, item.started_at)
-        wx_stat = stats.get_item_stat(item.app_id, item.item_id, item.started_at)
+    for item in DistArticle.objects.all(): # filter(created_at__gte=timezone.now() - timedelta(days=3)):
+        # qq_stat = stats.get_item_stat(item.app_id, item.item_id, item.started_at)
+        wx_stat = stats.get_item_stat(item.app_id, item.item_id, item.started_at, user_type=1)
 
         db = DistArticleStat.objects.filter(article=item).first()
         if not db:
             db = DistArticleStat(article=item)
 
-        db.qq_pv = qq_stat.get('weizhan')
-        db.qq_down = qq_stat.get('download')
-        db.qq_user = qq_stat.get('users')
+        # db.qq_pv = qq_stat.get('weizhan')
+        # db.qq_down = qq_stat.get('download')
+        # db.qq_user = qq_stat.get('users')
 
         db.wx_pv = wx_stat.get('weizhan')
         db.wx_down = wx_stat.get('download')

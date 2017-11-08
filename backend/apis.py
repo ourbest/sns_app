@@ -19,9 +19,10 @@ from logzero import logger
 from qiniu import Auth, put_file, etag
 
 from backend import model_manager, api_helper, caches, stats, zhiyue_models
-from backend.api_helper import get_session_user, get_session_app, sns_user_to_json, device_to_json, qun_to_json
+from backend.api_helper import get_session_user, get_session_app, sns_user_to_json, device_to_json, qun_to_json, \
+    deal_dist_result, deal_add_result, ADD_STATUS
 from backend.models import User, App, SnsGroup, SnsGroupSplit, PhoneDevice, SnsUser, SnsUserGroup, SnsTaskDevice, \
-    DeviceFile, SnsTaskType, SnsTask, ActiveDevice, SnsApplyTaskLog, DistTaskLog, UserActionLog, SnsGroupLost, GroupTag, \
+    DeviceFile, SnsTaskType, SnsTask, ActiveDevice, SnsApplyTaskLog, UserActionLog, SnsGroupLost, GroupTag, \
     TaskWorkingLog, AppUser, DeviceTaskData, SnsUserKickLog, DistArticle
 from backend.zhiyue_models import ZhiyueUser
 
@@ -211,10 +212,6 @@ def import_dist_result(device_task, lines):
     return kicked
 
 
-ADD_STATUS = {'付费群', '不存在', '不允许加入', '已加群', '无需验证已加入', '已发送验证', '需要回答问题', '无需验证未加入'}
-DIST_STATUS = {}
-
-
 def import_add_result(device_task, lines):
     """
     1列 群号，2列 属性，3列QQ号
@@ -236,37 +233,6 @@ def import_add_result(device_task, lines):
             logger.warning('error import line %s' % line, exc_info=1)
 
     model_manager.reset_qun_status(device_task)
-
-
-def deal_dist_result(device_task, qq, qun, status):
-    DistTaskLog(task=device_task, group=qun, sns_user=qq, status=status,
-                success=1 if status == '已分发' else 0).save()
-
-    kicked = False
-
-    if status == '被踢出':
-        ug = qun.snsusergroup_set.filter(sns_user=qq).first()
-        if ug:
-            model_manager.set_qun_kicked(ug)
-        kicked = True
-
-    model_manager.reset_qun_status(device_task)
-    return kicked
-
-
-def deal_add_result(device_task, qq, qun, status):
-    SnsApplyTaskLog(device=device_task.device, device_task=device_task, account=qq, memo=status,
-                    group=qun).save()
-    if status in ('付费群', '不存在', '不允许加入'):
-        model_manager.set_qun_useless(qun)
-    elif status in ('已加群', '无需验证已加入'):
-        model_manager.set_qun_join(qq, qun)
-    elif status in ('已发送验证',):
-        model_manager.set_qun_applying(device_task.device, qun)
-    elif status in ('需要回答问题',):
-        model_manager.set_qun_manual(qun)
-    elif status in ('无需验证未加入',):
-        pass
 
 
 def _make_task_content(device_task):
@@ -952,6 +918,7 @@ def import_qun_stat(ids, device_id, status):
                         if qun.status != 2:
                             qun.status = 2
                             qun.save()
+                        qun.snsgroupsplit_set.filter(phone=device).update(status=3)
 
                     SnsUserGroup(sns_group=qun, sns_user=sns_user, status=0, active=1).save()
                     SnsApplyTaskLog.objects.filter(account=sns_user, memo='已发送验证', group=qun).update(status=1)
@@ -968,6 +935,8 @@ def import_qun_stat(ids, device_id, status):
                     qun.group_name = qun_name
                     qun.group_user_count = qun_user_cnt
                     qun.save()
+
+                    qun.snsgroupsplit_set.filter(phone=device).update(status=3)
 
             if status == 2:
                 for group in all_groups:
@@ -1611,6 +1580,18 @@ def re_import(i_file_id):
         _after_upload(file.device_task, file.device_task.id, file_name, file.device, file.type)
 
     return ''
+
+
+@api_func_anonymous
+def report_result(id, task_id, line):
+    response = HttpResponse('')
+    if not id or not task_id:
+        return response
+    device_task = SnsTaskDevice.objects.filter(device__label=id, task_id=task_id).first()
+    if device_task:
+        api_helper.deal_result_line(device_task, line)
+
+    return response
 
 
 @api_func_anonymous

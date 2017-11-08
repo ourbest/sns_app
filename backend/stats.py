@@ -187,6 +187,7 @@ def get_user_share_stat(date, the_user):
         'name': the_user.name,
         'item_id': x.itemId,
         'time': times.to_str(task_dict.get(str(x.itemId)).started_at, '%H:%M'),
+        'date': times.to_str(task_dict.get(str(x.itemId)).started_at, '%y-%m-%d'),
         'title': x.title,
         'weizhan': data.get('%s_%s' % (x.itemId, 'article'), 0),
         'reshare': data.get('%s_%s' % (x.itemId, 'article-reshare'), 0),
