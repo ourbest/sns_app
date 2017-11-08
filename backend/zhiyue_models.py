@@ -196,4 +196,7 @@ ITEM_TYPES = {
 
 def get_article_title(item_id):
     item = ClipItem.objects.using('zhiyue').filter(itemId=item_id).first()
-    return item.title if item else ''
+    if not item:
+        return '（无此文章）'
+    else:
+        return item.title if item.title else '(无标题)'

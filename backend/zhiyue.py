@@ -47,7 +47,7 @@ def get_url_title(url):
     if u:
         article_id = u[0]
         item = ClipItem.objects.using('zhiyue').filter(itemId=article_id).first()
-        return item.title
+        return item.title if item.title else '(无标题)'
     return None
 
 

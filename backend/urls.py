@@ -100,6 +100,7 @@ urlpatterns = [
     url(r'^team/users$', apis.team_users),
     url(r'^team/summary/qun$', apis.sum_team_qun),
     url(r'^team/summary/dist$', zhiyue.sum_team_dist),
+    url(r'^team/articles$', stats.team_articles),
 
     url(r'^tmp$', apis.temp_func),
     url(r'^import/result$', apis.re_import),
@@ -123,6 +124,7 @@ urlpatterns = [
     url(r'^daemon/check$', daemons.check_online_task),
     url(r'^daemon/stat$', daemons.daily_stat),
     url(r'^daemon/stat/save$', daemons.save_daily_active),
+    url(r'^daemon/stat/article$', stats.get_item_stat_values),
 
     # weixin
     url(r'^wx/contact/sync$', bot_apis.sync_contacts),
