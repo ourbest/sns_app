@@ -509,8 +509,10 @@ def deal_result_line(device_task, line):
 
 
 def deal_dist_result(device_task, qq, qun, status):
-    DistTaskLog(task=device_task, group=qun, sns_user=qq, status=status,
-                success=1 if status == '已分发' else 0).save()
+    db = DistTaskLog.objects.filter(task=device_task, group=qun, sns_user=qq).first()
+    if not db:
+        DistTaskLog(task=device_task, group=qun, sns_user=qq, status=status,
+                    success=1 if status == '已分发' else 0).save()
 
     kicked = False
 

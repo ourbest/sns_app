@@ -23,7 +23,7 @@ from backend.api_helper import get_session_user, get_session_app, sns_user_to_js
     deal_dist_result, deal_add_result, ADD_STATUS
 from backend.models import User, App, SnsGroup, SnsGroupSplit, PhoneDevice, SnsUser, SnsUserGroup, SnsTaskDevice, \
     DeviceFile, SnsTaskType, SnsTask, ActiveDevice, SnsApplyTaskLog, UserActionLog, SnsGroupLost, GroupTag, \
-    TaskWorkingLog, AppUser, DeviceTaskData, SnsUserKickLog, DistArticle
+    TaskWorkingLog, AppUser, DeviceTaskData, SnsUserKickLog, DistArticle, DistTaskLog
 from backend.zhiyue_models import ZhiyueUser
 
 
@@ -228,7 +228,11 @@ def import_add_result(device_task, lines):
                 [qun_id, status, qq_id] = values
                 qun = model_manager.get_qun(qun_id)
                 qq = model_manager.get_qq(qq_id)
-                deal_add_result(device_task, qq, qun, status)
+                db = SnsApplyTaskLog.objects.filter(device=device_task.device,
+                                                    device_task=device_task,
+                                                    account=qq, group=qun).first()
+                if not db:
+                    deal_add_result(device_task, qq, qun, status)
         except:
             logger.warning('error import line %s' % line, exc_info=1)
 
