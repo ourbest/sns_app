@@ -1,9 +1,12 @@
 # Create your tests here.
+from datetime import timedelta
+from time import sleep
+
 from django.utils import timezone
 from logzero import logger
 
-from backend import model_manager
-from backend.models import SnsGroupSplit, SnsGroup, SnsUser, SnsUserGroup
+from backend import model_manager, api_helper, stats, zhiyue_models
+from backend.models import SnsGroupSplit, SnsGroup, SnsUser, SnsUserGroup, SnsTask, DistArticle, DistArticleStat
 
 
 def clean_split_data():
@@ -46,6 +49,46 @@ def remove_dup_ids():
                 qun_ids_done.add(row.group_id)
             else:
                 row.delete()
+
+
+def extract_all_items():
+    done = set()
+    for task in SnsTask.objects.filter(type__in=(3, 5)):
+        the_id = api_helper.parse_item_id(task.data)
+        if the_id and the_id not in done:
+            try:
+                std = task.snstaskdevice_set.filter(started_at__isnull=False).order_by('started_at').first()
+                done.add(the_id)
+                if std:
+                    DistArticle(item_id=the_id, app_id=std.device.owner.app_id,
+                                started_at=std.started_at, created_at=std.started_at,
+                                title=zhiyue_models.get_article_title(the_id)).save()
+            except:
+                logger.warning('error saving dist item %s' % the_id, exc_info=1)
+
+    pass
+
+
+def make_stats():
+    for item in DistArticle.objects.filter(created_at__gte=timezone.now() - timedelta(days=3)):
+        qq_stat = stats.get_item_stat(item.app_id, item.item_id, item.started_at)
+        wx_stat = stats.get_item_stat(item.app_id, item.item_id, item.started_at)
+
+        db = DistArticleStat.objects.filter(article=item).first()
+        if not db:
+            db = DistArticleStat(article=item)
+
+        db.qq_pv = qq_stat.get('weizhan')
+        db.qq_down = qq_stat.get('download')
+        db.qq_user = qq_stat.get('users')
+
+        db.wx_pv = wx_stat.get('weizhan')
+        db.wx_down = wx_stat.get('download')
+        db.wx_user = wx_stat.get('users')
+
+        db.save()
+        print('stat %s' % item.item_id)
+        sleep(1)
 
 
 def import_qun_test(file):

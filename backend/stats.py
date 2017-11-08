@@ -5,10 +5,11 @@ from dj.utils import api_func_anonymous
 from django.conf import settings
 from django.db import connections
 from django.template.loader import render_to_string
+from django.utils import timezone
 
 from backend import api_helper
 from backend import model_manager
-from backend.models import SnsTask
+from backend.models import SnsTask, AppUser, DistArticle, DistArticleStat
 from backend.models import User, App
 from backend.zhiyue_models import ClipItem
 from backend.zhiyue_models import HighValueUser, ShareArticleLog
@@ -193,3 +194,63 @@ def get_user_share_stat(date, the_user):
             '%s_%s' % (x.itemId, 'article-mochuang'), 0) + data.get('%s_%s' % (x.itemId, 'tongji-down'), 0),
         'users': data.get('%s_du' % x.itemId, 0),
     } for x in ClipItem.objects.using(ClipItem.db_name()).filter(itemId__in=items)]
+
+
+def get_item_stat_values():
+    """
+    统计3天内的文章
+    :return:
+    """
+    for item in DistArticle.objects.filter(created_at__gte=timezone.now() - timedelta(days=3)):
+        qq_stat = get_item_stat(item.app_id, item.item_id, item.started_at)
+        wx_stat = get_item_stat(item.app_id, item.item_id, item.started_at)
+
+        db = DistArticleStat.objects.filter(article=item).first()
+        if not db:
+            db = DistArticleStat(article=item, app_id=item.app_id)
+
+        db.qq_pv = qq_stat.get('weizhan')
+        db.qq_down = qq_stat.get('download')
+        db.qq_user = qq_stat.get('users')
+
+        db.wx_pv = wx_stat.get('weizhan')
+        db.wx_down = wx_stat.get('download')
+        db.wx_user = wx_stat.get('users')
+
+        db.save()
+
+
+def get_item_stat(app_id, item_id, from_time, user_type=0):
+    date_end = from_time + timedelta(days=3)
+    ids = [x.cutt_user_id for x in AppUser.objects.filter(user__app_id=app_id, type=user_type)]
+
+    query = 'SELECT itemType, count(1) as cnt FROM datasystem_WeizhanItemView ' \
+            'WHERE itemId = %s AND shareUserId in (%s) AND time BETWEEN \'%s\' AND \'%s\' ' \
+            'GROUP BY itemType' % (
+                item_id, ','.join(map(str, ids)), times.to_date_str(from_time),
+                times.to_date_str(date_end))
+    device_user_query = 'select count(1) as cnt from datasystem_DeviceUser ' \
+                        'where sourceItemId = %s and sourceUserId in (%s) ' \
+                        'and createTime between \'%s\' AND \'%s\' GROUP BY sourceItemId' % (
+                            item_id, ','.join(map(str, ids)), times.to_date_str(from_time),
+                            times.to_date_str(date_end))
+    data = {}
+    if not ids:
+        return []
+
+    with connections['zhiyue'].cursor() as cursor:
+        cursor.execute(query)
+        rows = cursor.fetchall()
+        for row in rows:
+            data[row[0]] = row[1]
+
+        cursor.execute(device_user_query)
+        rows = cursor.fetchall()
+        for row in rows:
+            data['du'] = row[0]
+    return {
+        'weizhan': data.get('article', 0),
+        'reshare': data.get('article-reshare', 0),
+        'download': data.get('article-down', 0) + data.get('article-mochuang', 0) + data.get('tongji-down', 0),
+        'users': data.get('du', 0),
+    }

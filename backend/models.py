@@ -469,4 +469,16 @@ class DistArticleStatDetail(models.Model):
     wx_down = models.IntegerField()
     qq_user = models.IntegerField()
     wx_user = models.IntegerField()
-    created_at = models.DateTimeField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+
+class DistArticleStat(models.Model):
+    article = models.ForeignKey(DistArticle)
+    qq_pv = models.IntegerField()
+    wx_pv = models.IntegerField()
+    qq_down = models.IntegerField()
+    wx_down = models.IntegerField()
+    qq_user = models.IntegerField()
+    wx_user = models.IntegerField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
