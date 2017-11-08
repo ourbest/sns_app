@@ -444,7 +444,6 @@ def deal_result_line(device_task, line):
             [qun_id, status, qq_id] = values
             qun = model_manager.get_qun(qun_id)
             qq = model_manager.get_qq(qq_id)
-            deal_add_result(device_task, qq, qun, status)
             if status in ADD_STATUS:
                 deal_add_result(device_task, qq, qun, status)
             else:
