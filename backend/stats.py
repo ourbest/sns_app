@@ -330,7 +330,7 @@ def team_articles(request, i_page, i_size):
 def to_stat_json(x, item):
     return {
         'id': x.id,
-        'title': x.title,
+        'title': x.title if x.title else '(无标题)',
         'item_id': x.item_id,
         'deleted': x.delete_flag,
         'category': x.category,
