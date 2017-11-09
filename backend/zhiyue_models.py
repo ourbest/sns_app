@@ -200,3 +200,36 @@ def get_article_title(item_id):
         return '（无此文章）'
     else:
         return item.title if item.title else '(无标题)'
+
+
+class CouponInst(models.Model):
+    partnerId = models.IntegerField()
+    couponId = models.IntegerField()
+    couponNum = models.IntegerField(primary_key=True)
+    userId = models.BigIntegerField()
+    useDate = models.DateTimeField()
+
+    @staticmethod
+    def db_name():
+        return 'zhiyue'
+
+    class Meta:
+        db_table = 'partner_CouponInst'
+        managed = False
+
+
+class ShopCouponStatSum(models.Model):
+    partnerId = models.IntegerField()
+    ownerName = models.CharField(max_length=50)
+    shopName = models.CharField(max_length=50)
+    useDate = models.CharField(max_length=10)
+    ownerId = models.IntegerField(primary_key=True)
+    useNum = models.IntegerField()
+
+    @staticmethod
+    def db_name():
+        return 'zhiyue'
+
+    class Meta:
+        db_table = 'partner_ShopCouponStatSum'
+        managed = False
