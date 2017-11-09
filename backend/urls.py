@@ -6,6 +6,7 @@ app_name = 'backend'
 urlpatterns = [
     url(r'^upload$', apis.upload),
     url(r'^task$', apis.task),
+    url(r'^url$', apis.redirect),
     url(r'^report$', apis.report_progress),
     url(r'^result$', apis.report_result),
     url(r'^daily/report$', stats.gen_daily_report),
@@ -89,6 +90,8 @@ urlpatterns = [
     url(r'^user/delegates$', users.delegates),
     url(r'^user/delegated$', users.delegated),
     url(r'^user/delegate/update$', users.set_delegates),
+
+    url(r'^article/attr$', apis.set_article_attr),
 
     url(r'^share/items$', apis.get_share_items),
 

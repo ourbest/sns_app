@@ -23,8 +23,8 @@ from backend.api_helper import get_session_user, get_session_app, sns_user_to_js
     deal_dist_result, deal_add_result, ADD_STATUS
 from backend.models import User, App, SnsGroup, SnsGroupSplit, PhoneDevice, SnsUser, SnsUserGroup, SnsTaskDevice, \
     DeviceFile, SnsTaskType, SnsTask, ActiveDevice, SnsApplyTaskLog, UserActionLog, SnsGroupLost, GroupTag, \
-    TaskWorkingLog, AppUser, DeviceTaskData, SnsUserKickLog, DistArticle, DistTaskLog
-from backend.zhiyue_models import ZhiyueUser
+    TaskWorkingLog, AppUser, DeviceTaskData, SnsUserKickLog, DistArticle
+from backend.zhiyue_models import ZhiyueUser, ClipItem
 
 
 @api_func_anonymous
@@ -1738,3 +1738,16 @@ def sum_app_user(app, user_id, callback=None):
     if callback:
         callback(ret)
     return ret
+
+
+@api_func_anonymous
+def set_article_attr(article_id, key, value):
+    db = DistArticle.objects.filter(pk=article_id).first()
+    setattr(db, key, value)
+    db.save()
+
+def redirect(request):
+    item_id = request.GET.get('id')
+    app_id = request.GET.get('app')
+    item = model_manager.query(ClipItem).filter(itemId=item_id).first()
+    return HttpResponseRedirect('http://www.cutt.com/weizhan/article/%s/%s/%s' % (item.clipId, item_id, app_id))

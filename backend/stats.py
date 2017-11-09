@@ -198,7 +198,7 @@ def get_user_share_stat(date, the_user):
 
 
 @api_func_anonymous
-def get_item_stat_values():
+def get_item_stat_values(app):
     """
     统计3天内的文章
     :return:
@@ -206,7 +206,10 @@ def get_item_stat_values():
     item_apps = dict()
     article_dict = dict()
     from_time = timezone.now() - timedelta(days=3)
-    for item in DistArticle.objects.filter(started_at__gte=from_time):
+    query = DistArticle.objects.filter(started_at__gte=from_time)
+    if app:
+        query = query.filter(app_id=app)
+    for item in query:
         if item.app_id not in item_apps:
             item_apps[item.app_id] = list()
 
@@ -243,12 +246,12 @@ def batch_item_stat(app_id, items, from_time, user_type=0):
             'WHERE itemId in (%s) AND shareUserId in (%s) AND time BETWEEN \'%s\' AND \'%s\' ' \
             'GROUP BY itemId, itemType' % (
                 ','.join(map(str, items)), ','.join(map(str, ids)), times.to_date_str(from_time),
-                times.to_date_str(date_end))
+                times.to_str(date_end, '%Y-%m-%d %H:%M:%S'))
     device_user_query = 'select sourceItemId, count(1) as cnt from datasystem_DeviceUser ' \
                         'where sourceItemId in (%s) and sourceUserId in (%s) ' \
                         'and createTime between \'%s\' AND \'%s\' GROUP BY sourceItemId' % (
                             ','.join(map(str, items)), ','.join(map(str, ids)), times.to_date_str(from_time),
-                            times.to_date_str(date_end))
+                            times.to_date_str(date_end, '%Y-%m-%d %H:%M:%S'))
     data = dict()
     if not ids:
         return []
@@ -316,7 +319,7 @@ def team_articles(request, i_page, i_size):
     app = api_helper.get_session_app(request)
     articles = DistArticle.objects.filter(app_id=app).order_by("-started_at")[offset:size + offset]
     total = DistArticle.objects.filter(app_id=app).count()
-    stat_data = {x.id: x for x in DistArticleStat.objects.filter(article_id__in=[x.id for x in articles])}
+    stat_data = {x.article_id: x for x in DistArticleStat.objects.filter(article_id__in=[x.id for x in articles])}
 
     return {
         'total': total,
@@ -326,7 +329,12 @@ def team_articles(request, i_page, i_size):
 
 def to_stat_json(x, item):
     return {
+        'id': x.id,
         'title': x.title,
+        'item_id': x.item_id,
+        'deleted': x.delete_flag,
+        'category': x.category,
+        'url': '/api/url?app=%s&id=%s' % (x.app_id, x.item_id),
         'time': times.to_str(x.started_at, '%H:%M'),
         'date': times.to_str(x.started_at, '%y-%m-%d'),
         'qq_pv': item.qq_pv if item else 0,
