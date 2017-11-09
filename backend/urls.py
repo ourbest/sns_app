@@ -1,9 +1,11 @@
 from django.conf.urls import url
 
-from backend import apis, users, zhiyue, tasks, daemons, bot_apis, stats
+from backend import apis, users, zhiyue, tasks, daemons, bot_apis, stats, exts
 
 app_name = 'backend'
 urlpatterns = [
+    url(r'^ext/stat', exts.daily_stat),
+
     url(r'^upload$', apis.upload),
     url(r'^task$', apis.task),
     url(r'^url$', apis.redirect),
