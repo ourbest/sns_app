@@ -273,7 +273,7 @@ def get_new_device():
 def get_offline_ids(request, date):
     date = times.localtime(
         datetime.now().replace(hour=0, second=0,
-                               minute=0, microsecond=0) if not date else datetime.strptime(date, '%Y-%m-%d'))
+                               minute=0, microsecond=0) if not date else datetime.strptime(date[0:10], '%Y-%m-%d'))
     app = api_helper.get_session_app(request)
 
     # today = timezone.now().date()

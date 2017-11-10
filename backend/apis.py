@@ -98,7 +98,7 @@ def upload(type, id, task_id, content, name, request):
         thread = threading.Thread(target=re_import, args=(device_file.id,))
         thread.start()
     else:
-        dest = '/tmp/' + timezone.now().timestamp()
+        dest = '/tmp/%s' % timezone.now().timestamp()
         copyfile(tmp_file, dest)
         thread = threading.Thread(target=_after_upload, args=(device_task, task_id, dest, device, type))
         thread.start()
@@ -1745,6 +1745,7 @@ def set_article_attr(article_id, key, value):
     db = DistArticle.objects.filter(pk=article_id).first()
     setattr(db, key, value)
     db.save()
+
 
 def redirect(request):
     item_id = request.GET.get('id')
