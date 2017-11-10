@@ -3,20 +3,42 @@
 <head>
     <meta charset="UTF-8">
     <title>日活统计</title>
+    <style>
+        .red {
+            color: red;
+        }
+
+        .green {
+            color: green;
+        }
+    </style>
 </head>
 <body>
+<h1 align="center">{{ name }}</h1>
 <table width="100%" cellpadding="2" cellspacing="2" border="1" style="border-collapse: collapse">
     <tr>
-        <th>&nbsp;</th>
+        <th width="100">&nbsp;</th>
         <th>苹果</th>
         <th>安卓</th>
         <th>总数</th>
     </tr>
     <tr align="center">
         <td>今日</td>
-        <td>{{ today.iphone }}</td>
-        <td>{{ today.android }}</td>
-        <td>{{ today.total }}</td>
+        <td class="{% if today.iphone > yesterday.iphone %}
+        red
+        {% else %}
+        green
+        {% endif %}">{{ today.iphone }}</td>
+        <td class="{% if today.android > yesterday.android %}
+        red
+        {% else %}
+        green
+        {% endif %}">{{ today.android }}</td>
+        <td class="{% if today.total > yesterday.total %}
+        red
+        {% else %}
+        green
+        {% endif %}">{{ today.total }}</td>
     </tr>
     <tr align="center">
         <td>昨日同期</td>

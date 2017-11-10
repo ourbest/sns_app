@@ -10,7 +10,7 @@ from django.utils import timezone
 from backend import api_helper, model_manager, stats
 from backend.api_helper import get_session_app
 from backend.models import AppUser, AppDailyStat, UserDailyStat, App, DailyActive
-from backend.zhiyue_models import ShareArticleLog, ClipItem, WeizhanCount, AdminPartnerUser
+from backend.zhiyue_models import ShareArticleLog, ClipItem, WeizhanCount, AdminPartnerUser, CouponInst
 
 
 @api_func_anonymous
@@ -267,3 +267,13 @@ def get_new_device():
             sum['%s' % row[1]] = row[2]
 
     return sorted(data, key=lambda x: int(x['app_id']))
+
+
+@api_func_anonymous
+def get_offline_ids(request):
+    app = api_helper.get_session_app(request)
+
+    today = timezone.now().date()
+    query = model_manager.query(CouponInst).filter(partnerId=app, status=1,
+                                                   useDate__range=(today, today + timedelta(days=1)))
+    return [x.userId for x in query] if app else ""

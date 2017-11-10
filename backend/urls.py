@@ -134,4 +134,7 @@ urlpatterns = [
     # weixin
     url(r'^wx/contact/sync$', bot_apis.sync_contacts),
     url(r'^wx/contacts$', bot_apis.get_contacts),
+
+    # coupon
+    url(r'coupon/users$', zhiyue.get_offline_ids),
 ]

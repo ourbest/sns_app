@@ -208,6 +208,7 @@ class CouponInst(models.Model):
     couponNum = models.IntegerField(primary_key=True)
     userId = models.BigIntegerField()
     useDate = models.DateTimeField()
+    status = models.IntegerField()
 
     @staticmethod
     def db_name():
