@@ -10,7 +10,6 @@ from backend import caches
 from backend.models import PhoneDevice, SnsTaskType, App, User, ActiveDevice, SnsUser, SnsGroup, UserAuthApp, \
     MenuItemPerm, SnsGroupLost, Tag, GroupTag
 from backend.models import SnsUserGroup, SnsGroupSplit
-from backend.zhiyue_models import AdminPartnerUser
 
 
 def get_phone(label):
@@ -64,16 +63,16 @@ def mark_task_finish(device_task):
     _set_task_status(device_task, 2)
 
     from backend import api_helper
-    api_helper.webhook(device_task, '执行完毕, 共耗时%s秒' %
-                       (device_task.finish_at - device_task.started_at).total_seconds())
+    api_helper.webhook(device_task, '执行完毕, 共耗时%s分钟' %
+                       int((device_task.finish_at - device_task.started_at).total_seconds() / 60))
 
 
 def mark_task_cancel(device_task, notify=True):
     _set_task_status(device_task, 3)
     if notify:
         from backend import api_helper
-        api_helper.webhook(device_task, '已放弃, 共耗时%s秒' %
-                           (device_task.finish_at - device_task.started_at).total_seconds(), force=True)
+        api_helper.webhook(device_task, '已放弃, 共耗时%s分钟' %
+                           int((device_task.finish_at - device_task.started_at).total_seconds() / 60), force=True)
 
 
 def _set_task_status(device_task, status):
@@ -253,7 +252,9 @@ def add_user_auth(user, app_id):
 def get_user_menu(user):
     ret = defaultdict(list)
     query = MenuItemPerm.objects.filter(role__lte=user.role).order_by('menu__show_order').select_related('menu')
-    if user.role >= 10:
+    if user.role >= 20:
+        query = query.filter(role__gte=20)
+    elif user.role >= 10:
         query = query.filter(role__gte=10)
     for item in query:
         items = ret[item.menu.menu_category]

@@ -270,10 +270,13 @@ def get_new_device():
 
 
 @api_func_anonymous
-def get_offline_ids(request):
+def get_offline_ids(request, date):
+    date = times.localtime(
+        datetime.now().replace(hour=0, second=0,
+                               minute=0, microsecond=0) if not date else datetime.strptime(date, '%Y-%m-%d'))
     app = api_helper.get_session_app(request)
 
-    today = timezone.now().date()
+    # today = timezone.now().date()
     query = model_manager.query(CouponInst).filter(partnerId=app, status=1,
-                                                   useDate__range=(today, today + timedelta(days=1)))
+                                                   useDate__range=(date, date + timedelta(days=1)))
     return [x.userId for x in query] if app else ""
