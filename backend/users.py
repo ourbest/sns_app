@@ -48,7 +48,7 @@ def delegated(request):
 
 @api_func_anonymous
 def all_users():
-    return [api_helper.user_to_json(x) for x in User.objects.all()]
+    return [api_helper.user_to_json(x) for x in User.objects.filter(role__lt=10)]
 
 
 @api_func_anonymous
