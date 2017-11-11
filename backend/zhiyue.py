@@ -83,7 +83,7 @@ def count_user_sum(email, date, request):
     """
     date = times.localtime(
         datetime.now().replace(hour=0, second=0,
-                               minute=0, microsecond=0) if not date else datetime.strptime(date, '%Y-%m-%d'))
+                               minute=0, microsecond=0) if not date else datetime.strptime(date[0:10], '%Y-%m-%d'))
     the_user = api_helper.get_login_user(request, email)
     return stats.get_user_stat(date, the_user)
 

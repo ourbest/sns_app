@@ -1672,7 +1672,7 @@ def get_share_items(date, email, request):
         email = get_session_user(request)
 
     the_user = model_manager.get_user(email)
-    date = timezone.make_aware(datetime.strptime(date, '%Y-%m-%d')) if date else timezone.now()
+    date = timezone.make_aware(datetime.strptime(date[0:10], '%Y-%m-%d')) if date else timezone.now()
     date = date.replace(microsecond=0, second=0, hour=0, minute=0)
     return stats.get_user_share_stat(date, the_user)
 

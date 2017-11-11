@@ -86,6 +86,9 @@ def app_daily_stat(app, date, include_sum=False):
 
 
 def get_user_stat(date, the_user):
+    if not the_user:
+        return []
+
     cutt_users = list(the_user.appuser_set.all())
     cutt_user_dict = {x.cutt_user_id: x for x in cutt_users}
 
