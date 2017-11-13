@@ -537,19 +537,27 @@ def my_pending_rearrange(email, request, phone):
               x.snsuser_set.filter(friend=1).count() > 0]
     idx = 0
     forward = True
-    for x in groups:
-        phone = phones[idx]
-        idx += 1 if forward else -1
+    if len(phones) == 1:
+        phone = phones[0]
+        for x in groups:
+            x.phone = phone
+            x.save()
+    elif len(phones):
+        for x in groups:
+            phone = phones[idx]
+            idx += 1 if forward else -1
 
-        if idx == -1:
-            idx = 0
-            forward = not forward
-        elif idx == len(phones):
-            idx = idx - 1
-            forward = not forward
+            if idx == -1:
+                idx = 0
+                forward = not forward
+            elif idx == len(phones):
+                idx = idx - 1
+                forward = not forward
 
-        x.phone = phone
-        x.save()
+            x.phone = phone
+            x.save()
+    else:
+        logger.warning('没有可供选择的号')
 
 
 @api_func_anonymous
