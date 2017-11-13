@@ -141,8 +141,10 @@ def gen_daily_report():
 
 def get_user_share_stat(date, the_user):
     date_end = date + timedelta(days=3)
+    if not the_user:
+        return []
     ids = [x.cutt_user_id for x in the_user.appuser_set.all()]
-    tasks = list(SnsTask.objects.filter(creator=the_user, type_id=3,
+    tasks = list(SnsTask.objects.filter(creator=the_user, type_id__in=(5, 3),
                                         schedule_at__range=(date.date(), date.date() + timedelta(days=1))))
     items = {api_helper.parse_item_id(x.data) for x in tasks}
 
