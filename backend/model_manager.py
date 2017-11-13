@@ -105,7 +105,7 @@ def check_task_status(task):
         task.finish_at = timezone.now()
         task.save()
         from backend import api_helper
-        api_helper.webhook_task(task, '执行完毕, 共耗时%s分钟' % (
+        api_helper.webhook_task(task, '执行完毕, 共耗时%s分钟' % int(
             (task.finish_at - task.started_at).total_seconds() / 60) if task.started_at else 'N/A')
     elif task.status == 2:
         task.status = 0

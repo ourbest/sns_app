@@ -384,8 +384,8 @@ def webhook(device_task, msg, force=0):
         return
 
     msg = '%s：%s %s' % (device_task.device.friend_text, device_task.task.type.name, msg)
-    if device_task.task.type_id == 3:
-        msg += ' URL: ' + extract_url(device_task.task.data)
+    if device_task.task.type_id in (3, 5):
+        msg += ' URL: %s' % extract_url(device_task.task.data)
 
     thread = threading.Thread(target=send_msg, args=(msg, user))
     thread.start()
@@ -397,8 +397,8 @@ def webhook_task(task, msg):
         return
 
     msg = '%s：任务%s' % (task.type.name, msg)
-    if task.type_id == 3:
-        msg += ' URL: ' + extract_url(task.data)
+    if task.type_id in (3, 5):
+        msg += ' URL: %s' % extract_url(task.data)
 
     thread = threading.Thread(target=send_msg, args=(msg, user))
     thread.start()
