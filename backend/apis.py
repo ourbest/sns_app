@@ -529,9 +529,27 @@ def my_pending_purge(email, request):
 
 
 @api_func_anonymous
-def my_pending_rearrange(email, request):
+def my_pending_rearrange(email, request, phone):
     user = api_helper.get_login_user(request, email)
-    # TODO 重新分配
+    # 重新分配手机phone是的加群
+    groups = SnsGroupSplit.objects.filter(phone__label=phone, status=0)
+    phones = [x for x in PhoneDevice.objects.filter(owner__email=user, status=0).exclude(label=phone) if
+              x.snsuser_set.filter(friend=1).count() > 0]
+    idx = 0
+    forward = True
+    for x in groups:
+        phone = phones[idx]
+        idx += 1 if forward else -1
+
+        if idx == -1:
+            idx = 0
+            forward = not forward
+        elif idx == len(phones):
+            idx = idx - 1
+            forward = not forward
+
+        x.phone = phone
+        x.save()
 
 
 @api_func_anonymous
@@ -1755,4 +1773,5 @@ def redirect(request):
     item_id = request.GET.get('id')
     app_id = request.GET.get('app')
     item = model_manager.query(ClipItem).filter(itemId=item_id).first()
-    return HttpResponseRedirect('http://www.cutt.com/weizhan/article/%s/%s/%s' % (item.clipId, item_id, app_id))
+    return HttpResponseRedirect(
+        'http://www.cutt.com/weizhan/article/%s/%s/%s' % (item.clipId if item else 0, item_id, app_id))
