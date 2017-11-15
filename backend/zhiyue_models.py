@@ -27,7 +27,7 @@ class ItemMore(models.Model):
         return 'zhiyue'
 
     class Meta:
-        db_table = 'clip_ItemMore'
+        db_table = 'partner_ItemMore'
         managed = False
 
 
