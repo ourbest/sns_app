@@ -45,8 +45,8 @@ def find_url(x):
 def get_url_title(url):
     u = re.findall('https?://.+/weizhan/article/\d+/(\d+)/(\d+)', url)
     if u:
-        article_id = u[0]
-        more = model_manager.query(ItemMore).filter(itemId=article_id, appId=u[1]).first()
+        (article_id, app_id) = u[0]
+        more = model_manager.query(ItemMore).filter(itemId=article_id, appId=app_id).first()
         if more and more.title:
             return more.title
         item = model_manager.query(ClipItem).filter(itemId=article_id).first()
