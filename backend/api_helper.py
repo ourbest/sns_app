@@ -210,7 +210,8 @@ def add_wx_params(device_task):
 
     user_lines = []
     for line in lines:
-        if line.find('app=') == 0 or line.find('ratio=') == 0:
+        idx = line.find('=')
+        if 0 < idx < 10:
             user_lines.append(line)
 
     return '\n%s' % '\n'.join(user_lines)
