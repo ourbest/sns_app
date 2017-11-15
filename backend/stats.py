@@ -140,7 +140,7 @@ def gen_daily_report():
 
 
 def get_user_share_stat(date, the_user):
-    date_end = date + timedelta(days=3)
+    date_end = date + timedelta(days=7)
     if not the_user:
         return []
     ids = [x.cutt_user_id for x in the_user.appuser_set.all()]
@@ -210,7 +210,7 @@ def get_item_stat_values(app):
     """
     item_apps = dict()
     article_dict = dict()
-    from_time = timezone.now() - timedelta(days=3)
+    from_time = timezone.now() - timedelta(days=7)
     query = DistArticle.objects.filter(started_at__gte=from_time)
     if app:
         query = query.filter(app_id=app)
@@ -245,7 +245,7 @@ def get_item_stat_values(app):
 
 
 def batch_item_stat(app_id, items, from_time, user_type=0):
-    date_end = from_time + timedelta(days=3)
+    date_end = from_time + timedelta(days=7)
     ids = [x.cutt_user_id for x in AppUser.objects.filter(user__app_id=app_id, type=user_type)]
     query = 'SELECT itemId, itemType, count(1) as cnt FROM datasystem_WeizhanItemView ' \
             'WHERE itemId in (%s) AND shareUserId in (%s) AND time BETWEEN \'%s\' AND \'%s\' ' \
@@ -282,7 +282,7 @@ def batch_item_stat(app_id, items, from_time, user_type=0):
 
 
 def get_item_stat(app_id, item_id, from_time, user_type=0):
-    date_end = from_time + timedelta(days=3)
+    date_end = from_time + timedelta(days=7)
     ids = [x.cutt_user_id for x in AppUser.objects.filter(user__app_id=app_id, type=user_type)]
 
     query = 'SELECT itemType, count(1) as cnt FROM datasystem_WeizhanItemView ' \

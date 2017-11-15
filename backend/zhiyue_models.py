@@ -15,6 +15,22 @@ class ZhiyueUser(models.Model):
         managed = False
 
 
+class ItemMore(models.Model):
+    itemId = models.BigIntegerField(primary_key=True)
+    appId = models.IntegerField()
+    title = models.CharField(80)
+    content = models.CharField(255)
+    createTime = models.DateTimeField()
+
+    @staticmethod
+    def db_name():
+        return 'zhiyue'
+
+    class Meta:
+        db_table = 'clip_ItemMore'
+        managed = False
+
+
 class ClipItem(models.Model):
     clipId = models.IntegerField()
     itemId = models.IntegerField(primary_key=True)

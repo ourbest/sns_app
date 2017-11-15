@@ -10,7 +10,7 @@ from django.utils import timezone
 from backend import api_helper, model_manager, stats
 from backend.api_helper import get_session_app
 from backend.models import AppUser, AppDailyStat, UserDailyStat, App, DailyActive
-from backend.zhiyue_models import ShareArticleLog, ClipItem, WeizhanCount, AdminPartnerUser, CouponInst
+from backend.zhiyue_models import ShareArticleLog, ClipItem, WeizhanCount, AdminPartnerUser, CouponInst, ItemMore
 
 
 @api_func_anonymous
@@ -43,10 +43,13 @@ def find_url(x):
 
 @api_func_anonymous
 def get_url_title(url):
-    u = re.findall('https?://.+/weizhan/article/\d+/(\d+)/\d+', url)
+    u = re.findall('https?://.+/weizhan/article/\d+/(\d+)/(\d+)', url)
     if u:
         article_id = u[0]
-        item = ClipItem.objects.using('zhiyue').filter(itemId=article_id).first()
+        more = model_manager.query(ItemMore).filter(itemId=article_id, appId=u[1]).first()
+        if more and more.title:
+            return more.title
+        item = model_manager.query(ClipItem).filter(itemId=article_id).first()
         return item.title if item.title else '(无标题)'
     return None
 
