@@ -533,7 +533,7 @@ def my_pending_rearrange(email, request, phone):
     user = api_helper.get_login_user(request, email)
     # 重新分配手机phone是的加群
     groups = SnsGroupSplit.objects.filter(phone__label=phone, status=0)
-    phones = [x for x in PhoneDevice.objects.filter(owner__email=user, status=0).exclude(label=phone) if
+    phones = [x for x in PhoneDevice.objects.filter(owner=user, status=0).exclude(label=phone) if
               x.snsuser_set.filter(friend=1).count() > 0]
     idx = 0
     forward = True
