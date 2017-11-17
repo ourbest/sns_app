@@ -2,6 +2,7 @@ import re
 import threading
 from random import shuffle
 
+import os
 import requests
 from dj import times
 from django.conf import settings
@@ -371,8 +372,11 @@ def merge_task_result(task, result_content):
 
 def get_result_content(task_id):
     file_path = './logs/result/%s.txt' % task_id
-    with open(file_path, "rt") as file:
-        return file.read()
+    if os.path.exists(file_path):
+        with open(file_path, "rt") as file:
+            return file.read()
+    else:
+        return ''
 
 
 def get_login_user(request, email=None):
