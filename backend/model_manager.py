@@ -125,7 +125,7 @@ def set_qun_join(qq_id, qun):
     if qun.status != 2:
         qun.status = 2
         qun.save()
-
+    sug = None
     try:
         qun.snsgroupsplit_set.filter(user=qq.owner).update(status=3)
         sug = SnsUserGroup(sns_group=qun, sns_user=qq, status=0, active=1)
