@@ -5,6 +5,7 @@ class ZhiyueUser(models.Model):
     appId = models.CharField(max_length=30)
     name = models.CharField(max_length=50)
     userId = models.IntegerField(primary_key=True)
+    lastActiveTime = models.DateTimeField()
 
     @staticmethod
     def db_name():

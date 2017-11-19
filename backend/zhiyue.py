@@ -4,13 +4,15 @@ from datetime import datetime, timedelta
 from dj import times
 from dj.utils import api_func_anonymous
 from django.db import connections
+from django.db.models import Count
 from django.http import HttpResponse
 from django.utils import timezone
 
 from backend import api_helper, model_manager, stats
 from backend.api_helper import get_session_app
 from backend.models import AppUser, AppDailyStat, UserDailyStat, App, DailyActive
-from backend.zhiyue_models import ShareArticleLog, ClipItem, WeizhanCount, AdminPartnerUser, CouponInst, ItemMore
+from backend.zhiyue_models import ShareArticleLog, ClipItem, WeizhanCount, AdminPartnerUser, CouponInst, ItemMore, \
+    ZhiyueUser
 
 
 @api_func_anonymous
@@ -283,3 +285,35 @@ def get_offline_ids(request, date):
     query = model_manager.query(CouponInst).filter(partnerId=app, status=1,
                                                    useDate__range=(date, date + timedelta(days=1)))
     return [x.userId for x in query] if app else ""
+
+
+@api_func_anonymous
+def get_coupon_details():
+    date = times.localtime(datetime.now().replace(hour=0, second=0, minute=0, microsecond=0))
+    yesterday = date - timedelta(days=1)
+    apps = {x.app_id: x.app_name for x in App.objects.filter(stage__in=('分发期', '留守期'))}
+
+    query = model_manager.query(CouponInst).filter(partnerId__in=apps.keys(), status=1,
+                                                   useDate__range=(date, date + timedelta(days=1))).values(
+        'partnerId').annotate(total=Count('userId')).order_by('-total')
+
+    ids = [x['partnerId'] for x in query]
+
+    rates = dict()
+
+    for app_id in ids:
+        user_ids = [x.userId for x in model_manager.query(CouponInst).filter(partnerId=app_id,
+                                                                             status=1,
+                                                                             useDate__range=(
+                                                                                 yesterday,
+                                                                                 yesterday + timedelta(days=1)))]
+        rates[app_id] = int(model_manager.query(ZhiyueUser).filter(userId__in=user_ids,
+                                                                   lastActiveTime__gt=date).count() / len(
+            user_ids) * 100)
+
+    return [{
+        'app_id': x['partnerId'],
+        'app_name': apps[x['partnerId']],
+        'today': x['total'],
+        'remain': '%s%%' % rates[x['partnerId']],
+    } for x in query]

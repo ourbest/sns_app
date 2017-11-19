@@ -137,4 +137,5 @@ urlpatterns = [
 
     # coupon
     url(r'coupon/users$', zhiyue.get_offline_ids),
+    url(r'coupon/detail$', zhiyue.get_coupon_details),
 ]
