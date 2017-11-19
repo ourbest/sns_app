@@ -20,7 +20,7 @@ RAVEN_CONFIG = {
     'dsn': 'https://fe9e540bdac242f8b8368969898b18ed:8cf5e54884964a5793998a1f5dfcabb7@sentry.io/243100',
     # If you are using git, you can also automatically configure the
     # release based on the git info.
-    'release': '9b2a0f09e22437b7c099',
+    'release': 'a5b3c4b2e348966fa099',
 }
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -146,7 +146,7 @@ FILE_UPLOAD_HANDLERS = ["django.core.files.uploadhandler.TemporaryFileUploadHand
 EMAIL_HOST = 'smtp.mxhichina.com'
 EMAIL_HOST_USER = 'yonghui.chen@cutt.com'
 
-JS_VER = '4e5e20c4766332bbfa8a'
+JS_VER = 'a5b3c4b2e348966fa099'
 QINIU_URL = 'http://jwres.cutt.com/'
 
 DEFAULT_CHARSET = 'utf-8'
