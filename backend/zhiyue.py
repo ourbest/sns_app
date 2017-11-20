@@ -122,7 +122,7 @@ def sum_team_dist(date, request, include_sum):
     app = get_session_app(request)
     date = times.localtime(
         datetime.now().replace(hour=0, second=0,
-                               minute=0, microsecond=0) if not date else datetime.strptime(date, '%Y-%m-%d'))
+                               minute=0, microsecond=0) if not date else datetime.strptime(date[0:10], '%Y-%m-%d'))
     return stats.app_daily_stat(app, date, include_sum)
 
 
