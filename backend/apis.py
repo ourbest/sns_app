@@ -667,6 +667,8 @@ def device_transfer(label, to_user):
 
             SnsUser.objects.filter(device=dev).update(owner=user)
 
+            SnsGroupSplit.objects.filter(phone=dev).update(user=user)
+
             UserActionLog(action='转交', memo='%s转交给%s' % (label, user.name), user=owner).save()
 
     return 'ok'
