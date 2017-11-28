@@ -114,7 +114,7 @@ def get_user_majia(email, request):
         'id': x.cutt_user_id,
         'name': x.name,
         'type': x.type,
-    } for x in user.appuser_set.all()]
+    } for x in user.appuser_set.filter(type__gte=0)]
 
 
 @api_func_anonymous

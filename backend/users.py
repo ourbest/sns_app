@@ -81,6 +81,16 @@ def set_delegates(delegates, request):
 
 
 @api_func_anonymous
+def remove_majia(i_id):
+    db = AppUser.objects.filter(cutt_user_id=i_id).first()
+    if db:
+        db.type = -1
+        db.save()
+
+    return 'ok'
+
+
+@api_func_anonymous
 def update_majia_type(i_id, i_type):
     db = AppUser.objects.filter(cutt_user_id=i_id).first()
     if db:
