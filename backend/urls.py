@@ -18,6 +18,8 @@ urlpatterns = [
     url(r'^menu$', apis.get_menu),
     url(r'^tags$', apis.tag_names),
 
+    url(r'^perm/save$', apis.save_perm),
+
     # imports ====
     url(r'^import/qq$', apis.import_qq),
     # url(r'^import/split$', apis.import_split),

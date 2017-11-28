@@ -23,7 +23,7 @@ from backend.api_helper import get_session_user, get_session_app, sns_user_to_js
     deal_dist_result, deal_add_result, ADD_STATUS
 from backend.models import User, App, SnsGroup, SnsGroupSplit, PhoneDevice, SnsUser, SnsUserGroup, SnsTaskDevice, \
     DeviceFile, SnsTaskType, SnsTask, ActiveDevice, SnsApplyTaskLog, UserActionLog, SnsGroupLost, GroupTag, \
-    TaskWorkingLog, AppUser, DeviceTaskData, SnsUserKickLog, DistArticle
+    TaskWorkingLog, AppUser, DeviceTaskData, SnsUserKickLog, DistArticle, UserAuthApp
 from backend.zhiyue_models import ZhiyueUser, ClipItem
 
 
@@ -1267,18 +1267,21 @@ def send_qq():
 
 
 @api_func_anonymous
-def apps(request, i_dist):
+def apps(request, i_dist, email):
     if i_dist:
         return [{'id': x.app_id, 'name': x.app_name} for x in
                 App.objects.filter(stage__in=['分发期', '留守期'])]
-    user = model_manager.get_user(get_session_user(request))
+    user = model_manager.get_user(email if email else get_session_user(request))
     ret = []
     if not user:
         return []
-    apps = user.userauthapp_set.all()
-    if user.app_id:
-        ret += [{'id': user.app.app_id, 'name': user.app.app_name}]
-    ret += [{'id': x.app.app_id, 'name': x.app.app_name} for x in apps if x.app_id != user.app_id]
+    if user.role <= 2 or user.role > 10:
+        apps = user.userauthapp_set.all()
+        if user.app_id:
+            ret += [{'id': user.app.app_id, 'name': user.app.app_name}]
+        ret += [{'id': x.app.app_id, 'name': x.app.app_name} for x in apps if x.app_id != user.app_id]
+    else:
+        ret = [{'id': x.app_id, 'name': x.app_name} for x in App.objects.all()]
 
     return ret  # [{'id': x.app_id, 'name': x.app_name} for x in App.objects.all()]
 
@@ -1689,6 +1692,15 @@ def change_js_version(ver):
     if ver and len(ver) == len('6f88563ddfbfa6fbca5e'):
         settings.JS_VER = ver
     return "ok"
+
+
+@api_func_anonymous
+def save_perm(ids, email):
+    user = model_manager.get_user(email)
+    user.userauthapp_set.all().delete()
+    for x in ids.split(';'):
+        if x:
+            UserAuthApp(user=user, app_id=x).save()
 
 
 @api_func_anonymous
