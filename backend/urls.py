@@ -55,6 +55,7 @@ urlpatterns = [
     url(r'^device/transfer$', apis.device_transfer),
 
     url(r'^qq/create$', apis.qq_create),
+    url(r'^qq/provider$', apis.update_qq_provider),
 
     url(r'^qq/drop$', apis.qq_drop),
 

@@ -703,6 +703,16 @@ def qq_transfer(qq, phone):
 
 
 @api_func_anonymous
+def update_qq_provider(qq, provider):
+    db = model_manager.get_qq(qq)
+    if db:
+        db.provider = provider
+        db.save()
+
+    return 'ok'
+
+
+@api_func_anonymous
 def qq_create(request, qq, name, phone, password):
     dev = PhoneDevice.objects.filter(label=phone).first()
     db = SnsUser.objects.filter(login_name=qq, type=0).first()

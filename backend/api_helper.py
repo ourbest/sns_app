@@ -48,6 +48,7 @@ def sns_user_to_json(sns_user, owner=0):
         'search': sns_user.search,
         'friend': sns_user.friend,
         'status': sns_user.status,
+        'provider': sns_user.provider,
     } if sns_user else {}
 
     if sns_user and owner:
@@ -222,7 +223,14 @@ def add_dist_qun(device_task):
     device = device_task.device
     logger.info('%s分发任务手机（%s）', device_task.id, device.friend_text)
 
-    sns_users = list(device.snsuser_set.filter(type=0, dist=1))
+    sns_user_query = device.snsuser_set.filter(type=0, dist=1)
+    if 'client=qq' in device_task:
+        sns_user_query = sns_user_query.filter(provider='qq')
+    elif 'client=tim' in device_task:
+        sns_user_query = sns_user_query.filter(provider='tim')
+
+
+    sns_users = list(sns_user_query)
     shuffle(sns_users)
 
     logger.info('%s分发%s个QQ', device_task.id, len(sns_users))
@@ -250,6 +258,8 @@ def add_dist_qun(device_task):
                     logger.info('%s分发最多%s个QQ群', device_task.id, len(ids))
 
         elif line.find('app=') == 0:
+            user_lines.append(line)
+        elif line.find('client=') == 0:
             user_lines.append(line)
         elif line.find('apply_qun=') == 0:
             qun = int(line[line.find('=') + 1:])
@@ -338,7 +348,14 @@ def add_add_qun(device_task):
 
 def get_add_groups(cnt, device_task):
     device = device_task.device
+
     sns_users = device.snsuser_set.filter(type=0, friend=1)
+
+    if 'client=qq' in device_task:
+        sns_users = sns_users.filter(provider='qq')
+    elif 'client=tim' in device_task:
+        sns_users = sns_users.filter(provider='tim')
+
     idx = 0
     ids = [x.group_id for x in
            model_manager.get_qun_idle(device_task.task.creator, len(sns_users) * cnt * 5, device_task.device)]

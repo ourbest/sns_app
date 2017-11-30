@@ -114,6 +114,7 @@ class SnsUser(models.Model):
     dist = models.IntegerField(default=1)
     friend = models.IntegerField(default=1)
     search = models.IntegerField(default=0)
+    provider = models.CharField(default='qq', max_length=10)
 
     def __str__(self):
         return self.name
