@@ -123,7 +123,7 @@ def user_to_json(x):
         'name': y.name,
         'type': y.type,
         'cutt_id': y.cutt_user_id,
-    } for y in x.appuser_set.all()]
+    } for y in x.appuser_set.filter(type__gte=0)]
 
     ret = {
         'id': x.id, 'email': x.email, 'name': x.name, 'notify': 0 if not x.notify else x.notify,

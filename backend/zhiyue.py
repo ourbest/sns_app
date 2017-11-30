@@ -100,7 +100,7 @@ def get_user_majia(email, request):
     cutt = {x.user_id: x.user.name for x in model_manager.query(AdminPartnerUser).select_related('user')
         .filter(loginUser=user.email, partnerId=get_session_app(request))}
 
-    for x in user.appuser_set.all():
+    for x in user.appuser_set.filter(type__gte=0):
         if x.cutt_user_id in cutt:
             if x.name != cutt[x.cutt_user_id]:
                 x.name = cutt[x.cutt_user_id]
@@ -108,13 +108,13 @@ def get_user_majia(email, request):
             del cutt[x.cutt_user_id]
 
     for k, v in cutt.items():
-        AppUser(user=user, name=v, type=2, cutt_user_id=k).save()
+        AppUser(user=user, name=v if v else k, type=2, cutt_user_id=k).save()
 
     return [{
         'id': x.cutt_user_id,
         'name': x.name,
         'type': x.type,
-    } for x in user.appuser_set.all()]
+    } for x in user.appuser_set.filter(type__gte=0)]
 
 
 @api_func_anonymous

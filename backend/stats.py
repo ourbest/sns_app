@@ -89,7 +89,7 @@ def get_user_stat(date, the_user):
     if not the_user:
         return []
 
-    cutt_users = list(the_user.appuser_set.all())
+    cutt_users = list(the_user.appuser_set.filter(type__gte=0))
     cutt_user_dict = {x.cutt_user_id: x for x in cutt_users}
 
     return [{
@@ -106,7 +106,7 @@ def get_user_stat(date, the_user):
 
 
 def get_user_share(app_id, user, date):
-    uids = {x.cutt_user_id for x in user.appuser_set.all()}
+    uids = {x.cutt_user_id for x in user.appuser_set.filter(type__gte=0)}
 
     data = ShareArticleLog.objects.using('zhiyue').select_related('user', 'article', 'article__item').filter(
         user_id__in=uids, article__partnerId=app_id).filter(time__range=(date.date(),
@@ -143,7 +143,7 @@ def get_user_share_stat(date, the_user):
     date_end = date + timedelta(days=7)
     if not the_user:
         return []
-    ids = [x.cutt_user_id for x in the_user.appuser_set.all()]
+    ids = [x.cutt_user_id for x in the_user.appuser_set.filter(type__gte=0)]
     tasks = list(SnsTask.objects.filter(creator=the_user, type_id__in=(5, 3),
                                         schedule_at__range=(date.date(), date.date() + timedelta(days=1))))
     items = {api_helper.parse_item_id(x.data) for x in tasks}

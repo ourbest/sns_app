@@ -48,7 +48,7 @@ def delegated(request):
 
 @api_func_anonymous
 def all_users():
-    return [api_helper.user_to_json(x) for x in User.objects.filter(role__lt=10)]
+    return [api_helper.user_to_json(x) for x in User.objects.filter(role__lt=3)]
 
 
 @api_func_anonymous
@@ -81,10 +81,26 @@ def set_delegates(delegates, request):
 
 
 @api_func_anonymous
-def update_majia_type(i_id, i_type):
-    db = AppUser.objects.filter(cutt_user_id=i_id).first()
+def remove_majia(i_id, request):
+    email = api_helper.get_session_user(request)
+    user = model_manager.get_user(email)
+
+    db = AppUser.objects.filter(cutt_user_id=i_id, user=user).first()
     if db:
-        db.type = i_type
+        db.type = -1
         db.save()
+        AppUser.objects.filter(cutt_user_id=i_id, user=user).exclude(type=-1).delete()
+
+    return 'ok'
+
+
+@api_func_anonymous
+def update_majia_type(i_id, i_type, request):
+    email = api_helper.get_session_user(request)
+    user = model_manager.get_user(email)
+
+    db = AppUser.objects.filter(cutt_user_id=i_id, user=user).first()
+    if db:
+        AppUser.objects.filter(cutt_user_id=i_id, user=user).update(type=i_type)
 
     return 'ok'
