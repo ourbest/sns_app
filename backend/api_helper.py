@@ -229,7 +229,6 @@ def add_dist_qun(device_task):
     elif 'client=tim' in device_task.data:
         sns_user_query = sns_user_query.filter(provider='tim')
 
-
     sns_users = list(sns_user_query)
     shuffle(sns_users)
 
