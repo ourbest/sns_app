@@ -340,11 +340,15 @@ def import_qq(ids):
         if line:
             account = re.split('\s+', line)
             db = SnsUser.objects.filter(type=0, login_name=account[0]).first()
-            device = PhoneDevice.objects.filter(phone_num=account[3]).first()
+            device = PhoneDevice.objects.filter(label=account[3]).first()
             if not db:
-                SnsUser(passwd=account[1], type=0, login_name=account[0],
-                        owner=device.owner, app_id=device.owner.app_id,
-                        name=account[2], phone=account[3], device=device).save()
+                db = SnsUser(passwd=account[1], type=0, login_name=account[0],
+                             # owner=device.owner, app_id=device.owner.app_id,
+                             name=account[2], phone=account[3], device=device)
+                if device:
+                    db.owner = device.owner
+                    db.app_id = device.owner.app_id
+                db.save()
                 total += 1
             else:
                 db.passwd = account[1]
