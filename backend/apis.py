@@ -813,14 +813,14 @@ def import_phone(request, ids):
     :param ids:
     :return:
     """
-    self = get_session_user(request)
+    self = model_manager.get_user(get_session_user(request))
     total = 0
     for line in ids.split('\n'):
         line = line.strip()
         if line:
             account = re.split('\s+', line)
             db = PhoneDevice.objects.filter(label=account[0]).first()
-            user = User.objects.filter(email=account[2]).first() if len(account) > 2 else  self
+            user = User.objects.filter(email=account[2]).first() if len(account) > 2 else self
 
             label = account[0]
             phone_num = label if len(account) == 1 else account[1]
