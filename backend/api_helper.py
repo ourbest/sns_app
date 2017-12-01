@@ -350,9 +350,9 @@ def get_add_groups(cnt, device_task):
 
     sns_users = device.snsuser_set.filter(type=0, friend=1)
 
-    if 'client=qq' in device_task:
+    if 'client=qq' in device_task.data:
         sns_users = sns_users.filter(provider='qq')
-    elif 'client=tim' in device_task:
+    elif 'client=tim' in device_task.data:
         sns_users = sns_users.filter(provider='tim')
 
     idx = 0
