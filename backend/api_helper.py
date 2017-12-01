@@ -224,10 +224,10 @@ def add_dist_qun(device_task):
     logger.info('%s分发任务手机（%s）', device_task.id, device.friend_text)
 
     sns_user_query = device.snsuser_set.filter(type=0, dist=1)
-    if 'client=qq' in device_task.data:
-        sns_user_query = sns_user_query.filter(provider='qq')
-    elif 'client=tim' in device_task.data:
-        sns_user_query = sns_user_query.filter(provider='tim')
+    # if 'client=qq' in device_task.data:
+    #     sns_user_query = sns_user_query.filter(provider='qq')
+    # elif 'client=tim' in device_task.data:
+    #     sns_user_query = sns_user_query.filter(provider='tim')
 
     sns_users = list(sns_user_query)
     shuffle(sns_users)
