@@ -12,7 +12,7 @@ from backend import api_helper, model_manager, stats
 from backend.api_helper import get_session_app
 from backend.models import AppUser, AppDailyStat, UserDailyStat, App, DailyActive
 from backend.zhiyue_models import ShareArticleLog, ClipItem, WeizhanCount, AdminPartnerUser, CouponInst, ItemMore, \
-    ZhiyueUser
+    ZhiyueUser, UserRewardHistory
 
 
 @api_func_anonymous
@@ -311,9 +311,14 @@ def get_coupon_details():
                                                                    lastActiveTime__gt=date).count() / len(
             user_ids) * 100)
 
+    reward_query = model_manager.query(UserRewardHistory).filter(createTime__gt=date).values('partnerId').annotate(
+        total=Count('userId'))
+    rewards = {x['partnerId']: x['total'] for x in reward_query}
+
     return [{
         'app_id': x['partnerId'],
         'app_name': apps[x['partnerId']],
         'today': x['total'],
         'remain': '%s%%' % rates[x['partnerId']],
+        'open': rewards.get(x['partnerId'], 0)
     } for x in query]

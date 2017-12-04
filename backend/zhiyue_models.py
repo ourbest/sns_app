@@ -251,3 +251,19 @@ class ShopCouponStatSum(models.Model):
     class Meta:
         db_table = 'partner_ShopCouponStatSum'
         managed = False
+
+
+class UserRewardHistory(models.Model):
+    partnerId = models.IntegerField()
+    userId = models.IntegerField(primary_key=True)
+    createTime = models.DateTimeField()
+    source = models.CharField(max_length=20)
+    type = models.IntegerField()
+
+    @staticmethod
+    def db_name():
+        return 'zhiyue'
+
+    class Meta:
+        db_table = 'partner_UserRewardHistory'
+        managed = False
