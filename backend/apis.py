@@ -700,6 +700,12 @@ def qq_transfer(qq, phone):
 
 
 @api_func_anonymous
+def get_qq_password(qq):
+    db = model_manager.get_qq(qq)
+    return HttpResponse(db.passwd if db else '')
+
+
+@api_func_anonymous
 def update_qq_provider(qq, provider):
     db = model_manager.get_qq(qq)
     if db:
@@ -1179,6 +1185,18 @@ def split_qq(app, request):
         split_qun_to_device(None, u.email)
 
     return 'ok'
+
+
+@api_func_anonymous
+def export_qun_csv(request):
+    app = get_session_app(request)
+    db = SnsGroup.objects.filter(app_id=app).order_by("-pk")
+
+    response = HttpResponse('\n'.join(['%s\t%s\t%s' % (x.group_id, x.group_name, x.group_user_count) for x in db]),
+                            content_type='application/octet-stream')
+    response['Content-Disposition'] = 'attachment; filename=qun.csv'
+
+    return response
 
 
 @api_func_anonymous
