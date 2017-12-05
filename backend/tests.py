@@ -70,7 +70,7 @@ def extract_all_items():
 
 
 def make_stats():
-    for item in DistArticle.objects.all(): # filter(created_at__gte=timezone.now() - timedelta(days=3)):
+    for item in DistArticle.objects.all():  # filter(created_at__gte=timezone.now() - timedelta(days=3)):
         # qq_stat = stats.get_item_stat(item.app_id, item.item_id, item.started_at)
         wx_stat = stats.get_item_stat(item.app_id, item.item_id, item.started_at, user_type=1)
 
@@ -132,3 +132,9 @@ def import_qun_test(file):
                     logger.warning("error save %s" % line, exc_info=1)
 
         logger.info('共%s个新群' % total)
+
+
+def sync_articles():
+    for task in SnsTask.objects.all():
+        if task.type_id in (3, 5) and not task.article:
+            api_helper.parse_dist_article(task.data, task, task.started_at or task.schedule_at or task.created_at)

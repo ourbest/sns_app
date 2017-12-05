@@ -18,9 +18,9 @@ from django.utils import timezone
 from logzero import logger
 from qiniu import Auth, put_file, etag
 
-from backend import model_manager, api_helper, caches, stats, zhiyue_models
+from backend import model_manager, api_helper, caches, stats
 from backend.api_helper import get_session_user, get_session_app, sns_user_to_json, device_to_json, qun_to_json, \
-    deal_dist_result, deal_add_result, ADD_STATUS
+    deal_dist_result, deal_add_result, ADD_STATUS, parse_dist_article
 from backend.models import User, App, SnsGroup, SnsGroupSplit, PhoneDevice, SnsUser, SnsUserGroup, SnsTaskDevice, \
     DeviceFile, SnsTaskType, SnsTask, ActiveDevice, SnsApplyTaskLog, UserActionLog, SnsGroupLost, GroupTag, \
     TaskWorkingLog, AppUser, DeviceTaskData, SnsUserKickLog, DistArticle, UserAuthApp
@@ -255,17 +255,8 @@ def _make_task_content(device_task):
                                        label=device_task.device.label,
                                        share_type=1) + api_helper.add_wx_params(device_task)
 
-    if task_type in (3, 5):
-        item_id = api_helper.parse_item_id(data)
-        if item_id:
-            db = DistArticle.objects.filter(item_id=item_id).first()
-            if not db:
-                try:
-                    DistArticle(item_id=item_id, app_id=device_task.device.owner.app_id,
-                                started_at=timezone.now(), created_at=timezone.now(),
-                                title=zhiyue_models.get_article_title(item_id)).save()
-                except:
-                    logger.warning('error saving dist item %s' % item_id, exc_info=1)
+    if task_type in (3, 5) and not device_task.task.article:
+        parse_dist_article(data, device_task.task)
 
     return '[task]\nid=%s\ntype=%s\n[data]\n%s' % (device_task.task_id, task_type, data)
 
@@ -533,12 +524,12 @@ def my_pending_purge(email, request):
 
 
 @api_func_anonymous
-def my_pending_rearrange(email, request, phone):
+def my_pending_rearrange(email, request, phone, toPhone):
     user = api_helper.get_login_user(request, email)
     # 重新分配手机phone是的加群
-    groups = SnsGroupSplit.objects.filter(phone__label=phone, status=0)
+    groups = SnsGroupSplit.objects.filter(phone__label=phone, status__in=(0, 1))
     phones = [x for x in PhoneDevice.objects.filter(owner=user, status=0).exclude(label=phone) if
-              x.snsuser_set.filter(friend=1).count() > 0]
+              x.snsuser_set.filter(friend=1).count() > 0] if not toPhone else [model_manager.get_phone(toPhone)]
     idx = 0
     forward = True
     if len(phones) == 1:
@@ -1166,6 +1157,8 @@ def split_qq(app, request):
             continue
 
         if x.snsgroupsplit_set.filter(status__in=(0, 1)).count():
+            x.status = 1
+            x.save()
             continue
 
         x.status = 1
@@ -1494,6 +1487,10 @@ def create_task(type, params, phone, request, date):
                        app_id=get_session_app(request), status=0, schedule_at=scheduler_date,
                        data=params, creator=model_manager.get_user(get_session_user(request)))
         task.save()
+
+        # if '分发' in task_type.name:
+        #     pass
+
         for device in devices:
             SnsTaskDevice(task=task, device=device, schedule_at=scheduler_date, data=task.data).save()
 

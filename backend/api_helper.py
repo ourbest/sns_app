@@ -10,9 +10,9 @@ from django.core.mail import EmailMultiAlternatives
 from django.utils import timezone
 from logzero import logger
 
-from backend import model_manager, caches
+from backend import model_manager, caches, zhiyue_models
 from backend.models import User, AppUser, TaskGroup, GroupTag, SnsGroupSplit, DistTaskLog, SnsApplyTaskLog, SnsGroup, \
-    SnsUser, SnsUserGroup
+    SnsUser, SnsUserGroup, DistArticle
 
 DEFAULT_APP = 1519662
 
@@ -563,3 +563,20 @@ def deal_add_result(device_task, qq, qun, status):
 
 ADD_STATUS = {'付费群', '不存在', '不允许加入', '已加群', '无需验证已加入', '已发送验证', '需要回答问题', '无需验证未加入'}
 DIST_STATUS = {}
+
+
+def parse_dist_article(data, task, from_time=timezone.now()):
+    item_id = parse_item_id(data)
+    if item_id:
+        db = DistArticle.objects.filter(item_id=item_id).first()
+        if not db:
+            try:
+                db = DistArticle(item_id=item_id, app_id=task.app_id,
+                                 started_at=from_time, created_at=from_time,
+                                 title=zhiyue_models.get_article_title(item_id))
+                db.save()
+            except:
+                logger.warning('error saving dist item %s' % item_id, exc_info=1)
+
+        task.article = db
+        task.save()

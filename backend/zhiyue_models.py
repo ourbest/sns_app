@@ -251,3 +251,21 @@ class ShopCouponStatSum(models.Model):
     class Meta:
         db_table = 'partner_ShopCouponStatSum'
         managed = False
+
+
+class UserRemain(models.Model):
+    bizType = models.IntegerField()
+    dateType = models.IntegerField()
+    clipId = models.IntegerField()
+    day = models.CharField(max_length=10, primary_key=True)
+    value = models.CharField(max_length=20)
+    platform = models.CharField(max_length=10)
+    partnerId = models.IntegerField()
+
+    @staticmethod
+    def db_name():
+        return 'cms'
+
+    class Meta:
+        db_table = 'report_UserRemain'
+        managed = False

@@ -249,6 +249,16 @@ class ActiveDevice(models.Model):
     status = models.IntegerField('状态', default=0, help_text='0 - 正常， 1 - 工作中')
 
 
+class DistArticle(models.Model):
+    item_id = models.IntegerField(unique=True)
+    app = models.ForeignKey(App)
+    title = models.CharField(max_length=255)
+    delete_flag = models.IntegerField(default=0)
+    category = models.CharField(max_length=30, null=True, blank=True)
+    created_at = models.DateTimeField()
+    started_at = models.DateTimeField()
+
+
 class SnsTask(models.Model):
     """
     任务
@@ -263,6 +273,7 @@ class SnsTask(models.Model):
     schedule_at = models.DateTimeField(null=True)
     started_at = models.DateTimeField(null=True)
     finish_at = models.DateTimeField(null=True)
+    article = models.ForeignKey(DistArticle, null=True)
 
 
 class SnsTaskDevice(models.Model):
@@ -449,16 +460,6 @@ class DailyActive(models.Model):
     android = models.IntegerField()
     total = models.IntegerField()
     created_at = models.DateTimeField(auto_now_add=True)
-
-
-class DistArticle(models.Model):
-    item_id = models.IntegerField(unique=True)
-    app = models.ForeignKey(App)
-    title = models.CharField(max_length=255)
-    delete_flag = models.IntegerField(default=0)
-    category = models.CharField(max_length=30, null=True, blank=True)
-    created_at = models.DateTimeField()
-    started_at = models.DateTimeField()
 
 
 class DistArticleStatDetail(models.Model):
