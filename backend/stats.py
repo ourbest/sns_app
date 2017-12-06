@@ -3,7 +3,7 @@ from datetime import timedelta, datetime
 from dj import times
 from dj.utils import api_func_anonymous
 from django.conf import settings
-from django.db import connections
+from django.db import connections, connection
 from django.template.loader import render_to_string
 from django.utils import timezone
 
@@ -205,13 +205,14 @@ def get_user_share_stat(date, the_user):
 @api_func_anonymous
 def get_item_stat_values(app):
     """
-    统计3天内的文章
+    统计7天内的文章
     :return:
     """
     item_apps = dict()
     article_dict = dict()
     from_time = timezone.now() - timedelta(days=7)
     query = DistArticle.objects.filter(started_at__gte=from_time)
+
     if app:
         query = query.filter(app_id=app)
     for item in query:
@@ -241,7 +242,40 @@ def get_item_stat_values(app):
                 db.wx_down = wx_stat.get('download')
                 db.wx_user = wx_stat.get('users')
 
+            user_ids = {x.creator_id for x in article.snstask_set.all()}
+            db.dist_user_count = len(user_ids)
+
             db.save()
+
+    with connection.cursor() as cursor:
+        query = '''update backend_distarticlestat s,
+(select a.id, count(distinct t.creator_id) owners, count(l.group_id) groups,
+ count(distinct d.`device_id`) devices, sum(group_user_count) users
+from 
+  backend_snsgroup g,
+  backend_disttasklog l, backend_snstaskdevice d, 
+  backend_snstask t, backend_distarticle a
+where g.group_id = l.group_id and success=1 and d.task_id=t.id and l.task_id=t.id and t.article_id=a.id and t.type_id=3
+and a.`created_at` > current_date - interval 7 day group by a.id) a
+set s.`dist_qq_user_count` = a.owners,
+s.`dist_qq_phone_count` = a.devices,
+s.`dist_qun_count` = a.groups,
+s.dist_qun_user = a.users
+where s.`article_id` = a.id
+'''
+        cursor.execute(query)
+
+        query = '''update backend_distarticlestat s,
+(select a.id, count(distinct t.creator_id) owners, count(distinct d.`device_id`) devices
+from backend_snstaskdevice d, 
+  backend_snstask t, backend_distarticle a
+where d.task_id = t.id and t.article_id=a.id and t.type_id=5
+and a.`created_at` > current_date - interval 7 day group by a.id) a
+set s.dist_wx_user_count = a.owners,
+s.dist_wx_phone_count = devices
+where s.article_id=a.id'''
+
+        cursor.execute(query)
 
 
 def batch_item_stat(app_id, items, from_time, user_type=0):
@@ -318,12 +352,21 @@ def get_item_stat(app_id, item_id, from_time, user_type=0):
 
 
 @api_func_anonymous
-def team_articles(request, i_page, i_size):
+def team_articles(request, i_page, i_size, url):
+    item_id = None
+    if url:
+        item_id = api_helper.parse_item_id(url)
+
     size = i_size if i_size else 50
     offset = (i_page - 1) * size if i_page else 0
     app = api_helper.get_session_app(request)
-    articles = DistArticle.objects.filter(app_id=app).order_by("-started_at")[offset:size + offset]
-    total = DistArticle.objects.filter(app_id=app).count()
+    if not item_id:
+        articles = DistArticle.objects.filter(app_id=app).order_by("-started_at")[offset:size + offset]
+        total = DistArticle.objects.filter(app_id=app).count()
+    else:
+        articles = DistArticle.objects.filter(app_id=app, item_id=item_id)
+        total = len(articles)
+
     stat_data = {x.article_id: x for x in DistArticleStat.objects.filter(article_id__in=[x.id for x in articles])}
 
     return {
@@ -348,4 +391,10 @@ def to_stat_json(x, item):
         'wx_pv': item.wx_pv if item else 0,
         'wx_down': item.wx_down if item else 0,
         'wx_user': item.wx_user if item else 0,
+        'qq_owners': item.dist_qq_user_count if item else 0,
+        'wx_owners': item.dist_wx_user_count if item else 0,
+        'wx_devices': item.dist_wx_phone_count if item else 0,
+        'qq_devices': item.dist_qq_phone_count if item else 0,
+        'qq_groups': item.dist_qun_count if item else 0,
+        'qq_users': item.dist_qun_user if item else 0,
     }

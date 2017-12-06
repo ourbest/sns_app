@@ -135,6 +135,6 @@ def import_qun_test(file):
 
 
 def sync_articles():
-    for task in SnsTask.objects.all():
+    for task in SnsTask.objects.filter(type_id__in=(3, 5), article_id__isnull=True):
         if task.type_id in (3, 5) and not task.article:
             api_helper.parse_dist_article(task.data, task, task.started_at or task.schedule_at or task.created_at)

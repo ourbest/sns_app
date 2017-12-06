@@ -1545,6 +1545,30 @@ def team_users(request):
 
 
 @api_func_anonymous
+def team_dist_info(item_id):
+    db = DistArticle.objects.filter(item_id=item_id).first()
+    ret = list()
+    if db:
+        tasks = db.snstask_set.all()
+        for ts in tasks:
+            devices = ts.snstaskdevice_set.all()
+            for device in devices:
+                if ts.type_id == 3:
+                    cnt = device.disttasklog_set.filter(success=1).count()
+                    sum = device.disttasklog_set.filter(success=1).aggregate(Sum('group__group_user_count')).get(
+                        'group__group_user_count__sum', 0) if cnt else 0
+                    obj = {'owner': ts.creator.name, 'qun': cnt, 'type': 'QQ', 'user': sum,
+                           'phone': device.device.friend_text}
+                    ret.append(obj)
+                else:
+                    obj = {'owner': ts.creator.name, 'qun': 0, 'type': '微信', 'user': 0,
+                           'phone': device.device.friend_text}
+                    ret.append(obj)
+
+    return ret
+
+
+@api_func_anonymous
 def team_tasks(request):
     return [{
         'id': x.id,
@@ -1756,8 +1780,8 @@ def user_majia(request, filter):
             'name': x.name,
             'type': '微信' if x.type == 1 else 'QQ'
         } for x in (AppUser.objects.filter(user__email=get_session_user(request), type__gte=0)
-                    if not filter else AppUser.objects.filter(type=filter,
-                                                              user__email=get_session_user(request)))]
+        if not filter else AppUser.objects.filter(type=filter,
+                                                  user__email=get_session_user(request)))]
     }
 
 

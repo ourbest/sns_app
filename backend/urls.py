@@ -108,6 +108,7 @@ urlpatterns = [
     url(r'^team/qq$', apis.team_qq),
     url(r'^team/qun$', apis.team_qun),
     url(r'^team/tasks$', apis.team_tasks),
+    url(r'^team/article/dist$', apis.team_dist_info),
     url(r'^team/users$', apis.team_users),
     url(r'^team/summary/qun$', apis.sum_team_qun),
     url(r'^team/summary/dist$', zhiyue.sum_team_dist),
