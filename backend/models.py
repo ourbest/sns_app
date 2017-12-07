@@ -275,6 +275,9 @@ class SnsTask(models.Model):
     finish_at = models.DateTimeField(null=True)
     article = models.ForeignKey(DistArticle, null=True)
 
+    def __str__(self):
+        return '<SnsTask %s>' % self.pk
+
 
 class SnsTaskDevice(models.Model):
     """

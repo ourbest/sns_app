@@ -284,3 +284,21 @@ class UserRewardHistory(models.Model):
     class Meta:
         db_table = 'partner_UserRewardHistory'
         managed = False
+
+
+class CouponPmSentInfo(models.Model):
+    messageId = models.CharField(max_length=32, primary_key=True)
+    userId = models.IntegerField()
+    partnerId = models.IntegerField()
+    createTime = models.DateTimeField()
+    message = models.CharField(max_length=80)
+    status = models.IntegerField()
+    type = models.IntegerField()
+
+    @staticmethod
+    def db_name():
+        return 'zhiyue'
+
+    class Meta:
+        db_table = 'partner_CouponPmSentInfo'
+        managed = False
