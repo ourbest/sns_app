@@ -484,6 +484,7 @@ def deal_result_line(device_task, line):
         if len(account) == 4 and account[0].isdigit():
             device = device_task.device
             [qun_num, qun_name, qun_user_cnt, qq] = account
+            qun_user_cnt = 0 if not qun_user_cnt.isdigit() else int(qun_user_cnt)
             qun = SnsGroup.objects.filter(group_id=qun_num, type=0).first()
             sns_user = SnsUser.objects.filter(login_name=qq, type=0).first()
             logger.info("Sns user %s not found device is %s", qq, device.id)
@@ -499,7 +500,6 @@ def deal_result_line(device_task, line):
                 sns_user.save()
 
             if not qun:
-                qun_user_cnt = 0 if not qun_user_cnt.isdigit() else int(qun_user_cnt)
                 qun = SnsGroup(group_id=qun_num, group_name=qun_name, type=0, app_id=sns_user.app_id,
                                group_user_count=qun_user_cnt, status=2, created_at=timezone.now(),
                                from_user_id=device_task.device.owner_id)
