@@ -1598,6 +1598,18 @@ def task_devices(task_id):
 
 
 @api_func_anonymous
+def device_articles(device):
+    return [{
+        'title': x.task.article.title,
+        'url': x.data.split('\n')[0],
+        'type': 'QQ' if x.task.type_id == 3 else '微信',
+        'time': times.to_str(x.started_at),
+    } for x in SnsTaskDevice.objects.filter(device_id=device, task__article__isnull=False,
+                                            task__type_id__in=(3, 5)).select_related("task", "task__article").order_by(
+        "-pk")[0:20]]
+
+
+@api_func_anonymous
 def device_tasks(device):
     return [{
         'id': x.id,
