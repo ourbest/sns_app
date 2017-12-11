@@ -1616,7 +1616,7 @@ def task_devices(task_id):
 @api_func_anonymous
 def device_articles(device):
     return [{
-        'title': x.task.article.title,
+        'title': x.task.article.title if x.task.article else '',
         'url': x.data.split('\n')[0],
         'type': 'QQ' if x.task.type_id == 3 else '微信',
         'time': times.to_str(x.started_at),
