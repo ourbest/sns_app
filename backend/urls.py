@@ -7,6 +7,7 @@ urlpatterns = [
     url(r'^ext/stat', exts.daily_stat),
 
     url(r'^upload$', apis.upload),
+    url(r'^upload$', apis.upload),
     url(r'^task$', apis.task),
     url(r'^url$', apis.redirect),
     url(r'^report$', apis.report_progress),
@@ -89,6 +90,7 @@ urlpatterns = [
     url(r'^task/create$', apis.create_task),
     url(r'^task/devices$', apis.task_devices),
     url(r'^task/files$', apis.task_files),
+    url(r'^task/groups$', apis.task_groups),
     url(r'^file/content$', apis.file_content),
     url(r'^task/logs$', tasks.work_logs),
     url(r'^image$', apis.file_content),

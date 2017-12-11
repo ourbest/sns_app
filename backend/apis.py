@@ -23,7 +23,7 @@ from backend.api_helper import get_session_user, get_session_app, sns_user_to_js
     deal_dist_result, deal_add_result, ADD_STATUS, parse_dist_article
 from backend.models import User, App, SnsGroup, SnsGroupSplit, PhoneDevice, SnsUser, SnsUserGroup, SnsTaskDevice, \
     DeviceFile, SnsTaskType, SnsTask, ActiveDevice, SnsApplyTaskLog, UserActionLog, SnsGroupLost, GroupTag, \
-    TaskWorkingLog, AppUser, DeviceTaskData, SnsUserKickLog, DistArticle, UserAuthApp, WxDistLog
+    TaskWorkingLog, AppUser, DeviceTaskData, SnsUserKickLog, DistArticle, UserAuthApp, WxDistLog, DistTaskLog
 from backend.zhiyue_models import ZhiyueUser, ClipItem
 
 
@@ -963,8 +963,8 @@ def import_qun_stat(ids, device_id, status):
                 if not found:
                     # 新增
                     qun = SnsGroup.objects.filter(group_id=qun_num, type=0).first()
+                    qun_user_cnt = 0 if not qun_user_cnt.isdigit() else int(qun_user_cnt)
                     if not qun:
-                        qun_user_cnt = 0 if not qun_user_cnt.isdigit() else int(qun_user_cnt)
                         qun = SnsGroup(group_id=qun_num, group_name=qun_name, type=0, app_id=sns_user.app_id,
                                        group_user_count=qun_user_cnt, status=2, created_at=timezone.now(),
                                        from_user_id=device.owner_id)
@@ -973,7 +973,10 @@ def import_qun_stat(ids, device_id, status):
                     else:
                         if qun.status != 2:
                             qun.status = 2
-                            qun.save()
+
+                        qun.group_user_count = qun_user_cnt
+                        qun.name = qun_name
+                        qun.save()
                         qun.snsgroupsplit_set.filter(phone=device).update(status=3)
 
                     SnsUserGroup(sns_group=qun, sns_user=sns_user, status=0, active=1).save()
@@ -1877,3 +1880,45 @@ def redirect(request):
     item = model_manager.query(ClipItem).filter(itemId=item_id).first()
     return HttpResponseRedirect(
         'http://www.cutt.com/weizhan/article/%s/%s/%s' % (item.clipId if item else 0, item_id, app_id))
+
+
+@api_func_anonymous
+def task_groups(task_id, i_page):
+    db = SnsTaskDevice.objects.filter(id=task_id).first()
+    items = []
+    total = 0
+    if db:
+        task = db.task
+        if task.type_id == 3:
+            if i_page <= 0:
+                i_page = 1
+
+            offset = (i_page - 1) * 50
+            query = DistTaskLog.objects.filter(task=db, success=1).select_related("group")
+            items = [{
+                'name': x.group.group_name,
+                'num': x.group.group_id,
+                'count': x.group.group_user_count
+            } for x in
+                query[offset:offset + 50]]
+            total = query.count()
+
+        elif task.type_id == 5:
+            if i_page <= 0:
+                i_page = 1
+
+            query = WxDistLog.objects.filter(task=db)
+
+            offset = (i_page - 1) * 50
+            items = [{
+                'name': x.group_name,
+                'num': '(N/A)',
+                'count': x.user_count
+            } for x in
+                query[offset:offset + 50]]
+            total = query.count()
+
+    return {
+        'total': total,
+        'items': items
+    }
