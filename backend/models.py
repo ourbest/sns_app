@@ -386,6 +386,16 @@ class DistTaskLog(models.Model):
     success = models.IntegerField()
 
 
+class WxDistLog(models.Model):
+    """
+    微信分发日志
+    """
+    task = models.ForeignKey(SnsTaskDevice)
+    group_name = models.CharField(max_length=100)
+    user_count = models.IntegerField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+
 # 用户
 
 
