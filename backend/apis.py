@@ -23,7 +23,7 @@ from backend.api_helper import get_session_user, get_session_app, sns_user_to_js
     deal_dist_result, deal_add_result, ADD_STATUS, parse_dist_article
 from backend.models import User, App, SnsGroup, SnsGroupSplit, PhoneDevice, SnsUser, SnsUserGroup, SnsTaskDevice, \
     DeviceFile, SnsTaskType, SnsTask, ActiveDevice, SnsApplyTaskLog, UserActionLog, SnsGroupLost, GroupTag, \
-    TaskWorkingLog, AppUser, DeviceTaskData, SnsUserKickLog, DistArticle, UserAuthApp
+    TaskWorkingLog, AppUser, DeviceTaskData, SnsUserKickLog, DistArticle, UserAuthApp, WxDistLog
 from backend.zhiyue_models import ZhiyueUser, ClipItem
 
 
@@ -139,7 +139,9 @@ def import_wx_dist_result(device_task, lines):
         match = re.match(line, reg)
         if match:
             (name, cnt) = match.groups()
-            pass
+            log = WxDistLog(task=device_task, group_name=name if len(name) < 100 else (name[0:90] + '...'),
+                            user_count=cnt)
+            log.save()
 
 
 def import_dist_result(device_task, lines):
