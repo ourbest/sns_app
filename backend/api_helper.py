@@ -167,9 +167,9 @@ def save_cutt_id(user, cutt_id, user_type):
 def to_share_url(user, url, share_type=0, label=None):
     lines = url.split('\n')
     url = lines[0]
-    u = re.findall(r'https?://.+?/weizhan/article/\d+/\d+/\d+', url)
+    u = re.findall(r'(https?://.+?/weizhan/article/\d+/\d+)/\d+', url)
     if u:
-        u = u[0]
+        u = '%s/%s' % (u[0], user.app_id)
 
         cutt_id = None
         if lines:
