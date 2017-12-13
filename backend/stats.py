@@ -248,7 +248,7 @@ def get_item_stat_values(app):
             db.save()
 
     with connection.cursor() as cursor:
-        query = '''update backend_distarticlestat s,
+        tmp_tbl = '''CREATE TEMPORARY TABLE tmp_stat_tbl as select a.* from backend_distarticlestat s,
 (select a.id, count(distinct t.creator_id) owners, count(l.group_id) groups,
  count(distinct d.`device_id`) devices, sum(group_user_count) users
 from 
@@ -256,21 +256,25 @@ from
   backend_disttasklog l, backend_snstaskdevice d, 
   backend_snstask t, backend_distarticle a
 where g.group_id = l.group_id and success=1 and d.task_id=t.id and l.task_id=t.id and t.article_id=a.id and t.type_id=3
-and a.`created_at` > current_date - interval 7 day group by a.id) a
+and a.`created_at` > current_date - interval 7 day and d.created_at > now() - interval 8 HOUR group by a.id) a
+where s.`article_id` = a.id'''
+        query = '''update backend_distarticlestat s, tmp_stat_tbl a
 set s.`dist_qq_user_count` = a.owners,
 s.`dist_qq_phone_count` = a.devices,
 s.`dist_qun_count` = a.groups,
 s.dist_qun_user = a.users
 where s.`article_id` = a.id
 '''
+        cursor.execute(tmp_tbl)
         cursor.execute(query)
+        cursor.execute('drop table tmp_stat_tbl')
 
         query = '''update backend_distarticlestat s,
 (select a.id, count(distinct t.creator_id) owners, count(distinct d.`device_id`) devices
 from backend_snstaskdevice d, 
   backend_snstask t, backend_distarticle a
 where d.task_id = t.id and t.article_id=a.id and t.type_id=5
-and a.`created_at` > current_date - interval 7 day group by a.id) a
+and a.`created_at` > current_date - interval 7 day and d.created_at > now() - interval 8 HOUR group by a.id) a
 set s.dist_wx_user_count = a.owners,
 s.dist_wx_phone_count = devices
 where s.article_id=a.id'''
