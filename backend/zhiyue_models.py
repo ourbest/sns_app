@@ -1,4 +1,5 @@
 from django.db import models
+from django.db.models import CASCADE
 
 
 class ZhiyueUser(models.Model):
@@ -50,7 +51,7 @@ class ClipItem(models.Model):
 class PartnerClipArticle(models.Model):
     articleId = models.IntegerField(primary_key=True)
     partnerId = models.IntegerField()
-    item = models.ForeignKey(ClipItem, db_column='itemId')
+    item = models.ForeignKey(ClipItem, db_column='itemId', on_delete=CASCADE)
 
     class Meta:
         db_table = 'partner_PartnerClipArticle'
@@ -59,8 +60,8 @@ class PartnerClipArticle(models.Model):
 
 class ShareArticleLog(models.Model):
     partnerId = models.IntegerField()
-    article = models.ForeignKey(PartnerClipArticle, db_column='articleId', null=True)
-    user = models.ForeignKey(ZhiyueUser, db_column='userId')
+    article = models.ForeignKey(PartnerClipArticle, db_column='articleId', null=True, on_delete=CASCADE)
+    user = models.ForeignKey(ZhiyueUser, db_column='userId', on_delete=CASCADE)
     deviceUserId = models.IntegerField()
     time = models.DateTimeField(primary_key=True)
     target = models.IntegerField()
@@ -156,7 +157,7 @@ class HighValueUser(models.Model):
 
 class AdminPartnerUser(models.Model):
     loginUser = models.CharField(max_length=255)
-    user = models.ForeignKey(ZhiyueUser, db_column='userId', primary_key=True)
+    user = models.ForeignKey(ZhiyueUser, db_column='userId', primary_key=True, on_delete=CASCADE)
     partnerId = models.IntegerField()
 
     @staticmethod

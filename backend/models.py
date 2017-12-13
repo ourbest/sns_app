@@ -1,4 +1,5 @@
 from django.db import models
+from django.db.models import CASCADE
 
 
 class App(models.Model):
@@ -28,7 +29,7 @@ class User(models.Model):
     passwd = models.CharField('密码', max_length=50)
     created_at = models.DateTimeField('创建时间', auto_now_add=True)
     role = models.IntegerField(default=0, help_text='0-组员 1-组长')
-    app = models.ForeignKey(App, verbose_name='生活圈', null=True, blank=True, default=None)
+    app = models.ForeignKey(App, verbose_name='生活圈', null=True, blank=True, default=None, on_delete=CASCADE)
     phone = models.CharField(max_length=20, help_text='手机号', null=True, blank=True)
     notify = models.IntegerField(default=0, null=True)
 
@@ -44,8 +45,8 @@ class UserAuthApp(models.Model):
     """
     用户授权的APP列表
     """
-    user = models.ForeignKey(User)
-    app = models.ForeignKey(App)
+    user = models.ForeignKey(User, on_delete=CASCADE)
+    app = models.ForeignKey(App, on_delete=CASCADE)
 
 
 # Create your models here.
@@ -59,7 +60,7 @@ class PhoneDevice(models.Model):
     model = models.CharField('型号', max_length=20, null=True, blank=True)
     system = models.CharField('系统和版本', max_length=50, null=True, blank=True)
     status = models.IntegerField('状态', default=0)
-    owner = models.ForeignKey(User, null=True, blank=True, verbose_name='所有者')
+    owner = models.ForeignKey(User, null=True, blank=True, verbose_name='所有者', on_delete=CASCADE)
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='添加时间')
     memo = models.CharField('备注', null=True, blank=True, max_length=50)
 
@@ -84,7 +85,7 @@ class AppUser(models.Model):
     cutt_user_id = models.BigIntegerField('生活圈用户ID')
     memo = models.CharField('备注', max_length=50)
     created_at = models.DateTimeField('添加时间', auto_now_add=True)
-    user = models.ForeignKey(User, verbose_name='属于')
+    user = models.ForeignKey(User, verbose_name='属于', on_delete=CASCADE)
 
     def __str__(self):
         return self.name
@@ -105,11 +106,11 @@ class SnsUser(models.Model):
     status = models.IntegerField('状态', default=0)
     memo = models.CharField('备注', max_length=255, null=True, blank=True)
     phone = models.CharField('电话', max_length=30)
-    device = models.ForeignKey(PhoneDevice, null=True, verbose_name='设备')
+    device = models.ForeignKey(PhoneDevice, null=True, verbose_name='设备', on_delete=CASCADE)
     created_at = models.DateTimeField('创建时间', auto_now_add=True)
     updated_at = models.DateTimeField('更新时间', auto_now=True)
-    owner = models.ForeignKey(User, null=True, verbose_name='所有者')
-    app = models.ForeignKey(App, verbose_name='生活圈')
+    owner = models.ForeignKey(User, null=True, verbose_name='所有者', on_delete=CASCADE)
+    app = models.ForeignKey(App, verbose_name='生活圈', on_delete=CASCADE)
     bot_login_token = models.BinaryField(null=True, blank=True)
     dist = models.IntegerField(default=1)
     friend = models.IntegerField(default=1)
@@ -133,10 +134,10 @@ class SnsGroup(models.Model):
     group_name = models.CharField('群名', max_length=50)
     group_user_count = models.IntegerField('群用户数', default=0)
     status = models.IntegerField('状态', default=0, help_text='0 - 未使用 1 - 已分配 -1 - 忽略')
-    app = models.ForeignKey(App, verbose_name='生活圈', null=True)
+    app = models.ForeignKey(App, verbose_name='生活圈', null=True, on_delete=CASCADE)
     created_at = models.DateTimeField(verbose_name='添加时间', auto_now_add=True)
     quiz = models.CharField(verbose_name='问题答案', max_length=50, null=True, blank=True)
-    from_user = models.ForeignKey(User, verbose_name='爬群用户', null=True, blank=True)
+    from_user = models.ForeignKey(User, verbose_name='爬群用户', null=True, blank=True, on_delete=CASCADE)
 
     def __str__(self):
         return '%s (%s)' % (self.group_name, self.group_id)
@@ -150,8 +151,8 @@ class SnsUserGroup(models.Model):
     """
     用户群
     """
-    sns_user = models.ForeignKey(SnsUser, verbose_name='用户')
-    sns_group = models.ForeignKey(SnsGroup, verbose_name='群')
+    sns_user = models.ForeignKey(SnsUser, verbose_name='用户', on_delete=CASCADE)
+    sns_group = models.ForeignKey(SnsGroup, verbose_name='群', on_delete=CASCADE)
     nick_name = models.CharField(max_length=50, verbose_name='备注名', null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='加入时间')
     status = models.IntegerField(default=0, verbose_name='状态')
@@ -184,8 +185,8 @@ class SnsGroupUser(models.Model):
     """
     群中的用户信息
     """
-    group = models.ForeignKey(SnsGroup, verbose_name='群')
-    user = models.ForeignKey(SnsUserInfo, verbose_name='用户')
+    group = models.ForeignKey(SnsGroup, verbose_name='群', on_delete=CASCADE)
+    user = models.ForeignKey(SnsUserInfo, verbose_name='用户', on_delete=CASCADE)
     nick = models.CharField('昵称', max_length=50)
     title = models.CharField('头衔', max_length=20)
     created_at = models.DateTimeField('添加时间', auto_now_add=True)
@@ -200,12 +201,12 @@ class SnsGroupSplit(models.Model):
     """
     推广人员分配到的群表
     """
-    group = models.ForeignKey(SnsGroup, verbose_name='群')
-    user = models.ForeignKey(User, verbose_name='推广人')
+    group = models.ForeignKey(SnsGroup, verbose_name='群', on_delete=CASCADE)
+    user = models.ForeignKey(User, verbose_name='推广人', on_delete=CASCADE)
     status = models.IntegerField('状态', default=0, help_text='0 默认 1 已发送 2 已申请 3 已通过 -1 忽略')
     created_at = models.DateTimeField('添加时间', auto_now_add=True)
     updated_at = models.DateTimeField('修改时间', auto_now=True, null=True)
-    phone = models.ForeignKey(PhoneDevice, null=True, verbose_name='设备')
+    phone = models.ForeignKey(PhoneDevice, null=True, verbose_name='设备', on_delete=CASCADE)
 
 
 #
@@ -225,8 +226,8 @@ class SnsGroupLost(models.Model):
     """
     丢失的群列表
     """
-    group = models.ForeignKey(SnsGroup, verbose_name='群')
-    sns_user = models.ForeignKey(SnsUser, verbose_name='账号')
+    group = models.ForeignKey(SnsGroup, verbose_name='群', on_delete=CASCADE)
+    sns_user = models.ForeignKey(SnsUser, verbose_name='账号', on_delete=CASCADE)
     status = models.IntegerField('状态', default=0, help_text='0 - 未处理, 1 - 已处理')
     created_at = models.DateTimeField('添加时间', auto_now_add=True)
 
@@ -244,14 +245,14 @@ class ActiveDevice(models.Model):
     """
     当前在线的设备
     """
-    device = models.ForeignKey(PhoneDevice, verbose_name='设备')
+    device = models.ForeignKey(PhoneDevice, verbose_name='设备', on_delete=CASCADE)
     active_at = models.DateTimeField('最后上线时间', auto_now=True)
     status = models.IntegerField('状态', default=0, help_text='0 - 正常， 1 - 工作中')
 
 
 class DistArticle(models.Model):
     item_id = models.IntegerField(unique=True)
-    app = models.ForeignKey(App)
+    app = models.ForeignKey(App, on_delete=CASCADE)
     title = models.CharField(max_length=255)
     delete_flag = models.IntegerField(default=0)
     category = models.CharField(max_length=30, null=True, blank=True)
@@ -265,15 +266,15 @@ class SnsTask(models.Model):
     """
     name = models.CharField(max_length=80)
     created_at = models.DateTimeField(auto_now_add=True)
-    type = models.ForeignKey(SnsTaskType)
+    type = models.ForeignKey(SnsTaskType, on_delete=CASCADE)
     data = models.TextField(blank=True, null=True)
     status = models.IntegerField(default=0)
-    app = models.ForeignKey(App, null=True)
-    creator = models.ForeignKey(User, null=True)
+    app = models.ForeignKey(App, null=True, on_delete=CASCADE)
+    creator = models.ForeignKey(User, null=True, on_delete=CASCADE)
     schedule_at = models.DateTimeField(null=True)
     started_at = models.DateTimeField(null=True)
     finish_at = models.DateTimeField(null=True)
-    article = models.ForeignKey(DistArticle, null=True)
+    article = models.ForeignKey(DistArticle, null=True, on_delete=CASCADE)
 
     def __str__(self):
         return '<SnsTask %s>' % self.pk
@@ -283,8 +284,8 @@ class SnsTaskDevice(models.Model):
     """
     任务具体设备
     """
-    task = models.ForeignKey(SnsTask)
-    device = models.ForeignKey(PhoneDevice)
+    task = models.ForeignKey(SnsTask, on_delete=CASCADE)
+    device = models.ForeignKey(PhoneDevice, on_delete=CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
     status = models.IntegerField(default=0)
     started_at = models.DateTimeField(null=True, blank=True)
@@ -298,24 +299,24 @@ class DeviceFile(models.Model):
     """
     设备上传的文件信息
     """
-    device = models.ForeignKey(PhoneDevice)
+    device = models.ForeignKey(PhoneDevice, on_delete=CASCADE)
     qiniu_key = models.CharField(max_length=255)
     file_name = models.CharField(max_length=50, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
-    task = models.ForeignKey(SnsTask)
+    task = models.ForeignKey(SnsTask, on_delete=CASCADE)
     type = models.CharField(max_length=20)
-    device_task = models.ForeignKey(SnsTaskDevice, null=True)
+    device_task = models.ForeignKey(SnsTaskDevice, null=True, on_delete=CASCADE)
 
 
 class SnsApplyTaskLog(models.Model):
     """
     加群的历史记录
     """
-    device_task = models.ForeignKey(SnsTaskDevice, null=True)
-    device = models.ForeignKey(PhoneDevice)
+    device_task = models.ForeignKey(SnsTaskDevice, null=True, on_delete=CASCADE)
+    device = models.ForeignKey(PhoneDevice, on_delete=CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
-    account = models.ForeignKey(SnsUser)
-    group = models.ForeignKey(SnsGroup)
+    account = models.ForeignKey(SnsUser, on_delete=CASCADE)
+    group = models.ForeignKey(SnsGroup, on_delete=CASCADE)
     memo = models.CharField(max_length=30)
     status = models.IntegerField(default=0)
 
@@ -330,7 +331,7 @@ class MenuItem(models.Model):
 
 
 class MenuItemPerm(models.Model):
-    menu = models.ForeignKey(MenuItem)
+    menu = models.ForeignKey(MenuItem, on_delete=CASCADE)
     role = models.IntegerField(default=0)
 
 
@@ -338,8 +339,8 @@ class UserDelegate(models.Model):
     """
     授权给其他用户使用我的设备
     """
-    owner = models.ForeignKey(User, related_name='owner')
-    delegate = models.ForeignKey(User, related_name='delegate')
+    owner = models.ForeignKey(User, related_name='owner', on_delete=CASCADE)
+    delegate = models.ForeignKey(User, related_name='delegate', on_delete=CASCADE)
 
     class Meta:
         unique_together = ('owner', 'delegate')
@@ -353,7 +354,7 @@ class Tag(models.Model):
 
 
 class GroupTag(models.Model):
-    group = models.ForeignKey(SnsGroup)
+    group = models.ForeignKey(SnsGroup, on_delete=CASCADE)
     tag = models.CharField(max_length=10)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -365,9 +366,9 @@ class TaskGroup(models.Model):
     """
     此次分发设计到的群，避免发多次
     """
-    task = models.ForeignKey(SnsTask)
-    group = models.ForeignKey(SnsGroup)
-    sns_user = models.ForeignKey(SnsUser)
+    task = models.ForeignKey(SnsTask, on_delete=CASCADE)
+    group = models.ForeignKey(SnsGroup, on_delete=CASCADE)
+    sns_user = models.ForeignKey(SnsUser, on_delete=CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -378,9 +379,9 @@ class DistTaskLog(models.Model):
     """
     分发群日志
     """
-    task = models.ForeignKey(SnsTaskDevice)
-    group = models.ForeignKey(SnsGroup)
-    sns_user = models.ForeignKey(SnsUser)
+    task = models.ForeignKey(SnsTaskDevice, on_delete=CASCADE)
+    group = models.ForeignKey(SnsGroup, on_delete=CASCADE)
+    sns_user = models.ForeignKey(SnsUser, on_delete=CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
     status = models.CharField(max_length=10)
     success = models.IntegerField()
@@ -390,7 +391,7 @@ class WxDistLog(models.Model):
     """
     微信分发日志
     """
-    task = models.ForeignKey(SnsTaskDevice)
+    task = models.ForeignKey(SnsTaskDevice, on_delete=CASCADE)
     group_name = models.CharField(max_length=100)
     user_count = models.IntegerField()
     created_at = models.DateTimeField(auto_now_add=True)
@@ -403,7 +404,7 @@ class UserActionLog(models.Model):
     """
     用户操作历史
     """
-    user = models.ForeignKey(User)
+    user = models.ForeignKey(User, on_delete=CASCADE)
     action = models.CharField(max_length=20)
 
     memo = models.CharField(max_length=255)
@@ -414,9 +415,9 @@ class TaskWorkingLog(models.Model):
     """
     任务工作历史
     """
-    device_task = models.ForeignKey(SnsTaskDevice)
+    device_task = models.ForeignKey(SnsTaskDevice, on_delete=CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
-    account = models.ForeignKey(SnsUser)
+    account = models.ForeignKey(SnsUser, on_delete=CASCADE)
     progress = models.IntegerField(default=0)
 
     class Meta:
@@ -428,8 +429,8 @@ class UserDailyStat(models.Model):
     用户马甲列表
     """
     report_date = models.CharField(max_length=20)
-    app = models.ForeignKey(App)
-    user = models.ForeignKey(User)
+    app = models.ForeignKey(App, on_delete=CASCADE)
+    user = models.ForeignKey(User, on_delete=CASCADE)
     qq_pv = models.IntegerField()
     wx_pv = models.IntegerField()
     qq_down = models.IntegerField()
@@ -443,7 +444,7 @@ class AppDailyStat(models.Model):
     生活圈统计
     """
     report_date = models.CharField(max_length=20)
-    app = models.ForeignKey(App)
+    app = models.ForeignKey(App, on_delete=CASCADE)
     qq_pv = models.IntegerField()
     wx_pv = models.IntegerField()
     qq_down = models.IntegerField()
@@ -453,7 +454,7 @@ class AppDailyStat(models.Model):
 
 
 class DeviceTaskData(models.Model):
-    device_task = models.ForeignKey(SnsTaskDevice)
+    device_task = models.ForeignKey(SnsTaskDevice, on_delete=CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
     lines = models.TextField()
 
@@ -462,13 +463,13 @@ class SnsUserKickLog(models.Model):
     """
     qq号从QQ中被踢掉的记录
     """
-    device_task = models.ForeignKey(SnsTaskDevice)
-    sns_user = models.ForeignKey(SnsUser)
+    device_task = models.ForeignKey(SnsTaskDevice, on_delete=CASCADE)
+    sns_user = models.ForeignKey(SnsUser, on_delete=CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
 
 
 class DailyActive(models.Model):
-    app = models.ForeignKey(App)
+    app = models.ForeignKey(App, on_delete=CASCADE)
     iphone = models.IntegerField()
     android = models.IntegerField()
     total = models.IntegerField()
@@ -476,7 +477,7 @@ class DailyActive(models.Model):
 
 
 class DistArticleStatDetail(models.Model):
-    article = models.ForeignKey(DistArticle)
+    article = models.ForeignKey(DistArticle, on_delete=CASCADE)
     hour = models.IntegerField()
     qq_pv = models.IntegerField()
     wx_pv = models.IntegerField()
@@ -488,7 +489,7 @@ class DistArticleStatDetail(models.Model):
 
 
 class DistArticleStat(models.Model):
-    article = models.ForeignKey(DistArticle)
+    article = models.ForeignKey(DistArticle, on_delete=CASCADE)
     qq_pv = models.IntegerField()
     wx_pv = models.IntegerField()
     qq_down = models.IntegerField()
