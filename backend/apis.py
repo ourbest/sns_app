@@ -1527,7 +1527,6 @@ def create_task(type, params, phone, request, date):
     if devices:
         task_type = model_manager.get_task_type(type)
 
-
         task = SnsTask(name=task_type.name, type=task_type,
                        app_id=get_session_app(request), status=0, schedule_at=scheduler_date,
                        data=params, creator=model_manager.get_user(get_session_user(request)))
@@ -1902,8 +1901,12 @@ def set_article_attr(article_id, key, value):
 
 def redirect(request):
     item_id = request.GET.get('id')
-    app_id = request.GET.get('app')
+    app_id = api_helper.get_session_app(request)
+    db = DistArticle.objects.filter(pk=item_id).first()
     item = model_manager.query(ClipItem).filter(itemId=item_id).first()
+    if db:
+        app_id = db.app_id
+
     return HttpResponseRedirect(
         'http://www.cutt.com/weizhan/article/%s/%s/%s' % (item.clipId if item else 0, item_id, app_id))
 
