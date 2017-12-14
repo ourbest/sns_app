@@ -1512,11 +1512,16 @@ def update_task_status(device_task_id, i_status):
 
 @api_func_anonymous
 def create_task(type, params, phone, request, date):
+    if not type:
+        return 'error'
+
     labels = re.split(';', phone)
     devices = model_manager.get_phones(labels)
     scheduler_date = timezone.make_aware(datetime.strptime(date, '%Y-%m-%d %H:%M')) if date else None
     if devices:
         task_type = model_manager.get_task_type(type)
+
+
         task = SnsTask(name=task_type.name, type=task_type,
                        app_id=get_session_app(request), status=0, schedule_at=scheduler_date,
                        data=params, creator=model_manager.get_user(get_session_user(request)))
@@ -1548,7 +1553,7 @@ def my_tasks(request):
         'data': x.data,
         'status_text': TASK_STATUS_TEXT[x.status],
     } for x in SnsTask.objects.filter(creator__email=get_session_user(request)).select_related(
-        'creator', 'type').order_by('-pk')[:50]]
+        'creator', 'type').order_by('-pk')[:50] if x and x.creator and x.type]
 
 
 @api_func_anonymous
