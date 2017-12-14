@@ -1345,7 +1345,13 @@ def app_summary(app_id, request):
             'total_wx': SnsUser.objects.filter(type=1, app=app).count(),
             'total_device': PhoneDevice.objects.filter(owner__app=app).count(),
             'qun_join': t['count'],
-            'qun_join_members': t['sum']
+            'qun_join_members': t['sum'],
+            'add': t['add'],
+            'dist': t['dist'],
+            'add_count': t['add_count'],
+            'add_sum': t['add_sum'],
+            'dist_count': t['dist_count'],
+            'dist_sum': t['dist_sum'],
         }
 
 
@@ -1845,10 +1851,25 @@ def sum_app_team(app):
         .extra(where=['exists (select 1 from backend_snsusergroup '
                       'where status=0 and sns_group_id=backend_snsgroup.group_id)'])
 
+    query_add = SnsGroup.objects.filter(app_id=app) \
+        .extra(where=['exists (select 1 from backend_snsusergroup g, backend_snsuser u '
+                      'where g.sns_user_id=u.id and u.app_id=%s and u.friend=1 and u.dist=0 and '
+                      'g.status=0 and sns_group_id=backend_snsgroup.group_id)' % app])
+
+    query_dist = SnsGroup.objects.filter(app_id=app) \
+        .extra(where=['exists (select 1 from backend_snsusergroup g, backend_snsuser u '
+                      'where g.sns_user_id=u.id and u.app_id=%s and u.dist=1 and '
+                      'g.status=0 and sns_group_id=backend_snsgroup.group_id)' % app])
     return {
+        'add': SnsUser.objects.filter(app_id=app, friend=1).count(),
+        'dist': SnsUser.objects.filter(app_id=app, dist=1).count(),
         'sum': query.aggregate(Sum('group_user_count'))['group_user_count__sum'],
         'total': SnsUserGroup.objects.filter(sns_user__app_id=app, status=0).count(),
         'count': query.count(),
+        'add_count': query_add.count(),
+        'add_sum': query_add.aggregate(Sum('group_user_count'))['group_user_count__sum'],
+        'dist_sum': query_dist.aggregate(Sum('group_user_count'))['group_user_count__sum'],
+        'dist_count': query_dist.count(),
         'users': [
             sum_app_user(app, x.id, lambda y: y.update({'name': x.name})) for x in
             User.objects.filter(app_id=app, status=0)
