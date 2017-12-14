@@ -150,10 +150,12 @@ def get_user_share_stat(date, the_user):
     items = {api_helper.parse_item_id(x.data) for x in tasks}
 
     task_dict = dict()
+    items_in_order = []
     for x in tasks:
         item_id = api_helper.parse_item_id(x.data)
         if item_id and item_id not in task_dict:
             task_dict[item_id] = x
+            items_in_order.append(item_id)
 
     # items.update(get_user_share(the_user.app_id, the_user, date))
 
@@ -189,7 +191,8 @@ def get_user_share_stat(date, the_user):
             rows = cursor.fetchall()
             for row in rows:
                 data['%s_du' % (row[0],)] = row[1]
-    return [{
+
+    ret_dict = {str(x.itemId): {
         'name': the_user.name,
         'item_id': x.itemId,
         'time': times.to_str(task_dict.get(str(x.itemId)).started_at, '%H:%M'),
@@ -200,7 +203,8 @@ def get_user_share_stat(date, the_user):
         'download': data.get('%s_%s' % (x.itemId, 'article-down'), 0) + data.get(
             '%s_%s' % (x.itemId, 'article-mochuang'), 0) + data.get('%s_%s' % (x.itemId, 'tongji-down'), 0),
         'users': data.get('%s_du' % x.itemId, 0),
-    } for x in ClipItem.objects.using(ClipItem.db_name()).filter(itemId__in=items)]
+    } for x in ClipItem.objects.using(ClipItem.db_name()).filter(itemId__in=items)}
+    return [ret_dict[x] for x in items_in_order if x in ret_dict]
 
 
 @api_func_anonymous

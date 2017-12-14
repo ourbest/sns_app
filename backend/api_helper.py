@@ -1,8 +1,8 @@
+import os
 import re
 import threading
 from random import shuffle
 
-import os
 import requests
 from dj import times
 from django.conf import settings
@@ -288,7 +288,7 @@ def add_dist_qun(device_task):
                     pass
 
             if group_ids:
-                groups[user.login_name] = group_ids
+                groups['%s@%s' % (user.login_name, user.provider)] = group_ids
                 logger.info('%s QQ(%s)分发%s个QQ群，忽略%s个群', device_task.id, user.login_name, len(group_ids), dup)
 
     idx = 0
@@ -298,7 +298,10 @@ def add_dist_qun(device_task):
 
     for login_name, groups in groups.items():
         idx += 1
-        user_lines.append('QQ_%s=%s' % (idx, login_name))
+        [qq_id, platform] = login_name.split('@')
+        user_lines.append('QQ_%s=%s' % (idx, qq_id))
+        user_lines.append('QQ_%s_AT=%s' % (idx, platform))
+
         for group in groups:
             group_lines.append('QUN_%s=%s' % (idx, group))
 
@@ -339,7 +342,9 @@ def add_add_qun(device_task):
     group_lines = []
     for login_name, groups in groups.items():
         idx += 1
-        user_lines.append('QQ_%s=%s' % (idx, login_name))
+        [qq_id, platform] = login_name.split('@')
+        user_lines.append('QQ_%s=%s' % (idx, qq_id))
+        user_lines.append('QQ_%s_AT=%s' % (idx, platform))
         for group in groups:
             group_lines.append('QUN_%s=%s' % (idx, group))
     return data + '%s\n%s' % ('\n'.join(user_lines), '\n'.join(group_lines))
@@ -371,7 +376,7 @@ def get_add_groups(cnt, device_task):
                     break
 
             if group_ids:
-                groups[user.login_name] = group_ids
+                groups['%s@%s' % (user.login_name, user.provider)] = group_ids
     return groups
 
 
