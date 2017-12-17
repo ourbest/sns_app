@@ -20,8 +20,8 @@ class ZhiyueUser(models.Model):
 class ItemMore(models.Model):
     itemId = models.BigIntegerField(primary_key=True)
     appId = models.IntegerField()
-    title = models.CharField(80)
-    content = models.CharField(255)
+    title = models.CharField(max_length=80)
+    content = models.CharField(max_length=255)
     createTime = models.DateTimeField()
 
     @staticmethod
