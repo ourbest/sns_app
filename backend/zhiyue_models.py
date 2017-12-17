@@ -38,6 +38,7 @@ class ClipItem(models.Model):
     itemId = models.IntegerField(primary_key=True)
     articleId = models.IntegerField()
     title = models.CharField(max_length=255)
+    fromEntity = models.CharField(max_length=25)
 
     @staticmethod
     def db_name():

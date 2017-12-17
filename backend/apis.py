@@ -1904,11 +1904,16 @@ def redirect(request):
     app_id = api_helper.get_session_app(request)
     db = DistArticle.objects.filter(pk=item_id).first()
     item = model_manager.query(ClipItem).filter(itemId=item_id).first()
+
+    if not item:
+        return HttpResponse("error", status_code=404)
     if db:
         app_id = db.app_id
+    else:
+        app_id = item.fromEntity
 
     return HttpResponseRedirect(
-        'http://www.cutt.com/weizhan/article/%s/%s/%s' % (item.clipId if item else 0, item_id, app_id))
+        'http://www.cutt.com/weizhan/article/%s/%s/%s' % (item.clipId, item_id, app_id))
 
 
 @api_func_anonymous
