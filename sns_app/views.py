@@ -10,4 +10,4 @@ def home(request):
 
 
 def dist(request, page):
-    return HttpResponseRedirect('http://jwres.cutt.com/dist/' + page)
+    return HttpResponseRedirect('%s://jwres.cutt.com/dist/%s' % (request.scheme, page))
