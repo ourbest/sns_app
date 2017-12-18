@@ -257,7 +257,8 @@ class DistArticle(models.Model):
     delete_flag = models.IntegerField(default=0)
     category = models.CharField(max_length=30, null=True, blank=True)
     created_at = models.DateTimeField()
-    started_at = models.DateTimeField()
+    started_at = models.DateTimeField(null=True, blank=True)
+    last_started_at = models.DateTimeField(null=True, blank=True)
 
 
 class SnsTask(models.Model):
