@@ -7,7 +7,6 @@ urlpatterns = [
     url(r'^ext/stat', exts.daily_stat),
 
     url(r'^upload$', apis.upload),
-    url(r'^upload$', apis.upload),
     url(r'^task$', apis.task),
     url(r'^url$', apis.redirect),
     url(r'^report$', apis.report_progress),
