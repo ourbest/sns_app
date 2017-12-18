@@ -576,6 +576,8 @@ def parse_dist_article(data, task, from_time=timezone.now()):
         db = DistArticle.objects.filter(item_id=item_id).first()
         if not db:
             try:
+                from_time = from_time if from_time > task.schedule_at else task.schedule_at
+
                 db = DistArticle(item_id=item_id, app_id=task.app_id,
                                  started_at=from_time, created_at=from_time,
                                  title=zhiyue_models.get_article_title(item_id))

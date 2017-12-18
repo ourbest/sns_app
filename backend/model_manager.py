@@ -145,6 +145,16 @@ def reset_qun_status(device_task):
     SnsGroupSplit.objects.filter(phone=device_task.device, status=1).update(status=0)
 
 
+def remove_dup_split_data(app_id):
+    splits = SnsGroupSplit.objects.filter(status__in=(0, 1, 2), user__app_id=app_id).order_by("-status")
+    done = set()
+    for x in splits:
+        if x.group_id not in done:
+            done.add(x.group_id)
+        else:
+            x.delete()
+
+
 def set_qun_applying(device, qun):
     """
     将群状态改写成申请中

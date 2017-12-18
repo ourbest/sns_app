@@ -17,6 +17,22 @@ def clean_split_data():
             x.delete()
 
 
+def sync_task():
+    for task in SnsTask.objects.filter(created_at__gt=timezone.now() - timedelta(days=4), type_id__in=(3, 5)):
+        api_helper.parse_dist_article(task.data, task, from_time=task.schedule_at)
+
+
+def remove_dup_split_data():
+    splits = SnsGroupSplit.objects.filter(status__in=(0, 1, 2), user__app__stage='准备期').order_by("-status")
+    done = set()
+    for x in splits:
+        if x.group_id not in done:
+            done.add(x.group_id)
+        else:
+            x.delete()
+            print('delete %s' % x.group_id)
+
+
 def clean_split_data_1(status=1):
     splits = SnsGroupSplit.objects.filter(status=status)
     done = set()
