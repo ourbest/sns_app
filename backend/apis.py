@@ -122,7 +122,7 @@ def _after_upload(device_task, task_id, tmp_file, device, file_type):
                     import_add_result(device_task, upload_file_content)
                 elif device_task.task.type_id == 3:  # 分发
                     import_dist_result(device_task, upload_file_content)
-                elif device_task.task.type_id == 4:  # 微信分发
+                elif device_task.task.type_id == 5:  # 微信分发
                     import_wx_dist_result(device_task, upload_file_content)
                 api_helper.merge_task_result(device_task.task, upload_file_content)
 
