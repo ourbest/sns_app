@@ -145,8 +145,8 @@ def get_user_share_stat(date, the_user):
         return []
     ids = [x.cutt_user_id for x in the_user.appuser_set.filter(type__gte=0)]
     tasks = list(SnsTask.objects.filter(creator=the_user, type_id__in=(5, 3),
-                                        schedule_at__range=(date.date(), date.date() + timedelta(days=1)))
-                 .order_by('-schedule_at'))
+                                        started_at__range=(date.date(), date.date() + timedelta(days=1)))
+                 .order_by('-started_at'))
     items = {api_helper.parse_item_id(x.data) for x in tasks}
 
     task_dict = dict()
