@@ -574,14 +574,21 @@ def parse_dist_article(data, task, from_time=timezone.now()):
     item_id = parse_item_id(data)
     if item_id:
         db = DistArticle.objects.filter(item_id=item_id).first()
+        from_time = from_time if from_time > task.schedule_at else task.schedule_at
         if not db:
             try:
                 db = DistArticle(item_id=item_id, app_id=task.app_id,
-                                 started_at=from_time, created_at=from_time,
+                                 started_at=from_time, created_at=from_time, last_started_at=from_time,
                                  title=zhiyue_models.get_article_title(item_id))
                 db.save()
             except:
                 logger.warning('error saving dist item %s' % item_id, exc_info=1)
+        else:
+            try:
+                db.last_started_at = from_time
+                db.save()
+            except:
+                logger.warning('error updating dist item %s' % item_id, exc_info=1)
 
         task.article = db
         task.save()

@@ -136,7 +136,7 @@ def _after_upload(device_task, task_id, tmp_file, device, file_type):
 def import_wx_dist_result(device_task, lines):
     reg = r'(.+)\t\((\d+)\)$'
     for line in lines.split('\n'):
-        match = re.match(line, reg)
+        match = re.match(reg, line)
         if match:
             (name, cnt) = match.groups()
             log = WxDistLog(task=device_task, group_name=name if len(name) < 100 else (name[0:90] + '...'),
@@ -1584,11 +1584,11 @@ def team_dist_info(item_id):
                     sum = device.disttasklog_set.filter(success=1).aggregate(Sum('group__group_user_count')).get(
                         'group__group_user_count__sum', 0) if cnt else 0
                     obj = {'owner': ts.creator.name, 'qun': cnt, 'type': 'QQ', 'user': sum,
-                           'phone': device.device.friend_text}
+                           'phone': device.device.friend_text, 'time': times.to_str(device.started_at)}
                     ret.append(obj)
                 else:
                     obj = {'owner': ts.creator.name, 'qun': 0, 'type': '微信', 'user': 0,
-                           'phone': device.device.friend_text}
+                           'phone': device.device.friend_text, 'time': times.to_str(device.started_at)}
                     ret.append(obj)
 
     return ret

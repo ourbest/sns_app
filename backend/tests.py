@@ -1,5 +1,4 @@
 # Create your tests here.
-from datetime import timedelta
 from time import sleep
 
 from django.utils import timezone
@@ -15,6 +14,27 @@ def clean_split_data():
     for x in splits:
         if not done.add(x.group_id):
             x.delete()
+
+
+def sync_task():
+    for task in SnsTask.objects.filter(article__isnull=True, type_id__in=(3, 5)):
+        print('check ' + task.data)
+        item_id = api_helper.parse_item_id(task.data)
+        print('is item id %s ' % item_id)
+
+        api_helper.parse_dist_article(task.data, task, from_time=task.schedule_at)
+        print('after %s' % task.article)
+
+
+def remove_dup_split_data():
+    splits = SnsGroupSplit.objects.filter(status__in=(0, 1, 2), user__app__stage='准备期').order_by("-status")
+    done = set()
+    for x in splits:
+        if x.group_id not in done:
+            done.add(x.group_id)
+        else:
+            x.delete()
+            print('delete %s' % x.group_id)
 
 
 def clean_split_data_1(status=1):
