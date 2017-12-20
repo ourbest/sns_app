@@ -199,9 +199,12 @@ def extract_url(url):
 
 
 def parse_item_id(url):
-    url = url.split('\n')[0]
-    u = re.findall(r'https?://.+?/weizhan/article/\d+/(\d+)/\d+', url)
-    return u[0] if u else None
+    for res in url.split('\n'):
+        if not res:
+            continue
+        u = re.findall(r'https?://.+?/weizhan/article/\d+/(\d+)/\d+', res)
+        return u[0] if u else None
+    return None
 
 
 def add_wx_params(device_task):
@@ -592,3 +595,5 @@ def parse_dist_article(data, task, from_time=timezone.now()):
 
         task.article = db
         task.save()
+    else:
+        logger.warning('cannot parse task item id %s ' % data)
