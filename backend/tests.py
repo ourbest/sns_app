@@ -17,12 +17,12 @@ def clean_split_data():
 
 
 def sync_task():
-    for task in SnsTask.objects.filter(article__isnull=True, type_id__in=(3, 5)):
+    for task in SnsTask.objects.filter(article__isnull=True, type_id__in=(3, 5), started_at__isnull=False):
         print('check ' + task.data)
         item_id = api_helper.parse_item_id(task.data)
         print('is item id %s ' % item_id)
 
-        api_helper.parse_dist_article(task.data, task, from_time=task.schedule_at)
+        api_helper.parse_dist_article(task.data, task, from_time=task.started_at)
         print('after %s' % task.article)
 
 
