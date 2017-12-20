@@ -12,7 +12,7 @@ from backend import api_helper, model_manager, stats
 from backend.api_helper import get_session_app
 from backend.models import AppUser, AppDailyStat, UserDailyStat, App, DailyActive
 from backend.zhiyue_models import ShareArticleLog, ClipItem, WeizhanCount, AdminPartnerUser, CouponInst, ItemMore, \
-    ZhiyueUser, UserRewardHistory
+    ZhiyueUser, UserRewardHistory, AppConstants
 
 
 @api_func_anonymous
@@ -29,6 +29,20 @@ def user_share(i_uid, request):
         'clipId': x.article.item.clipId if x.article else 0,
         'title': x.article.item.title if x.article else '',
     } for x in data]
+
+
+@api_func_anonymous
+def messages():
+    data = model_manager.query(AppConstants).filter(constType='pushmessage')
+    return [{'constId': x.constId, 'constName': x.constName, 'memo': x.memo} for x in data]
+
+
+@api_func_anonymous
+def message_save(constId, constName):
+    db = AppConstants.objects.using('zhiyue_rw').filter(constType='pushmessage', constId=constId).first()
+    if db:
+        db.constName = constName
+        db.save()
 
 
 def get_user_share_items(app_id, uids):

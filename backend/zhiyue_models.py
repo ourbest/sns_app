@@ -304,3 +304,19 @@ class CouponPmSentInfo(models.Model):
     class Meta:
         db_table = 'partner_CouponPmSentInfo'
         managed = False
+
+
+class AppConstants(models.Model):
+    type = models.IntegerField()
+    constType = models.CharField(max_length=64)
+    constId = models.CharField(max_length=64, primary_key=True)
+    constName = models.CharField(max_length=255)
+    memo = models.CharField(max_length=255, null=True)
+
+    @staticmethod
+    def db_name():
+        return 'zhiyue'
+
+    class Meta:
+        db_table = 'partner_AppConstants'
+        managed = False

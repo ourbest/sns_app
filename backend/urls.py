@@ -121,6 +121,8 @@ urlpatterns = [
 
     ##### zhiyue
     url(r'^zhiyue/share$', zhiyue.user_share),
+    url(r'^zhiyue/message/save$', zhiyue.message_save),
+    url(r'^zhiyue/messages$', zhiyue.messages),
     url(r'^zhiyue/title$', zhiyue.get_url_title),
     url(r'^zhiyue/stat$', zhiyue.count_user_sum),
     url(r'^zhiyue/majia$', zhiyue.get_user_majia),
