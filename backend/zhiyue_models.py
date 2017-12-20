@@ -288,6 +288,25 @@ class UserRewardHistory(models.Model):
         managed = False
 
 
+class CouponDailyStatInfo(models.Model):
+    partnerId = models.IntegerField()
+    statDate = models.DateField(auto_now_add=True)
+    total = models.IntegerField()
+    active = models.IntegerField()
+    open = models.IntegerField()
+    remainDay = models.IntegerField()
+    remainOpen = models.IntegerField()
+    remainNotOpen = models.IntegerField()
+
+    @staticmethod
+    def db_name():
+        return 'partner'
+
+    class Meta:
+        db_table = 'partner_CouponStatInfo'
+        managed = False
+
+
 class CouponPmSentInfo(models.Model):
     messageId = models.CharField(max_length=32, primary_key=True)
     userId = models.IntegerField()

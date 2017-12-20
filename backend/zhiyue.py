@@ -12,7 +12,7 @@ from backend import api_helper, model_manager, stats
 from backend.api_helper import get_session_app
 from backend.models import AppUser, AppDailyStat, UserDailyStat, App, DailyActive
 from backend.zhiyue_models import ShareArticleLog, ClipItem, WeizhanCount, AdminPartnerUser, CouponInst, ItemMore, \
-    ZhiyueUser, UserRewardHistory, AppConstants
+    ZhiyueUser, UserRewardHistory, AppConstants, CouponPmSentInfo, CouponDailyStatInfo
 
 
 @api_func_anonymous
@@ -304,7 +304,32 @@ def get_offline_ids(request, date):
 
 
 @api_func_anonymous
-def get_coupon_details():
+def get_coupon_message_details():
+    query = 'select (userId % 2) as g, message, count(*), status, type from partner_CouponPmSentInfo ' \
+            'where createTime > current_date - interval 1 day group by message, userId % 2, status, type'
+
+    ret = []
+    values = {}
+    with connections['zhiyue'].cursor() as cursor:
+        cursor.execute(query)
+        rows = cursor.fetchall()
+        for [group, message, cnt, status, type] in rows:
+            key = '%s_%s_%s' % (group, message, type)
+            row = values.get(key)
+            if not row:
+                row = {'group': group, 'message': message, 'total': 0, 'type': type, 'open': 0}
+                ret.append(row)
+                values[key] = row
+
+            row['total'] += cnt
+            if status:
+                row['open'] = cnt
+
+    return ret
+
+
+@api_func_anonymous
+def get_coupon_details(save):
     date = times.localtime(datetime.now().replace(hour=0, second=0, minute=0, microsecond=0))
     yesterday = date - timedelta(days=1)
     apps = {x.app_id: x.app_name for x in App.objects.filter(stage__in=('分发期', '留守期'))}
@@ -316,25 +341,63 @@ def get_coupon_details():
     ids = [x['partnerId'] for x in query]
 
     rates = dict()
+    remains = dict()
+    picked_remains = dict()
+    picked_rates = dict()
+    others_remains = dict()
+    others_rates = dict()
 
-    for app_id in ids:
-        user_ids = [x.userId for x in model_manager.query(CouponInst).filter(partnerId=app_id,
-                                                                             status=1,
-                                                                             useDate__range=(
-                                                                                 yesterday,
-                                                                                 yesterday + timedelta(days=1)))]
-        rates[app_id] = int(model_manager.query(ZhiyueUser).filter(userId__in=user_ids,
-                                                                   lastActiveTime__gt=date).count() / len(
-            user_ids) * 100)
+    actives = {x['partnerId']: x['total'] for x in
+               model_manager.query(CouponPmSentInfo).filter(partnerId__in=apps.keys(), status=1,
+                                                            createTime__gt=date).values('partnerId').annotate(
+                   total=Count('userId'))}
 
-    reward_query = model_manager.query(UserRewardHistory).filter(createTime__gt=date).values('partnerId').annotate(
+    reward_query = model_manager.query(UserRewardHistory).filter(createTime__gt=date,
+                                                                 source='groundPush').values('partnerId').annotate(
         total=Count('userId'))
     rewards = {x['partnerId']: x['total'] for x in reward_query}
 
-    return [{
-        'app_id': x['partnerId'],
-        'app_name': apps[x['partnerId']],
-        'today': x['total'],
-        'remain': '%s%%' % rates[x['partnerId']],
-        'open': rewards.get(x['partnerId'], 0)
-    } for x in query]
+    for app_id in ids:
+        user_ids = {x.userId for x in model_manager.query(CouponInst).filter(partnerId=app_id,
+                                                                             status=1,
+                                                                             useDate__range=(
+                                                                                 yesterday,
+                                                                                 yesterday + timedelta(days=1)))}
+
+        user_picked_ids = {x.userId for x in model_manager.query(UserRewardHistory).filter(partnerId=app_id,
+                                                                                           source='groundPush',
+                                                                                           createTime__range=(
+                                                                                               yesterday, date))}
+
+        remain = model_manager.query(ZhiyueUser).filter(userId__in=user_ids,
+                                                        lastActiveTime__gt=date).count()
+
+        picked_remain = model_manager.query(ZhiyueUser).filter(userId__in=user_picked_ids,
+                                                               lastActiveTime__gt=date).count()
+
+        not_picked = user_ids - user_picked_ids
+
+        others_remains[app_id] = model_manager.query(ZhiyueUser).filter(userId__in=not_picked,
+                                                                        lastActiveTime__gt=date).count()
+        others_rates[app_id] = int(others_remains[app_id] / len(not_picked) * 100)
+
+        rates[app_id] = int(remain / len(user_ids) * 100)
+        remains[app_id] = remain
+        picked_remains[app_id] = picked_remain
+        picked_rates[app_id] = int(picked_remain / len(user_picked_ids) * 100)
+
+    ret = [{'app_id': x['partnerId'], 'app_name': apps[x['partnerId']], 'today': x['total'],
+            'remain': '%s%%' % rates[x['partnerId']], 'open': rewards.get(x['partnerId'], 0),
+            'active': actives.get(x['partnerId'], 0), 'picked_remain': picked_remains.get(x['partnerId'], 0),
+            'picked_remain_rate': '%s%%' % picked_rates.get(x['partnerId'], 0),
+            'others_remain': others_remains.get(x['partnerId'], 0),
+            'others_remain_rate': '%s%%' % others_rates.get(x['partnerId'], 0), } for x in query]
+    if save:
+        for x in ret:
+            info = CouponDailyStatInfo(partnerId=x['app_id'], statDate=date,
+                                       total=x['today'], active=x['active'],
+                                       open=x['open'], remainDay=x['remain'][:-1],
+                                       remainOpen=x['picked_remain_rate'][:-1],
+                                       remainNotOpen=x['others_remain_rate'][:-1])
+            info.save(using='partner_rw')
+    return ret
