@@ -172,8 +172,8 @@ def return_applying_to_normal():
     """
     today = timezone.now().replace(hour=0, minute=0, second=0, microsecond=0)
     SnsGroupSplit.objects.filter(status=2, apply_count__lt=5,
-                                 updated_at__range=(today - timedelta(days=3),
-                                                    today - timedelta(days=2))).update(status=0)
+                                 updated_at__range=(today - timedelta(days=4),
+                                                    today - timedelta(days=3))).update(status=0)
 
 
 def set_qun_manual(qun):
