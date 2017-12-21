@@ -2,7 +2,7 @@ import random
 from collections import defaultdict
 from datetime import timedelta
 
-from django.db.models import Q
+from django.db.models import Q, F
 from django.utils import timezone
 from logzero import logger
 
@@ -162,7 +162,18 @@ def set_qun_applying(device, qun):
     :param qun:
     :return:
     """
-    SnsGroupSplit.objects.filter(phone=device, group=qun).update(status=2)
+    SnsGroupSplit.objects.filter(phone=device, group=qun).update(status=2, apply_count=F('apply_count') + 1)
+
+
+def return_applying_to_normal():
+    """
+    将申请中的群重新设置为待申请
+    :return:
+    """
+    today = timezone.now().replace(hour=0, minute=0, second=0, microsecond=0)
+    SnsGroupSplit.objects.filter(status=2, apply_count__lt=5,
+                                 updated_at__range=(today - timedelta(days=3),
+                                                    today - timedelta(days=2))).update(status=0)
 
 
 def set_qun_manual(qun):

@@ -207,6 +207,7 @@ class SnsGroupSplit(models.Model):
     created_at = models.DateTimeField('添加时间', auto_now_add=True)
     updated_at = models.DateTimeField('修改时间', auto_now=True, null=True)
     phone = models.ForeignKey(PhoneDevice, null=True, verbose_name='设备', on_delete=CASCADE)
+    apply_count = models.IntegerField(default=0)
 
 
 #
