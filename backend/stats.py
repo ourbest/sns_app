@@ -14,6 +14,10 @@ from backend.models import User, App
 from backend.zhiyue_models import ClipItem
 from backend.zhiyue_models import HighValueUser, ShareArticleLog
 
+import statsd
+
+client = statsd.StatsClient('10.9.88.19')
+
 
 def app_daily_stat(app, date, include_sum=False):
     qq_stats = []

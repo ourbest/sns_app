@@ -142,6 +142,7 @@ urlpatterns = [
     url(r'^daemon/reset_apply$', apis.reset_applying),
     url(r'^daemon/stat/save$', daemons.save_daily_active),
     url(r'^daemon/stat/article$', stats.get_item_stat_values),
+    url(r'^daemon/stat/app$', daemons.gauge_data),
 
     # weixin
     url(r'^wx/contact/sync$', bot_apis.sync_contacts),
