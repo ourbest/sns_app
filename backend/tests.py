@@ -26,6 +26,14 @@ def sync_task():
         print('after %s' % task.article)
 
 
+def do_sync_articles():
+    for article in DistArticle.objects.filter(started_at__lt='2017-12-14', started_at__gt='2017-12-09'):
+        f = article.snstask_set.first()
+        if f.started_at != article.started_at:
+            article.started_at = f.started_at
+            article.save()
+
+
 def remove_dup_split_data():
     splits = SnsGroupSplit.objects.filter(status__in=(0, 1, 2), user__app__stage='准备期').order_by("-status")
     done = set()

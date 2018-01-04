@@ -139,8 +139,10 @@ urlpatterns = [
     url(r'^change/ver$', apis.change_js_version),
     url(r'^daemon/check$', daemons.check_online_task),
     url(r'^daemon/stat$', daemons.daily_stat),
+    url(r'^daemon/reset_apply$', apis.reset_applying),
     url(r'^daemon/stat/save$', daemons.save_daily_active),
     url(r'^daemon/stat/article$', stats.get_item_stat_values),
+    url(r'^daemon/stat/app$', daemons.gauge_data),
 
     # weixin
     url(r'^wx/contact/sync$', bot_apis.sync_contacts),
@@ -149,4 +151,5 @@ urlpatterns = [
     # coupon
     url(r'coupon/users$', zhiyue.get_offline_ids),
     url(r'coupon/detail$', zhiyue.get_coupon_details),
+    url(r'coupon/message/detail$', zhiyue.get_coupon_message_details),
 ]

@@ -1280,6 +1280,12 @@ def split_qun_to_device(request, email):
 
 
 @api_func_anonymous
+def reset_applying():
+    model_manager.return_applying_to_normal()
+    return ''
+
+
+@api_func_anonymous
 def reset_phone_split(request):
     user = get_session_user(request)
     if user:

@@ -13,3 +13,4 @@ logzero
 jieba
 wordcloud
 raven
+statsd
