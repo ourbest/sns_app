@@ -181,6 +181,7 @@ def get_user_share_stat(date, the_user):
                         'and createTime between \'%s\' AND \'%s\' GROUP BY sourceItemId' % (
                             ','.join(map(str, items)), ','.join(map(str, ids)), times.to_date_str(date),
                             times.to_date_str(date_end))
+
     data = {}
     if not ids:
         return []
@@ -202,10 +203,10 @@ def get_user_share_stat(date, the_user):
         'time': times.to_str(task_dict.get(str(x.itemId)).started_at, '%H:%M'),
         'date': times.to_str(task_dict.get(str(x.itemId)).started_at, '%y-%m-%d'),
         'title': x.title if x.title else '（无标题）',
-        'weizhan': data.get('%s_%s' % (x.itemId, 'article'), 0),
-        'reshare': data.get('%s_%s' % (x.itemId, 'article-reshare'), 0),
-        'download': data.get('%s_%s' % (x.itemId, 'article-down'), 0) + data.get(
-            '%s_%s' % (x.itemId, 'article-mochuang'), 0) + data.get('%s_%s' % (x.itemId, 'tongji-down'), 0),
+        'weizhan': get_count(data, x.itemId, ''),
+        'reshare': get_count(data, x.itemId, '-reshare'),
+        'download': get_count(data, x.itemId, '-down') + get_count(data, x.itemId, '-mochuang') + data.get(
+            '%s_%s' % (x.itemId, 'tongji-down'), 0),
         'users': data.get('%s_du' % x.itemId, 0),
     } for x in ClipItem.objects.using(ClipItem.db_name()).filter(itemId__in=items)}
     return [ret_dict[x] for x in items_in_order if x in ret_dict]
@@ -320,12 +321,18 @@ def batch_item_stat(app_id, items, from_time, user_type=0):
                 data['%s_du' % (row[0],)] = row[1]
     return [{
         'item_id': x,
-        'weizhan': data.get('%s_%s' % (x, 'article'), 0),
-        'reshare': data.get('%s_%s' % (x, 'article-reshare'), 0),
-        'download': data.get('%s_%s' % (x, 'article-down'), 0) + data.get(
-            '%s_%s' % (x, 'article-mochuang'), 0) + data.get('%s_%s' % (x, 'tongji-down'), 0),
+        'weizhan': get_count(data, x, ''),
+        'reshare': get_count(data, x, '-reshare'),
+        'download': get_count(data, x, '-down') + get_count(data, x, '-mochuang') + data.get(
+            '%s_%s' % (x, 'tongji-down'), 0),
         'users': data.get('%s_du' % x, 0),
     } for x in items]
+
+
+def get_count(data, item_id, tp):
+    return data.get('%s_%s' % (item_id, 'article%s' % tp), 0) \
+           + data.get('%s_%s' % (item_id, 'articlea%s' % tp), 0) \
+           + data.get('%s_%s' % (item_id, 'articleb%s' % tp), 0)
 
 
 def get_item_stat(app_id, item_id, from_time, user_type=0):
@@ -357,9 +364,12 @@ def get_item_stat(app_id, item_id, from_time, user_type=0):
         for row in rows:
             data['du'] = row[0]
     return {
-        'weizhan': data.get('article', 0),
-        'reshare': data.get('article-reshare', 0),
-        'download': data.get('article-down', 0) + data.get('article-mochuang', 0) + data.get('tongji-down', 0),
+        'weizhan': data.get('article', 0) + data.get('articlea', 0) + data.get('articleb', 0),
+        'reshare': data.get('article-reshare', 0) + data.get('articlea-reshare', 0) + data.get('articleb-reshare', 0),
+        'download': data.get('article-down', 0) + data.get('articlea-down', 0) + data.get('articleb-down',
+                                                                                          0) + data.get(
+            'article-mochuang', 0) + data.get('articlea-mochuang', 0) + data.get('articleb-mochuang', 0) + data.get(
+            'tongji-down', 0),
         'users': data.get('du', 0),
     }
 
