@@ -1533,9 +1533,13 @@ def create_task(type, params, phone, request, date):
     if devices:
         task_type = model_manager.get_task_type(type)
 
+        user = model_manager.get_user(get_session_user(request))
+        if not user:
+            user = devices[0].owner
+
         task = SnsTask(name=task_type.name, type=task_type,
                        app_id=get_session_app(request), status=0, schedule_at=scheduler_date,
-                       data=params, creator=model_manager.get_user(get_session_user(request)))
+                       data=params, creator=user)
         task.save()
 
         # if '分发' in task_type.name:
