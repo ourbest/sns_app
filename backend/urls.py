@@ -77,6 +77,7 @@ urlpatterns = [
     url(r'^reset/phone/qq$', apis.reset_phone_split),
     url(r'^qun$', apis.export_qun),
     url(r'^export/qun$', apis.export_qun_csv),
+    url(r'^export/user_qun$', apis.export_phone_qun_csv),
     url(r'^send/qq$', apis.send_qq),
     url(r'^login/submit$', apis.login),
     url(r'^login/info$', apis.login_info),

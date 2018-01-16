@@ -1216,6 +1216,24 @@ def export_qun_csv(request):
 
 
 @api_func_anonymous
+def export_phone_qun_csv(request):
+    app = get_session_app(request)
+    db = SnsUserGroup.objects.filter(sns_group__app__app_id=app,
+                                     status=0).select_related("sns_group",
+                                                              "sns_user", "sns_user__device").order_by("-pk")
+
+    response = HttpResponse('\n'.join(['%s\t%s\t%s\t%s\t%s' % (x.sns_group.group_id,
+                                                               x.sns_group.group_name,
+                                                               x.sns_group.group_user_count,
+                                                               x.sns_user.login_name,
+                                                               x.sns_user.device.label) for x in db]),
+                            content_type='application/octet-stream')
+    response['Content-Disposition'] = 'attachment; filename=qun.csv'
+
+    return response
+
+
+@api_func_anonymous
 def export_qun(request, others, filter, device):
     user = get_session_user(request)
     app = get_session_app(request)
