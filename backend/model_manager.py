@@ -225,7 +225,7 @@ def set_qun_kicked(sns_user_group):
     try:
         sns_user_group.save(update_fields=['status', 'active'])
     except:
-        logger.warning('Error save kicked', exc_info=1)
+        logger.warning('Error save kicked %s' % sns_user_group, exc_info=1)
 
 
 def deal_kicked(owner):

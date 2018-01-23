@@ -118,7 +118,7 @@ class SnsUser(models.Model):
     provider = models.CharField(default='qq', max_length=10)
 
     def __str__(self):
-        return self.name
+        return "%s(%s)" % (self.name, self.login_name)
 
     class Meta:
         verbose_name = '社交账号'
@@ -160,7 +160,7 @@ class SnsUserGroup(models.Model):
     last_post_at = models.DateTimeField(null=True, verbose_name='最后分发时间')
 
     def __str__(self):
-        return str(self.sns_group)
+        return "%s @ %s" % (self.sns_user, self.sns_group)
 
     class Meta:
         unique_together = ('sns_group', 'sns_user')

@@ -8,6 +8,11 @@ from backend import model_manager, api_helper, stats, zhiyue_models
 from backend.models import SnsGroupSplit, SnsGroup, SnsUser, SnsUserGroup, SnsTask, DistArticle, DistArticleStat
 
 
+def clean_finished():
+    SnsTask.objects.filter()
+    pass
+
+
 def clean_split_data():
     splits = SnsGroupSplit.objects.filter(status=0)
     done = set()
