@@ -590,14 +590,15 @@ def parse_dist_article(data, task, from_time=timezone.now()):
         else:
             try:
                 db.last_started_at = from_time
-                db.save()
+                db.save(update_fields=['last_started_at'])
             except:
                 logger.warning('error updating dist item %s' % item_id, exc_info=1)
 
-        task.article = db
-        try:
-            task.save()
-        except:
-            logger.warning('error updating task %s' % task, exc_info=1)
+        if task.article != db:
+            task.article = db
+            try:
+                task.save(update_fields=['article'])
+            except:
+                logger.warning('error updating task %s' % task, exc_info=1)
     else:
         logger.warning('cannot parse task item id %s ' % data)
