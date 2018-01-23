@@ -114,7 +114,7 @@ def check_task_status(task):
 
 def set_qun_useless(db):
     db.status = -2
-    db.save(update_fields=['status'])
+    db.save()
     # db = SnsGroup()
     # 删除无效群的数据
     db.snsgroupsplit_set.all().delete()
@@ -124,7 +124,7 @@ def set_qun_join(qq_id, qun):
     qq = get_qq(qq_id)
     if qun.status != 2:
         qun.status = 2
-        qun.save(update_fields=['status'])
+        qun.save()
     sug = None
     try:
         qun.snsgroupsplit_set.filter(user=qq.owner).update(status=3)
@@ -183,7 +183,7 @@ def set_qun_manual(qun):
     :return:
     """
     qun.status = -1
-    qun.save(update_fields=['status'])
+    qun.save()
     # db = SnsGroup()
     # 删除无效群的数据
     qun.snsgroupsplit_set.update(status=-1)
@@ -222,7 +222,7 @@ def set_qun_kicked(sns_user_group):
     SnsGroupSplit.objects.filter(group_id=sns_user_group.sns_group_id).delete()
     sns_user_group.status = -1
     sns_user_group.active = 0
-    sns_user_group.save(update_fields=['status', 'active'])
+    sns_user_group.save()
 
 
 def deal_kicked(owner):
@@ -263,7 +263,7 @@ def get_or_create_qun(device, qun_num):
 
 def mark_qun_useless(group):
     group.status = -2
-    group.save(update_fields=['status'])
+    group.save()
     # db = SnsGroup()
     # 删除无效群的数据
     group.snsgroupsplit_set.all().delete()
