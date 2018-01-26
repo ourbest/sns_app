@@ -518,7 +518,10 @@ def deal_result_line(device_task, line):
                 qun.group_name = qun_name
                 qun.group_user_count = qun_user_cnt
                 qun.status = 2
-                qun.save()
+                try:
+                    qun.save(update_fields=['group_name', 'group_user_count', 'status'])
+                except:
+                    pass
                 model_manager.process_tag(qun)
 
             found = qun.snsusergroup_set.filter(sns_user=sns_user).first()

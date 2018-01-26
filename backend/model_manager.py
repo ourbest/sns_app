@@ -83,8 +83,9 @@ def _set_task_status(device_task, status):
     device_task.status = status
     device_task.finish_at = timezone.now()
     device_task.save()
-    device_task.device.status = 0
-    device_task.device.save()
+    if device_task.device.status != 0:
+        device_task.device.status = 0
+        device_task.device.save(update_fields='status')
 
     check_task_status(device_task.task)
 

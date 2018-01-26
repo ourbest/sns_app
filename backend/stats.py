@@ -258,7 +258,7 @@ def get_item_stat_values(app):
             db.save()
 
     with connection.cursor() as cursor:
-        tmp_tbl = '''CREATE TEMPORARY TABLE tmp_stat_tbl as select a.* from backend_distarticlestat s,
+        tmp_tbl = '''CREATE TABLE tmp_stat_tbl as select a.* from backend_distarticlestat s,
 (select a.id, count(distinct t.creator_id) owners, count(l.group_id) groups,
  count(distinct d.`device_id`) devices, sum(group_user_count) users
 from 
