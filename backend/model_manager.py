@@ -221,12 +221,13 @@ def set_qun_kicked(sns_user_group):
     SnsGroupLost(group_id=sns_user_group.sns_group_id, sns_user=sns_user_group.sns_user).save()
     # SnsGroupSplit.objects.filter(group_id=group.group_id, status__gte=0).update(status=-1)
     SnsGroupSplit.objects.filter(group_id=sns_user_group.sns_group_id).delete()
-    sns_user_group.status = -1
-    sns_user_group.active = 0
-    try:
-        sns_user_group.save(update_fields=['status', 'active'])
-    except:
-        logger.warning('Error save kicked %s' % sns_user_group, exc_info=1)
+    if sns_user_group.status != -1 and sns_user_group.active != 0:
+        sns_user_group.status = -1
+        sns_user_group.active = 0
+        try:
+            sns_user_group.save(update_fields=['status', 'active'])
+        except:
+            logger.warning('Error save kicked %s' % sns_user_group, exc_info=1)
 
 
 def deal_kicked(owner):
