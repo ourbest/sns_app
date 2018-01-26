@@ -258,7 +258,8 @@ def get_item_stat_values(app):
             db.save()
 
     with connection.cursor() as cursor:
-        tmp_tbl = '''CREATE TABLE tmp_stat_tbl as select a.* from backend_distarticlestat s,
+        tmp_tbl = 'CREATE TABLE tmp_stat_tbl (id bigint, owners bigint, groups bigint, devices bigint, users bigint)'
+        tmp_tbl_2 = '''insert into tmp_stat_tbl(id, owners, groups, devices, users) select a.* from backend_distarticlestat s,
 (select a.id, count(distinct t.creator_id) owners, count(l.group_id) groups,
  count(distinct d.`device_id`) devices, sum(group_user_count) users
 from 
@@ -276,6 +277,7 @@ s.dist_qun_user = a.users
 where s.`article_id` = a.id
 '''
         cursor.execute(tmp_tbl)
+        cursor.execute(tmp_tbl_2)
         cursor.execute(query)
         cursor.execute('drop table tmp_stat_tbl')
 
