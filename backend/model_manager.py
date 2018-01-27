@@ -185,8 +185,10 @@ def set_qun_manual(qun):
     :param qun:
     :return:
     """
-    qun.status = -1
-    qun.save()
+    if qun.status != -1:
+        qun.status = -1
+        qun.save()
+
     # db = SnsGroup()
     # 删除无效群的数据
     qun.snsgroupsplit_set.update(status=-1)
