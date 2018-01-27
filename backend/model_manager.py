@@ -114,8 +114,10 @@ def check_task_status(task):
 
 
 def set_qun_useless(db):
-    db.status = -2
-    db.save()
+    if db.status != -2:
+        db.status = -2
+        db.save()
+
     # db = SnsGroup()
     # 删除无效群的数据
     db.snsgroupsplit_set.all().delete()
