@@ -1798,11 +1798,13 @@ def report_progress(id, q, task_id, p, i_status, i_r):
             response = HttpResponse('command=停止')
 
         if device_task.status == 11 and p != '0' and i_r == 1:
-            device_task.status = 1
-            device_task.save()
+            if device_task.status != 1:
+                device_task.status = 1
+                device_task.save()
         elif device_task.status < 10 and i_r == 2:
-            device_task.status = 10
-            device_task.save()
+            if device_task.status != 10:
+                device_task.status = 10
+                device_task.save()
         elif device_task.status == 12 and i_r == 3:
             model_manager.mark_task_cancel(device_task)
 
