@@ -1771,8 +1771,11 @@ def report_progress(id, q, task_id, p, i_status, i_r):
             if not twl:
                 twl = TaskWorkingLog(device_task=device_task, account=model_manager.get_qq(q))
 
-            twl.progress = device_task.progress
-            twl.save()
+            try:
+                twl.progress = device_task.progress
+                twl.save()
+            except:
+                pass
 
         if i_status == 1:
             if device_task.status != 3:
