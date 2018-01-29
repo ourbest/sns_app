@@ -1174,13 +1174,23 @@ def split_qq(app, request):
 
     for x in SnsGroup.objects.filter(app_id=app, status=0).order_by("-group_user_count"):
         if 0 < x.group_user_count <= 10:
-            x.status = -1
-            x.save()
+            try:
+                if x.status != -1:
+                    x.status = -1
+                    x.save(update_fields=['status'])
+            except:
+                pass
+
             continue
 
         if x.snsgroupsplit_set.filter(status__in=(0, 1)).count():
-            x.status = 1
-            x.save()
+            try:
+                if x.status != 1:
+                    x.status = 1
+                    x.save(update_fields=['status'])
+            except:
+                pass
+
             continue
 
         x.status = 1
@@ -1195,7 +1205,10 @@ def split_qq(app, request):
             forward = not forward
 
         SnsGroupSplit(group=x, user=user).save()
-        x.save()
+        try:
+            x.save(update_fields=['status'])
+        except:
+            pass
 
     for u in users:
         split_qun_to_device(None, u.email)
