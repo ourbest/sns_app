@@ -1165,13 +1165,30 @@ def import_qun_split(app, ids, request):
 
 
 @api_func_anonymous
+def split_qq_all():
+    def func():
+        for app in App.objects.all():
+            try:
+                do_split_app(app.app_id)
+            except:
+                logger.warn('err', exc_info=1)
+                pass
+
+    thread = threading.Thread(target=func)
+    thread.start()
+
+
+@api_func_anonymous
 def split_qq(app, request):
     if not app:
         app = get_session_app(request)
+    return do_split_app(app)
+
+
+def do_split_app(app):
     users = [x for x in User.objects.filter(app_id=app, status=0) if x.phonedevice_set.filter(status=0).count() > 0]
     idx = 0
     forward = True
-
     for x in SnsGroup.objects.filter(app_id=app, status=0).order_by("-group_user_count"):
         if 0 < x.group_user_count <= 10:
             try:
@@ -1209,10 +1226,8 @@ def split_qq(app, request):
             x.save(update_fields=['status'])
         except:
             pass
-
     for u in users:
         split_qun_to_device(None, u.email)
-
     return 'ok'
 
 

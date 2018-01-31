@@ -61,11 +61,37 @@ def clean_split_data_1(status=1):
 
 
 def sync_split():
-    groups = SnsGroup.objects.filter(status=1, app_id=1519662)
+    groups = SnsGroup.objects.filter(status=0)
+    for group in groups:
+        if group.snsusergroup_set.filter(status=0).count() > 0:
+            try:
+                group.status = 2
+                group.save()
+                print("%s changed to used" % group)
+            except:
+                pass
+
+    groups = SnsGroup.objects.filter(status=1)
     for group in groups:
         if group.snsgroupsplit_set.count() == 0 and group.snsusergroup_set.count() == 0:
-            group.status = 0
-            group.save()
+            try:
+                group.status = 0
+                group.save()
+                print("%s changed" % group)
+            except:
+                pass
+
+    groups = SnsGroup.objects.filter(status=2)
+    for group in groups:
+        if group.snsgroupsplit_set.filter(status=3).count() == 0 and \
+                group.snsusergroup_set.filter(status=0).count() == 0:
+            try:
+                group.status = 0
+                group.save()
+                print("%s changed" % group)
+            except:
+                pass
+
 
 
 def remove_dup_ids():

@@ -64,6 +64,7 @@ urlpatterns = [
 
     url(r'^qq/drop$', apis.qq_drop),
 
+    url(r'^split/qq/all$', apis.split_qq_all),
     url(r'^split/qq$', apis.split_qq),
     url(r'^users$', apis.users),
     url(r'^devices$', apis.devices),
