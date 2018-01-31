@@ -1320,8 +1320,11 @@ def split_qun_to_device(request, email):
                 idx = idx - 1
                 forward = not forward
 
-            x.phone = phone
-            x.save()
+            try:
+                x.phone = phone
+                x.save()
+            except:
+                pass
     return 'ok'
 
 
