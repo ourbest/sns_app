@@ -1,7 +1,7 @@
 from datetime import timedelta, datetime
 
 from dj import times
-from dj.utils import api_func_anonymous
+from dj.utils import api_func_anonymous, os
 from django.conf import settings
 from django.db import connections, connection
 from django.template.loader import render_to_string
@@ -121,26 +121,31 @@ def get_user_share(app_id, user, date):
 
 @api_func_anonymous
 def gen_daily_report():
-    yesterday = (datetime.now() - timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
-    date = times.to_str(yesterday, '%Y-%m-%d')
+    pid = os.fork()
+    if pid == 0:
+        print('Generate report ...')
+        yesterday = (datetime.now() - timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
+        date = times.to_str(yesterday, '%Y-%m-%d')
 
-    # print(yesterday)
+        # print(yesterday)
 
-    app_stats = []
+        app_stats = []
 
-    for app in App.objects.filter(stage__in=('分发期', '留守期')):
-        item_stats = []
-        app_stats.append({
-            'app': app.app_name,
-            'items': item_stats,
-            'sum': app_daily_stat(app, date, True),
-        })
-        for user in app.user_set.filter(status=0):
-            item_stats += get_user_share_stat(yesterday, user)
-            # sum_stats.append(get_user_stat(date, app.app_id))
+        for app in App.objects.filter(stage__in=('分发期', '留守期')):
+            item_stats = []
+            app_stats.append({
+                'app': app.app_name,
+                'items': item_stats,
+                'sum': app_daily_stat(app, date, True),
+            })
+            for user in app.user_set.filter(status=0):
+                item_stats += get_user_share_stat(yesterday, user)
+                # sum_stats.append(get_user_stat(date, app.app_id))
 
-    html = render_to_string('daily_report.html', {'stats': app_stats})
-    api_helper.send_html_mail('%s线上推广日报' % date, settings.DAILY_REPORT_EMAIL, html)
+        html = render_to_string('daily_report.html', {'stats': app_stats})
+        api_helper.send_html_mail('%s线上推广日报' % date, settings.DAILY_REPORT_EMAIL, html)
+        print('Done.')
+        os._exit(0)
 
 
 def get_user_share_stat(date, the_user):

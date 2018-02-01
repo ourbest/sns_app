@@ -1174,8 +1174,12 @@ def split_qq_all():
                 logger.warn('err', exc_info=1)
                 pass
 
-    thread = threading.Thread(target=func)
-    thread.start()
+    # thread = threading.Thread(target=func)
+    # thread.start()
+    pid = os.fork()
+    if pid == 0:
+        func()
+        os._exit(0)
 
 
 @api_func_anonymous
@@ -1187,6 +1191,10 @@ def split_qq(app, request):
 
 def do_split_app(app):
     users = [x for x in User.objects.filter(app_id=app, status=0) if x.phonedevice_set.filter(status=0).count() > 0]
+
+    if len(users) == 0:
+        return 'ok'
+
     idx = 0
     forward = True
     for x in SnsGroup.objects.filter(app_id=app, status=0).order_by("-group_user_count"):
@@ -1786,11 +1794,21 @@ def report_result(id, task_id, line):
 
 
 @api_func_anonymous
-def report_progress(id, q, task_id, p, i_status, i_r):
+def report_progress(id, q, task_id, p, i_status, i_r, nickname):
     response = HttpResponse('')
     if not id or not q or not task_id:
         return response
     device_task = SnsTaskDevice.objects.filter(device__label=id, task_id=task_id).first()
+
+    qq = model_manager.get_qq(q)
+
+    if qq and nickname and qq.name != nickname:
+        qq.name = nickname
+        try:
+            qq.save(update_fields=['name'])
+        except:
+            pass
+
     if device_task:
         if device_task.status == 0:
             model_manager.mark_task_started(device_task)
@@ -1800,7 +1818,7 @@ def report_progress(id, q, task_id, p, i_status, i_r):
             device_task.save()
             twl = TaskWorkingLog.objects.filter(device_task=device_task, account__login_name=q).first()
             if not twl:
-                twl = TaskWorkingLog(device_task=device_task, account=model_manager.get_qq(q))
+                twl = TaskWorkingLog(device_task=device_task, account=qq)
 
             try:
                 twl.progress = device_task.progress
