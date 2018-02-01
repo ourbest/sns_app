@@ -263,8 +263,9 @@ def get_item_stat_values(app):
             db.save()
 
     with connection.cursor() as cursor:
-        tmp_tbl = 'CREATE TABLE tmp_stat_tbl (id bigint, owners bigint, groups bigint, devices bigint, users bigint)'
-        tmp_tbl_2 = '''insert into tmp_stat_tbl(id, owners, groups, devices, users) select a.* from backend_distarticlestat s,
+        tbl_name = 'tmp_stat_tbl_%s' % int(timezone.now().timestamp())
+        tmp_tbl = 'CREATE TABLE %s (id bigint, owners bigint, groups bigint, devices bigint, users bigint)' % tbl_name
+        tmp_tbl_2 = '''insert into %s (id, owners, groups, devices, users) select a.* from backend_distarticlestat s,
 (select a.id, count(distinct t.creator_id) owners, count(l.group_id) groups,
  count(distinct d.`device_id`) devices, sum(group_user_count) users
 from 
@@ -273,18 +274,18 @@ from
   backend_snstask t, backend_distarticle a
 where g.group_id = l.group_id and success=1 and d.task_id=t.id and l.task_id=t.id and t.article_id=a.id and t.type_id=3
 and a.`created_at` > current_date - interval 7 day and d.created_at > now() - interval 8 HOUR group by a.id) a
-where s.`article_id` = a.id'''
-        query = '''update backend_distarticlestat s, tmp_stat_tbl a
+where s.`article_id` = a.id''' % tbl_name
+        query = '''update backend_distarticlestat s, %s a
 set s.`dist_qq_user_count` = a.owners,
 s.`dist_qq_phone_count` = a.devices,
 s.`dist_qun_count` = a.groups,
 s.dist_qun_user = a.users
 where s.`article_id` = a.id
-'''
+''' % tbl_name
         cursor.execute(tmp_tbl)
         cursor.execute(tmp_tbl_2)
         cursor.execute(query)
-        cursor.execute('drop table tmp_stat_tbl')
+        cursor.execute('drop table %s' % tbl_name)
 
         query = '''update backend_distarticlestat s,
 (select a.id, count(distinct t.creator_id) owners, count(distinct d.`device_id`) devices
