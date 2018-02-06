@@ -11,5 +11,6 @@ RUN pip install -r requirements.txt
 ADD . .
 
 EXPOSE 8000
+EXPOSE 8001
 
 ENTRYPOINT ["sh", "entry.sh"]

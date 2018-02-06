@@ -1,3 +1,4 @@
+import hashlib
 import os
 import re
 import threading
@@ -436,7 +437,7 @@ def webhook_task(task, msg):
 
 def send_msg(msg, user):
     now = timezone.now().timestamp()
-    val = caches.get_or_create(msg, now, 300)
+    val = caches.get_or_create(hashlib.md5(msg.encode()).hexdigest(), now, 300)
     if val is not None and val - now < 10:
         return
 
@@ -589,7 +590,7 @@ def parse_dist_article(data, task, from_time=timezone.now()):
                                  title=zhiyue_models.get_article_title(item_id))
                 db.save()
             except:
-                logger.warning('error saving dist item %s' % item_id, exc_info=1)
+                pass  # logger.warning('error saving dist item %s' % item_id, exc_info=1)
         else:
             try:
                 if db.last_started_at != from_time:
