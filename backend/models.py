@@ -9,7 +9,7 @@ class App(models.Model):
     app_id = models.IntegerField('ID', primary_key=True)
     app_name = models.CharField('名称', max_length=32)
     stage = models.CharField('所处时期', max_length=20, default='准备期')
-    self_qun = models.IntegerField('自行导入群', default=1)
+    self_qun = models.IntegerField('自行导入群', default=1, help_text="0 - 查群的结果平均分配给所有人，1 - 查群的结果分配给自己")
 
     def __str__(self):
         return '%s (%s)' % (self.app_name, self.app_id)
@@ -25,13 +25,13 @@ class User(models.Model):
     """
     name = models.CharField('姓名', max_length=30)
     email = models.CharField('邮箱', max_length=50)
-    status = models.IntegerField('状态', default=0)
+    status = models.IntegerField('状态', default=0, help_text="0 - 正常分发的操作者， 1 - 不分发的系统用户")
     passwd = models.CharField('密码', max_length=50)
     created_at = models.DateTimeField('创建时间', auto_now_add=True)
     role = models.IntegerField(default=0, help_text='0-组员 1-组长')
     app = models.ForeignKey(App, verbose_name='生活圈', null=True, blank=True, default=None, on_delete=CASCADE)
     phone = models.CharField(max_length=20, help_text='手机号', null=True, blank=True)
-    notify = models.IntegerField(default=0, null=True)
+    notify = models.IntegerField(default=0, null=True, help_text="是否接受钉钉通知")
 
     def __str__(self):
         return self.name
@@ -103,19 +103,19 @@ class SnsUser(models.Model):
     type = models.IntegerField('类型', default=0, help_text='0 - QQ 1 - 微信')
     login_name = models.CharField('登录名', max_length=80)
     passwd = models.CharField('密码', max_length=30)
-    status = models.IntegerField('状态', default=0)
+    status = models.IntegerField('状态', default=0, help_text='0 - 正常 -1 弃用的')
     memo = models.CharField('备注', max_length=255, null=True, blank=True)
-    phone = models.CharField('电话', max_length=30)
-    device = models.ForeignKey(PhoneDevice, null=True, verbose_name='设备', on_delete=CASCADE)
+    phone = models.CharField('绑定的电话号码', max_length=30)
+    device = models.ForeignKey(PhoneDevice, null=True, verbose_name='登录的设备', on_delete=CASCADE)
     created_at = models.DateTimeField('创建时间', auto_now_add=True)
     updated_at = models.DateTimeField('更新时间', auto_now=True)
     owner = models.ForeignKey(User, null=True, verbose_name='所有者', on_delete=CASCADE)
     app = models.ForeignKey(App, verbose_name='生活圈', on_delete=CASCADE)
-    bot_login_token = models.BinaryField(null=True, blank=True)
-    dist = models.IntegerField(default=1)
-    friend = models.IntegerField(default=1)
-    search = models.IntegerField(default=0)
-    provider = models.CharField(default='qq', max_length=10)
+    bot_login_token = models.BinaryField('字段未使用', null=True, blank=True)
+    dist = models.IntegerField('用于分发', default=1)
+    friend = models.IntegerField('可加群', default=1)
+    search = models.IntegerField('可查群', default=0)
+    provider = models.CharField('登录的软件(qq、tim)', default='qq', max_length=10)
 
     def __str__(self):
         return "%s(%s)" % (self.name, self.login_name)
@@ -133,7 +133,7 @@ class SnsGroup(models.Model):
     type = models.IntegerField('类型', default=0, help_text='0 - QQ 1 - 微信')
     group_name = models.CharField('群名', max_length=50)
     group_user_count = models.IntegerField('群用户数', default=0)
-    status = models.IntegerField('状态', default=0, help_text='0 - 未使用 1 - 已分配 -1 - 忽略')
+    status = models.IntegerField('状态', default=0, help_text='0 - 未使用 1 - 已分配 -1 - 忽略 2 - 已加入')
     app = models.ForeignKey(App, verbose_name='生活圈', null=True, on_delete=CASCADE)
     created_at = models.DateTimeField(verbose_name='添加时间', auto_now_add=True)
     quiz = models.CharField(verbose_name='问题答案', max_length=50, null=True, blank=True)
@@ -149,13 +149,13 @@ class SnsGroup(models.Model):
 
 class SnsUserGroup(models.Model):
     """
-    用户群
+    QQ号加入的群
     """
     sns_user = models.ForeignKey(SnsUser, verbose_name='用户', on_delete=CASCADE)
     sns_group = models.ForeignKey(SnsGroup, verbose_name='群', on_delete=CASCADE)
     nick_name = models.CharField(max_length=50, verbose_name='备注名', null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='加入时间')
-    status = models.IntegerField(default=0, verbose_name='状态')
+    status = models.IntegerField(default=0, verbose_name='状态', help_text='-1 - 被踢')
     active = models.IntegerField(default=0, verbose_name='可用')
     last_post_at = models.DateTimeField(null=True, verbose_name='最后分发时间')
 
@@ -235,7 +235,7 @@ class SnsGroupLost(models.Model):
 
 class SnsTaskType(models.Model):
     """
-    任务类型
+    任务类型，字典表，记录1,2，3,4,5
     """
     name = models.CharField(max_length=32)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -252,14 +252,17 @@ class ActiveDevice(models.Model):
 
 
 class DistArticle(models.Model):
-    item_id = models.IntegerField(unique=True)
+    """
+    分发的文章
+    """
+    item_id = models.IntegerField('cutt内部文章ID', unique=True)
     app = models.ForeignKey(App, on_delete=CASCADE)
-    title = models.CharField(max_length=255)
-    delete_flag = models.IntegerField(default=0)
-    category = models.CharField(max_length=30, null=True, blank=True)
-    created_at = models.DateTimeField()
-    started_at = models.DateTimeField(null=True, blank=True)
-    last_started_at = models.DateTimeField(null=True, blank=True)
+    title = models.CharField('文章标题', max_length=255)
+    delete_flag = models.IntegerField('是否已删除', default=0)
+    category = models.CharField('文章类型', max_length=30, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now=True)
+    started_at = models.DateTimeField('第一次分发时间', null=True, blank=True)
+    last_started_at = models.DateTimeField('最后一次分发时间', null=True, blank=True)
 
 
 class SnsTask(models.Model):
@@ -269,14 +272,14 @@ class SnsTask(models.Model):
     name = models.CharField(max_length=80)
     created_at = models.DateTimeField(auto_now_add=True)
     type = models.ForeignKey(SnsTaskType, on_delete=CASCADE)
-    data = models.TextField(blank=True, null=True)
-    status = models.IntegerField(default=0)
+    data = models.TextField('参数', blank=True, null=True)
+    status = models.IntegerField('状态', default=0, help_text='0 - 初始  1 - 进行中  2 - 已完成')
     app = models.ForeignKey(App, null=True, on_delete=CASCADE)
     creator = models.ForeignKey(User, null=True, on_delete=CASCADE)
-    schedule_at = models.DateTimeField(null=True)
-    started_at = models.DateTimeField(null=True)
-    finish_at = models.DateTimeField(null=True)
-    article = models.ForeignKey(DistArticle, null=True, on_delete=CASCADE)
+    schedule_at = models.DateTimeField('定时发送的时间', null=True)
+    started_at = models.DateTimeField('启动时间', null=True)
+    finish_at = models.DateTimeField('结束时间', null=True)
+    article = models.ForeignKey(DistArticle, null=True, on_delete=CASCADE, verbose_name='对应的文章')
 
     def __str__(self):
         return '<SnsTask %s>' % self.pk
@@ -289,24 +292,24 @@ class SnsTaskDevice(models.Model):
     task = models.ForeignKey(SnsTask, on_delete=CASCADE)
     device = models.ForeignKey(PhoneDevice, on_delete=CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
-    status = models.IntegerField(default=0)
+    status = models.IntegerField(default=0, help_text='0 - 初始  1 - 进行中  2 - 已完成 取消 暂停')
     started_at = models.DateTimeField(null=True, blank=True)
     finish_at = models.DateTimeField(null=True, blank=True)
-    data = models.TextField(blank=True, null=True)
+    data = models.TextField('参数', blank=True, null=True)
     schedule_at = models.DateTimeField(null=True)
-    progress = models.IntegerField(default=0)
+    progress = models.IntegerField('进度', default=0)
 
 
 class DeviceFile(models.Model):
     """
     设备上传的文件信息
     """
-    device = models.ForeignKey(PhoneDevice, on_delete=CASCADE)
-    qiniu_key = models.CharField(max_length=255)
-    file_name = models.CharField(max_length=50, null=True)
+    device = models.ForeignKey(PhoneDevice, on_delete=CASCADE, verbose_name='手机')
+    qiniu_key = models.CharField('保存到文件服务器的名字', max_length=255)
+    file_name = models.CharField('文件名', max_length=50, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     task = models.ForeignKey(SnsTask, on_delete=CASCADE)
-    type = models.CharField(max_length=20)
+    type = models.CharField('类型', max_length=20, help_text='日志log, 截图image')
     device_task = models.ForeignKey(SnsTaskDevice, null=True, on_delete=CASCADE)
 
 
@@ -319,22 +322,28 @@ class SnsApplyTaskLog(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     account = models.ForeignKey(SnsUser, on_delete=CASCADE)
     group = models.ForeignKey(SnsGroup, on_delete=CASCADE)
-    memo = models.CharField(max_length=30)
+    memo = models.CharField('结果文字', max_length=30)
     status = models.IntegerField(default=0)
 
 
 class MenuItem(models.Model):
-    menu_route = models.CharField(max_length=80)
-    menu_name = models.CharField(max_length=20)
-    menu_category = models.CharField(max_length=20)
-    menu_icon = models.CharField(max_length=32)
-    show_order = models.IntegerField(default=0)
+    """
+    推广后台的菜单项
+    """
+    menu_route = models.CharField('菜单的英文名', max_length=80)
+    menu_name = models.CharField('菜单的名字', max_length=20)
+    menu_category = models.CharField('类型（目录、功能）', max_length=20)
+    menu_icon = models.CharField('图标', max_length=32)
+    show_order = models.IntegerField('显示顺序', default=0)
     status = models.IntegerField(default=0)
 
 
 class MenuItemPerm(models.Model):
+    """
+    菜单角色对应表
+    """
     menu = models.ForeignKey(MenuItem, on_delete=CASCADE)
-    role = models.IntegerField(default=0)
+    role = models.IntegerField('角色', default=0, help_text='0 - 所有人 1 - 组长 2 - 管理')
 
 
 class UserDelegate(models.Model):
@@ -350,7 +359,7 @@ class UserDelegate(models.Model):
 
 class Tag(models.Model):
     """
-    提炼的标签列表
+    提炼的标签列表 (QQ群的标签)
     """
     name = models.CharField(max_length=10, primary_key=True)
 
@@ -366,7 +375,7 @@ class GroupTag(models.Model):
 
 class TaskGroup(models.Model):
     """
-    此次分发设计到的群，避免发多次
+    一次分发设计到的群，避免发多次，在给机器人发送数据之前生成
     """
     task = models.ForeignKey(SnsTask, on_delete=CASCADE)
     group = models.ForeignKey(SnsGroup, on_delete=CASCADE)
@@ -386,7 +395,7 @@ class DistTaskLog(models.Model):
     sns_user = models.ForeignKey(SnsUser, on_delete=CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
     status = models.CharField(max_length=10)
-    success = models.IntegerField()
+    success = models.IntegerField('1 成功或 0 失败')
 
 
 class WxDistLog(models.Model):
@@ -428,17 +437,17 @@ class TaskWorkingLog(models.Model):
 
 class UserDailyStat(models.Model):
     """
-    用户马甲列表
+    用户日统计
     """
-    report_date = models.CharField(max_length=20)
+    report_date = models.CharField('统计日期', max_length=20)
     app = models.ForeignKey(App, on_delete=CASCADE)
     user = models.ForeignKey(User, on_delete=CASCADE)
-    qq_pv = models.IntegerField()
-    wx_pv = models.IntegerField()
-    qq_down = models.IntegerField()
-    wx_down = models.IntegerField()
-    qq_install = models.IntegerField()
-    wx_install = models.IntegerField()
+    qq_pv = models.IntegerField('QQ PV')
+    wx_pv = models.IntegerField('微信 PV')
+    qq_down = models.IntegerField('QQ 下载页打开次数')
+    wx_down = models.IntegerField('微信下载页打开次数')
+    qq_install = models.IntegerField('QQ安装数')
+    wx_install = models.IntegerField('微信安装数')
 
 
 class AppDailyStat(models.Model):
@@ -456,6 +465,9 @@ class AppDailyStat(models.Model):
 
 
 class DeviceTaskData(models.Model):
+    """
+    TG后台给机器人发送的所有任务参数数据
+    """
     device_task = models.ForeignKey(SnsTaskDevice, on_delete=CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
     lines = models.TextField()
@@ -471,6 +483,9 @@ class SnsUserKickLog(models.Model):
 
 
 class DailyActive(models.Model):
+    """
+    生活圈日活数据
+    """
     app = models.ForeignKey(App, on_delete=CASCADE)
     iphone = models.IntegerField()
     android = models.IntegerField()
@@ -479,30 +494,36 @@ class DailyActive(models.Model):
 
 
 class DistArticleStatDetail(models.Model):
+    """
+    分发的文章对应的统计数据
+    """
     article = models.ForeignKey(DistArticle, on_delete=CASCADE)
     hour = models.IntegerField()
     qq_pv = models.IntegerField()
     wx_pv = models.IntegerField()
     qq_down = models.IntegerField()
     wx_down = models.IntegerField()
-    qq_user = models.IntegerField()
+    qq_user = models.IntegerField('关联安装数')
     wx_user = models.IntegerField()
     created_at = models.DateTimeField(auto_now_add=True)
 
 
 class DistArticleStat(models.Model):
+    """
+    分发的文章对应的统计数据
+    """
     article = models.ForeignKey(DistArticle, on_delete=CASCADE)
-    qq_pv = models.IntegerField()
+    qq_pv = models.IntegerField('PV')
     wx_pv = models.IntegerField()
-    qq_down = models.IntegerField()
+    qq_down = models.IntegerField('下载页')
     wx_down = models.IntegerField()
-    qq_user = models.IntegerField()
+    qq_user = models.IntegerField('关联安装')
     wx_user = models.IntegerField()
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    dist_qq_user_count = models.IntegerField(default=0)
-    dist_wx_user_count = models.IntegerField(default=0)
-    dist_qq_phone_count = models.IntegerField(default=0)
-    dist_wx_phone_count = models.IntegerField(default=0)
-    dist_qun_count = models.IntegerField(default=0)
-    dist_qun_user = models.IntegerField(default=0)
+    dist_qq_user_count = models.IntegerField('分发的QQ数', default=0)
+    dist_wx_user_count = models.IntegerField('分发的微信数', default=0)
+    dist_qq_phone_count = models.IntegerField('分发的QQ手机数', default=0)
+    dist_wx_phone_count = models.IntegerField('分发的微信手机数', default=0)
+    dist_qun_count = models.IntegerField('群数', default=0)
+    dist_qun_user = models.IntegerField('群用户数', default=0)

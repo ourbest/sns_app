@@ -23,3 +23,12 @@ script=1
 [result]
 xxxxx
 
+
+这是一个测试
+
+
+git commit -am "说明"
+git push
+git pull
+git stash
+git stash pop
