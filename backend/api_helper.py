@@ -139,7 +139,7 @@ def user_to_json(x):
 
 
 def auth(email, password):
-    user = User.objects.filter(email=email).first()
+    user = User.objects.filter(email=email, status__gte=0).first()
     return user if user and password == user.passwd else None
 
 
