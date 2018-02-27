@@ -929,8 +929,8 @@ def import_qun_stat(ids, device_id, status):
 
     for k, accounts in to_save.items():
         sns_user = SnsUser.objects.filter(login_name=k, type=0).first()
-        logger.info("Sns user %s not found device is %s", k, device_id)
         if device and not sns_user:
+            logger.info("Sns user %s not found device is %s", k, device_id)
             sns_user = SnsUser(name=k, login_name=k, passwd='_',
                                phone=device.phone_num, device=device,
                                owner=device.owner, app=device.owner.app)

@@ -497,8 +497,8 @@ def deal_result_line(device_task, line):
             qun_user_cnt = 0 if not qun_user_cnt.isdigit() else int(qun_user_cnt)
             qun = SnsGroup.objects.filter(group_id=qun_num, type=0).first()
             sns_user = SnsUser.objects.filter(login_name=qq, type=0).first()
-            logger.info("Sns user %s not found device is %s", qq, device.id)
             if not sns_user:
+                logger.info("Sns user %s not found device is %s", qq, device.id)
                 sns_user = SnsUser(name=qq, login_name=qq, passwd='_',
                                    phone=device.phone_num, device=device,
                                    owner=device.owner, app=device.owner.app)
