@@ -1899,7 +1899,7 @@ def user_majia(request, filter):
             'id': x.cutt_user_id,
             'name': x.name,
             'type': '微信' if x.type == 1 else 'QQ'
-        } for x in (AppUser.objects.filter(user__email=get_session_user(request), type__gte=0)
+        } for x in (AppUser.objects.filter(user__email=get_session_user(request), type__in=(0, 1))
         if not filter else AppUser.objects.filter(type=filter,
                                                   user__email=get_session_user(request)))]
     }
