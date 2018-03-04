@@ -482,7 +482,7 @@ def deal_result_line(device_task, line):
     elif device_task.task.type_id == 1:  # 查群
         account = line.split('\t')
         try:
-            db = SnsGroup(group_id=account[0], group_name=account[1], type=0, app_id=device_task.device.owner.app_id,
+            db = SnsGroup(group_id=account[0], group_name=account[1], type=0, app_id=device_task.task.app_id,
                           group_user_count=account[2], created_at=timezone.now(), from_user=device_task.device.owner)
             db.save()
             model_manager.process_tag(db)

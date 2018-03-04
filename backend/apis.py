@@ -1089,7 +1089,7 @@ def import_qun(app, ids, request, email, phone, edit_method, i_ignore_dup):
                         db.status = 2
                         db.snsgroupsplit_set.filter(status=0).update(status=3)
                         db.save()
-                elif login_user and (device or (the_app and the_app.self_qun == 1)):
+                elif login_user and (device or (the_app and the_app.self_qun == 1)) and login_user.app == the_app:
                     SnsGroupSplit(group=db, user=login_user, phone=device).save()
             except:
                 logger.warning("error save %s" % line, exc_info=1)
@@ -1097,7 +1097,7 @@ def import_qun(app, ids, request, email, phone, edit_method, i_ignore_dup):
     logger.info('共%s个新群' % cnt)
 
     if not device:
-        if the_app and the_app.self_qun == 1:
+        if the_app and the_app.self_qun == 1 and login_user.app == the_app:
             split_qun_to_device(request, email)
 
     return {
