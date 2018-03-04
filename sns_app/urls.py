@@ -29,6 +29,7 @@ def asserts(request, file):
 urlpatterns = [
     url(r'^admin/', admin.site.urls),
     url(r'^api/', include(backend.urls)),
+    url(r'^ir', views.internal_report),
     url(r'^asserts/(?P<file>.+)$', asserts),
     url(r'^$', views.home),
     url(r'^dist/(?P<page>.+)$', views.dist)
