@@ -139,7 +139,7 @@ def user_to_json(x):
 
 
 def auth(email, password):
-    user = User.objects.filter(email=email, status__gte=0).first()
+    user = User.objects.filter(email=email).first()
     return user if user and password == user.passwd else None
 
 
@@ -482,7 +482,7 @@ def deal_result_line(device_task, line):
     elif device_task.task.type_id == 1:  # 查群
         account = line.split('\t')
         try:
-            db = SnsGroup(group_id=account[0], group_name=account[1], type=0, app_id=device_task.task.app_id,
+            db = SnsGroup(group_id=account[0], group_name=account[1], type=0, app_id=device_task.device.owner.app_id,
                           group_user_count=account[2], created_at=timezone.now(), from_user=device_task.device.owner)
             db.save()
             model_manager.process_tag(db)
@@ -497,8 +497,8 @@ def deal_result_line(device_task, line):
             qun_user_cnt = 0 if not qun_user_cnt.isdigit() else int(qun_user_cnt)
             qun = SnsGroup.objects.filter(group_id=qun_num, type=0).first()
             sns_user = SnsUser.objects.filter(login_name=qq, type=0).first()
+            logger.info("Sns user %s not found device is %s", qq, device.id)
             if not sns_user:
-                logger.info("Sns user %s not found device is %s", qq, device.id)
                 sns_user = SnsUser(name=qq, login_name=qq, passwd='_',
                                    phone=device.phone_num, device=device,
                                    owner=device.owner, app=device.owner.app)

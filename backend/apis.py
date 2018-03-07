@@ -929,8 +929,8 @@ def import_qun_stat(ids, device_id, status):
 
     for k, accounts in to_save.items():
         sns_user = SnsUser.objects.filter(login_name=k, type=0).first()
+        logger.info("Sns user %s not found device is %s", k, device_id)
         if device and not sns_user:
-            logger.info("Sns user %s not found device is %s", k, device_id)
             sns_user = SnsUser(name=k, login_name=k, passwd='_',
                                phone=device.phone_num, device=device,
                                owner=device.owner, app=device.owner.app)
@@ -1049,8 +1049,6 @@ def import_qun(app, ids, request, email, phone, edit_method, i_ignore_dup):
 
         to_delete.delete()
 
-    split_to_self = login_user.snsuser_set.filter(app=the_app, friend=1).count() if login_user else 0
-
     for line in ids.split('\n'):
         line = line.strip()
         if line:
@@ -1091,7 +1089,7 @@ def import_qun(app, ids, request, email, phone, edit_method, i_ignore_dup):
                         db.status = 2
                         db.snsgroupsplit_set.filter(status=0).update(status=3)
                         db.save()
-                elif split_to_self and login_user and (device or (the_app and the_app.self_qun == 1)) and login_user.app == the_app:
+                elif login_user and (device or (the_app and the_app.self_qun == 1)):
                     SnsGroupSplit(group=db, user=login_user, phone=device).save()
             except:
                 logger.warning("error save %s" % line, exc_info=1)
@@ -1099,7 +1097,7 @@ def import_qun(app, ids, request, email, phone, edit_method, i_ignore_dup):
     logger.info('共%s个新群' % cnt)
 
     if not device:
-        if split_to_self and the_app and the_app.self_qun == 1 and login_user.app == the_app:
+        if the_app and the_app.self_qun == 1:
             split_qun_to_device(request, email)
 
     return {
@@ -1901,7 +1899,7 @@ def user_majia(request, filter):
             'id': x.cutt_user_id,
             'name': x.name,
             'type': '微信' if x.type == 1 else 'QQ'
-        } for x in (AppUser.objects.filter(user__email=get_session_user(request), type__in=(0, 1))
+        } for x in (AppUser.objects.filter(user__email=get_session_user(request), type__gte=0)
         if not filter else AppUser.objects.filter(type=filter,
                                                   user__email=get_session_user(request)))]
     }
