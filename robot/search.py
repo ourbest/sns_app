@@ -152,7 +152,8 @@ def data(request):
     """
     area_data = Area.objects.filter(isDelete=False).order_by('-id')
     keyword_data = Keyword.objects.filter(isDelete=False).order_by('-id')
-    search_data = Search.objects.select_related().filter(search_count__gt=0).order_by('-last_time')
+    search_queryset = Search.objects.select_related('area__app').all()
+    search_data = search_queryset.filter(search_count__gt=0).order_by('-last_time')
 
     data1 = '<tr><th>生活圈ID</th><th>地区名</th><th>创建时间</th></tr>'
     for i in area_data:
@@ -192,4 +193,19 @@ def data(request):
         data3 += '</tr>'
     data3 = '<table>' + data3 + '</table>'
 
-    return JsonResponse({'table1': data1, 'table2': data2, 'table3': data3})
+    data4 = '<tr><th>生活圈</th><th>群增量</th><th>群人数增量</th></tr>'
+    apps = []
+    for search in search_queryset:
+        app = search.area.app
+        if app not in apps:
+            apps.append(app)
+            group_increment = 0
+            group_user_increment = 0
+            for i in search_queryset.filter(area__app=app):
+                group_increment += i.group_increment
+                group_user_increment += i.group_user_increment
+            data4 += '<tr><td>' + app.app_name + '</td><td>' + str(group_increment) + '</td><td>' + str(
+                group_user_increment) + '</td></tr>'
+    data4 = '<table>' + data4 + '</table>'
+
+    return JsonResponse({'table1': data1, 'table2': data2, 'table3': data3, 'table4': data4})

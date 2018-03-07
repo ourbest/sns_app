@@ -31,3 +31,6 @@ class Search(models.Model):
     last_time = models.DateTimeField('最近一次的搜索时间', null=True, blank=True)
     area = models.ForeignKey(Area)
     keyword = models.ForeignKey(Keyword)
+
+    def __str__(self):
+        return self.word
