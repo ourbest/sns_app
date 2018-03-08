@@ -695,7 +695,7 @@ def qq_transfer(qq, phone):
 
     if not sns_user:
         api_error(1, '错误的QQ')
-    elif not device:
+    elif not phone or not device:
         api_error(1, '没找到电话记录')
 
     if sns_user.phone != phone:

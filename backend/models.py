@@ -138,6 +138,7 @@ class SnsGroup(models.Model):
     created_at = models.DateTimeField(verbose_name='添加时间', auto_now_add=True)
     quiz = models.CharField(verbose_name='问题答案', max_length=50, null=True, blank=True)
     from_user = models.ForeignKey(User, verbose_name='爬群用户', null=True, blank=True, on_delete=CASCADE)
+    kick_times = models.IntegerField(default=0, verbose_name='被踢的次数')
 
     def __str__(self):
         return '%s (%s)' % (self.group_name, self.group_id)
@@ -158,6 +159,7 @@ class SnsUserGroup(models.Model):
     status = models.IntegerField(default=0, verbose_name='状态', help_text='-1 - 被踢')
     active = models.IntegerField(default=0, verbose_name='可用')
     last_post_at = models.DateTimeField(null=True, verbose_name='最后分发时间')
+    kick_times = models.IntegerField(default=0, verbose_name='被踢的次数')
 
     def __str__(self):
         return "%s @ %s" % (self.sns_user, self.sns_group)
