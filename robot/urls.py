@@ -1,6 +1,9 @@
 from django.conf.urls import url
 from . import views, search
 
+
+app_name = 'robot'
+
 urlpatterns = [
     url(r'^$', views.index),
     url(r'^search/$', views.search),

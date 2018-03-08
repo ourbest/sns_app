@@ -738,6 +738,8 @@ def qq_create(request, qq, name, phone, password):
             owner = User.objects.filter(email=email).first()
             SnsUser(login_name=qq, device=dev, name=name, passwd=password,
                     type=0, phone=phone, owner=owner, app_id=owner.app_id).save()
+    elif db and dev != db.device:
+        pass
 
     return "ok"
 
