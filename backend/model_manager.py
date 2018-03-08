@@ -222,11 +222,16 @@ def set_qun_kicked(sns_user_group):
     :return:
     """
     logger.info('群%s被踢了', sns_user_group.sns_group_id)
-    SnsGroupLost(group_id=sns_user_group.sns_group_id, sns_user=sns_user_group.sns_user).save()
     # SnsGroupSplit.objects.filter(group_id=group.group_id, status__gte=0).update(status=-1)
     SnsGroupSplit.objects.filter(group_id=sns_user_group.sns_group_id).delete()
     SnsGroup.objects.filter(group_id=sns_user_group.sns_group_id) \
         .update(kick_times=F('kick_times') + 1)
+
+    g = SnsGroup.objects.filter(group_id=sns_user_group.sns_group_id)
+    status = 0
+    if g and g.kick_times > 10:
+        status = 10
+    SnsGroupLost(group_id=sns_user_group.sns_group_id, sns_user=sns_user_group.sns_user, status=status).save()
     if sns_user_group.status != -1 and sns_user_group.active != 0:
         sns_user_group.status = -1
         sns_user_group.active = 0
