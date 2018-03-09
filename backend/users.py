@@ -24,7 +24,10 @@ def update_user_info(request, name, app_id, qq_id, wx_id, i_role, phone, i_notif
     user.notify = i_notify
     user.phone = phone
 
-    user.save()
+    try:
+        user.save()
+    except:
+        pass
 
     if qq_id:
         api_helper.save_cutt_id(user, qq_id, 0)
