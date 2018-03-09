@@ -247,7 +247,8 @@ def deal_kicked(owner):
     :return:
     """
     devices = list(PhoneDevice.objects.filter(owner=owner, status=0))
-    q = SnsGroupLost.objects.filter(status=0, sns_user__owner=owner).select_related('sns_user')
+    q = SnsGroupLost.objects.filter(status=0, sns_user__owner=owner,
+                                    group__app_id=owner.app_id).select_related('sns_user')
     all = {x.group_id for x in SnsGroupSplit.objects.filter(user=owner, status=0)}
     for x in q:
         if x.group_id in all:

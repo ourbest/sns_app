@@ -420,6 +420,24 @@ def my_qun(request, i_page, i_size, keyword, qq, phone, tag):
 
 
 @api_func_anonymous
+def team_known_qun(request, i_page, i_size, keyword):
+    query = SnsGroup.objects.filter(app_id=get_session_app(request), status__gte=0)
+    if i_page != 0:
+        if i_size == 0:
+            i_size = 50
+
+    if keyword:
+        query = query.filter(group_name__contains=keyword)
+
+    query = query[(i_page - 1) * i_size:i_page * i_size]
+    total = query.count()
+    return {
+        'total': total,
+        'items': [api_helper.sns_group_to_json(x) for x in query],
+    }
+
+
+@api_func_anonymous
 def team_qun(request, i_page, i_size, keyword, owner, qq, phone):
     query = SnsUserGroup.objects.filter(sns_user__owner__app_id=get_session_app(request),
                                         status=0).select_related("sns_group", "sns_user", "sns_user__owner",
@@ -1093,7 +1111,8 @@ def import_qun(app, ids, request, email, phone, edit_method, i_ignore_dup):
                         db.status = 2
                         db.snsgroupsplit_set.filter(status=0).update(status=3)
                         db.save()
-                elif split_to_self and login_user and (device or (the_app and the_app.self_qun == 1)) and login_user.app == the_app:
+                elif split_to_self and login_user and (
+                        device or (the_app and the_app.self_qun == 1)) and login_user.app == the_app:
                     SnsGroupSplit(group=db, user=login_user, phone=device).save()
             except:
                 logger.warning("error save %s" % line, exc_info=1)
@@ -1379,6 +1398,7 @@ def apps(request, i_dist, email):
     if i_dist:
         return [{'id': x.app_id, 'name': x.app_name} for x in
                 App.objects.filter(stage__in=['分发期', '留守期'])]
+
     user = model_manager.get_user(email if email else get_session_user(request))
     ret = []
     if not user:
@@ -1517,6 +1537,33 @@ def update_account(sns_id, password, name):
         sns_user.save()
 
     return sns_user_to_json(sns_user)
+
+
+@api_func_anonymous
+def update_qun_app(sns_ids, i_app_id):
+    sns_users = SnsGroup.objects.filter(group_id__in=re.split(';', sns_ids))
+    if sns_users:
+        for sns_user in sns_users:
+            if sns_user.app_id != i_app_id:
+                sns_user.app_id = i_app_id
+                sns_user.save(update_fields=['app_id'])
+
+    return "ok"
+
+
+@api_func_anonymous
+def update_qun_attr(sns_ids, name, value):
+    if value.isdigit():
+        value = int(value)
+
+    sns_users = SnsGroup.objects.filter(group_id__in=re.split(';', sns_ids))
+    if sns_users:
+        for sns_user in sns_users:
+            if getattr(sns_user, name) != value:
+                setattr(sns_user, name, value)
+                sns_user.save(update_fields=[name])
+
+    return "ok"
 
 
 @api_func_anonymous
