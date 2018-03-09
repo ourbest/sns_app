@@ -382,7 +382,7 @@ def get_coupon_details(save):
 
         others_remains[app_id] = model_manager.query(ZhiyueUser).filter(userId__in=not_picked,
                                                                         lastActiveTime__gt=date).count()
-        others_rates[app_id] = int(others_remains[app_id] / len(not_picked) * 100)
+        others_rates[app_id] = int(others_remains[app_id] / len(not_picked) * 100) if len(not_picked) else 100
 
         rates[app_id] = int(remain / len(user_ids) * 100)
         remains[app_id] = remain
