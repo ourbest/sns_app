@@ -333,10 +333,13 @@ def add_add_qun(device_task):
     data = device_task.data
 
     cnt = 5
-    if not data:
-        data = 'COUNT=%s\n' % cnt
-    else:
-        data = data.strip() + '\n'
+    if data:
+        try:
+            cnt = int(data.strip())
+        except:
+            pass
+        # data = data.strip() + '\n'
+    data = 'COUNT=%s\n' % cnt
     # data += '\n'.join(ids)
 
     groups = get_add_groups(cnt, device_task)
