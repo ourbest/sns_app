@@ -1285,7 +1285,8 @@ def export_phone_qun_csv(request):
                                                                x.sns_group.group_name,
                                                                x.sns_group.group_user_count,
                                                                x.sns_user.login_name,
-                                                               x.sns_user.device.label) for x in db]),
+                                                               x.sns_user.device.label if x.sns_user.device else '') for
+                                       x in db]),
                             content_type='application/octet-stream')
     response['Content-Disposition'] = 'attachment; filename=qun.csv'
 
