@@ -227,7 +227,7 @@ def set_qun_kicked(sns_user_group):
     SnsGroup.objects.filter(group_id=sns_user_group.sns_group_id) \
         .update(kick_times=F('kick_times') + 1)
 
-    g = SnsGroup.objects.filter(group_id=sns_user_group.sns_group_id)
+    g = SnsGroup.objects.filter(group_id=sns_user_group.sns_group_id).first()
     status = 0
     if g and g.kick_times > 10:
         status = 10
