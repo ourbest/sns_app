@@ -387,7 +387,8 @@ def get_coupon_details(save):
         rates[app_id] = int(remain / len(user_ids) * 100)
         remains[app_id] = remain
         picked_remains[app_id] = picked_remain
-        picked_rates[app_id] = int(picked_remain / len(user_picked_ids) * 100)
+        picked = len(user_picked_ids)
+        picked_rates[app_id] = int(picked_remain / picked * 100) if picked else 0
 
     ret = [{'app_id': x['partnerId'], 'app_name': apps[x['partnerId']], 'today': x['total'],
             'remain': '%s%%' % rates[x['partnerId']], 'open': rewards.get(x['partnerId'], 0),
