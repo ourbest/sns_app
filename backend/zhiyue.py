@@ -384,7 +384,7 @@ def get_coupon_details(save):
                                                                         lastActiveTime__gt=date).count()
         others_rates[app_id] = int(others_remains[app_id] / len(not_picked) * 100) if len(not_picked) else 100
 
-        rates[app_id] = int(remain / len(user_ids) * 100)
+        rates[app_id] = int(remain / len(user_ids) * 100) if len(user_ids) else 0
         remains[app_id] = remain
         picked_remains[app_id] = picked_remain
         picked = len(user_picked_ids)
