@@ -80,7 +80,7 @@ def update(request):
                 if area_query:  # 该数据已存在
                     if area_query.first().isDelete:  # 该数据为逻辑删除
                         area_query.update(isDelete=False)  # 恢复为未删除
-                        search = Search.objects.select_related('keyword').filter(area=area_query)
+                        search = Search.objects.select_related('keyword').filter(area=area_query.first())
                         if search:  # 并将该数据对应的Search数据状态改为0
                             search.filter(keyword__isDelete=False).update(status=0)
                         result += '地区名添加成功 '
@@ -109,7 +109,7 @@ def update(request):
             if keyword_query:  # 有数据
                 if keyword_query.first().isDelete:  # 且没有没逻辑删除
                     keyword_query.update(isDelete=False)  # 恢复
-                    search = Search.objects.select_related('area').filter(keyword=keyword_query)
+                    search = Search.objects.select_related('area').filter(keyword=keyword_query.first())
                     if search:
                         search.filter(area__isDelete=False).update(status=0)
                     result += '关键词添加成功 '
