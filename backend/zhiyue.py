@@ -1,6 +1,9 @@
+import json
 import re
+from collections import defaultdict
 from datetime import datetime, timedelta
 
+import math
 from dj import times
 from dj.utils import api_func_anonymous
 from django.db import connections
@@ -12,7 +15,7 @@ from backend import api_helper, model_manager, stats
 from backend.api_helper import get_session_app
 from backend.models import AppUser, AppDailyStat, UserDailyStat, App, DailyActive
 from backend.zhiyue_models import ShareArticleLog, ClipItem, WeizhanCount, AdminPartnerUser, CouponInst, ItemMore, \
-    ZhiyueUser, UserRewardHistory, AppConstants, CouponPmSentInfo, CouponDailyStatInfo
+    ZhiyueUser, UserRewardHistory, AppConstants, CouponPmSentInfo, CouponDailyStatInfo, OfflineDailyStat
 
 
 @api_func_anonymous
@@ -308,8 +311,8 @@ def get_offline_ids(request, date):
 
 @api_func_anonymous
 def get_coupon_message_details():
-    query = 'select (userId % 2) as g, message, count(*), status, type from partner_CouponPmSentInfo ' \
-            'where createTime > current_date - interval 1 day group by message, userId % 2, status, type'
+    query = 'SELECT (userId % 2) AS g, message, count(*), status, type FROM partner_CouponPmSentInfo ' \
+            'WHERE createTime > current_date - INTERVAL 1 DAY GROUP BY message, userId % 2, status, type'
 
     ret = []
     values = {}
@@ -405,3 +408,160 @@ def get_coupon_details(save):
                                        remainNotOpen=x['others_remain_rate'][:-1])
             info.save(using='partner_rw')
     return ret
+
+
+@api_func_anonymous
+def make_offline(the_date):
+    apps = {x.app_id: x for x in App.objects.filter(offline=1)}
+    ids = ','.join([str(x) for x in apps.keys()])
+    query = '''
+    select partnerId, count(*) from partner_CouponInst 
+    where useDate between current_date - interval 1 day and current_date AND 
+    partnerId in (%s) GROUP BY partnerId
+    ''' % ids
+
+    date_str = times.to_date_str(timezone.now(), "%Y-%m-%d")
+
+    # 使用量
+    with connections['zhiyue'].cursor() as cursor:
+        cursor.execute(query)
+        rows = cursor.fetchall()
+        for [app_id, cnt] in rows:
+            try:
+                OfflineDailyStat(app_id=app_id, stat_date=date_str, user_num=cnt).save()
+            except:
+                pass
+
+    make_offline_remain(the_date)
+
+    return "ok"
+
+
+@api_func_anonymous
+def make_offline_remain(the_date):
+    stat_date = timezone.now()
+
+    if not the_date:
+        the_date = 'current_date'
+    else:
+        stat_date = timezone.make_aware(datetime.strptime(the_date, '%Y-%m-%d'))
+        the_date = "'%s'" % the_date
+
+    apps = {x.app_id: x for x in App.objects.filter(offline=1)}
+    ids = ','.join([str(x) for x in apps.keys()])
+
+    # 补红包打开数字
+    bonus_query = '''
+    select partnerId, count(*) from pojo_ZhiyueUser u, partner_UserRewardHistory c 
+    where u.createTime between %s - interval 1 day and %s
+    and u.userId = c.userId and partnerId in (%s) and c.source='groundPush' group by partnerId
+    ''' % (the_date, the_date, ids)
+    # 补留存率
+    # 补结算数字
+    query = '''
+    select partnerId, useNum, extInfo, remainDay from partner_ShopCouponStatSum
+    WHERE useDate = %s - INTERVAL 2 DAY AND partnerId in (%s)
+    ''' % (the_date, ids)
+    # 补红包补贴
+    op_bonus_query = '''
+    SELECT partnerId, sum(amount)  FROM partner_RedCouponBonus
+    WHERE partnerId = 1564403 AND rewardDate = %s - INTERVAL 1 DAY
+    GROUP BY partnerId
+    ''' % the_date
+    with connections['zhiyue'].cursor() as cursor:
+        cursor.execute(query)
+        rows = cursor.fetchall()
+        values = defaultdict(dict)
+        for [app_id, cnt, ext_info, remain_day] in rows:
+            percent = 1
+            low_cnt = int(json.loads(ext_info).get('LowQualityCnt', 0))
+
+            if low_cnt == 1:
+                percent = 0.95
+            elif low_cnt == 2:
+                percent = 0.9
+            elif low_cnt == 3:
+                percent = 0.8
+            elif low_cnt == 4:
+                percent = 0.5
+            elif low_cnt >= 5:
+                percent = 0
+
+            total = math.ceil(apps[app_id].price * cnt * percent)
+            r = values[app_id]
+            r['total'] = r.get('total', 0) + total
+            remain_cnt = 0
+
+            if remain_day:
+                day_ = re.split(';', remain_day)[0]
+                if day_:
+                    remain_cnt = int(re.split('-', day_)[1])
+
+            r['remain'] = r.get('remain', 0) + remain_cnt
+
+        cursor.execute(bonus_query)
+        rows = cursor.fetchall()
+
+        for [app_id, cnt] in rows:
+            values[app_id]['open'] = cnt
+
+        cursor.execute(op_bonus_query)
+        rows = cursor.fetchall()
+
+        for [app_id, amount] in rows:
+            values[app_id]['bonus'] = amount
+    for stat in OfflineDailyStat.objects.filter(stat_date=times.to_date_str(stat_date - timedelta(days=2),
+                                                                            "%Y-%m-%d")):
+        r = values[stat.app_id]
+        stat.user_bonus_num = r.get('open', 0)
+        stat.remain = r.get('remain', 0)
+        stat.user_cost = r.get('total', 0)
+        stat.bonus_cost = r.get('bonus', 0)
+        stat.total_cost = stat.bonus_cost + stat.user_cost
+        try:
+            stat.save(force_update=True)
+        except:
+            pass
+
+
+@api_func_anonymous
+def make_offline_days(days):
+    if not days:
+        days = 10
+    apps = {x.app_id: x for x in App.objects.filter(offline=1)}
+    ids = ','.join([str(x) for x in apps.keys()])
+    query = '''
+        SELECT date(useDate), partnerId, count(*) FROM partner_CouponInst 
+    WHERE useDate BETWEEN current_date - INTERVAL %s DAY AND current_date AND 
+    partnerId IN (%s) GROUP BY partnerId, date(useDate)
+    ''' % (days, ids)
+
+    # 使用量
+    with connections['zhiyue'].cursor() as cursor:
+        cursor.execute(query)
+        rows = cursor.fetchall()
+        for [day, app_id, cnt] in rows:
+            try:
+                OfflineDailyStat(app_id=app_id, stat_date=day, user_num=cnt).save()
+            except:
+                pass
+
+
+@api_func_anonymous
+def get_offline_detail(the_date):
+    stat_date = timezone.now()
+
+    if the_date:
+        stat_date = timezone.make_aware(datetime.strptime(the_date, '%Y-%m-%d'))
+
+    return [{
+        'app_id': x.app_id,
+        'stat_date': x.stat_date,
+        'user_num': x.user_num,
+        'user_cost': x.user_cost,
+        'total_cost': x.total_cost,
+        'bonus_cost': x.bonus_cost,
+        'user_bonus_num': x.user_bonus_num,
+        'remain': x.remain,
+    } for x in OfflineDailyStat.objects.filter(stat_date=times.to_date_str(stat_date - timedelta(days=2),
+                                                                           "%Y-%m-%d"))]

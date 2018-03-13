@@ -339,3 +339,15 @@ class AppConstants(models.Model):
     class Meta:
         db_table = 'partner_AppConstants'
         managed = False
+
+
+class OfflineDailyStat(models.Model):
+    app_id = models.IntegerField()
+    stat_date = models.CharField(max_length=12)
+    user_num = models.IntegerField('新增', default=0)
+    user_cost = models.IntegerField('花费', default=0)
+    remain = models.IntegerField('留存', default=0)
+    user_bonus_num = models.IntegerField('领取红包数', default=0)
+    bonus_cost = models.IntegerField('红包奖励', default=0)
+    bonus_cash = models.IntegerField('红包提取', default=0)
+    total_cost = models.IntegerField('总花费', default=0)

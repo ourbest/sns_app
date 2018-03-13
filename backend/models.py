@@ -10,6 +10,9 @@ class App(models.Model):
     app_name = models.CharField('名称', max_length=32)
     stage = models.CharField('所处时期', max_length=20, default='准备期')
     self_qun = models.IntegerField('自行导入群', default=1, help_text="0 - 查群的结果平均分配给所有人，1 - 查群的结果分配给自己")
+    price = models.FloatField('推广单价', default=0)
+    cost = models.IntegerField('推广消耗', default=0)
+    offline = models.IntegerField('是否在地推', default=0)
 
     def __str__(self):
         return '%s (%s)' % (self.app_name, self.app_id)
