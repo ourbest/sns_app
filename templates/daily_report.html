@@ -1,5 +1,35 @@
 {% load calc %}
 
+<h2>汇总情况</h2>
+<table width="100%" border="1" style="border-collapse: collapse; text-align: center" cellpadding="5">
+    <tr>
+        <th>生活圈</th>
+        <th>PV</th>
+        <th>安装</th>
+        <th>平台</th>
+        <th>PV</th>
+        <th>安装</th>
+        <th>转化率</th>
+    </tr>
+    {% for item in sum %}
+        <tr>
+            <td rowspan="2">{{ item.app }}</td>
+            <td rowspan="2">{{ item.qq.weizhan|add:item.wx.weizhan }}</td>
+            <td rowspan="2">{{ item.qq.users|add:item.wx.users }}</td>
+            <td>QQ</td>
+            <td>{{ item.qq.weizhan }}</td>
+            <td>{{ item.qq.users }}</td>
+            <td>{% rate item.qq.users item.qq.weizhan 100 4 %}</td>
+        </tr>
+        <tr>
+            <td>微信</td>
+            <td>{{ item.wx.weizhan }}</td>
+            <td>{{ item.wx.users }}</td>
+            <td>{% rate item.wx.users item.wx.weizhan 100 4 %}</td>
+        </tr>
+    {% endfor %}
+</table>
+
 {% for item in stats %}
     <h2>{{ item.app }}</h2>
     <h3>分发统计数据</h3>

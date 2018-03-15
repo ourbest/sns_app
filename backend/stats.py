@@ -130,19 +130,27 @@ def gen_daily_report():
         # print(yesterday)
 
         app_stats = []
+        summary = []
 
         for app in App.objects.filter(stage__in=('分发期', '留守期')):
             item_stats = []
+            stat = app_daily_stat(app, date, True)
             app_stats.append({
                 'app': app.app_name,
                 'items': item_stats,
-                'sum': app_daily_stat(app, date, True),
+                'sum': stat,
+            })
+
+            summary.append({
+                'app': app.app_name,
+                'qq': [x for x in stat['qq'] if x['name'] == '合计'][0],
+                'wx': [x for x in stat['wx'] if x['name'] == '合计'][0],
             })
             for user in app.user_set.filter(status=0):
                 item_stats += get_user_share_stat(yesterday, user)
                 # sum_stats.append(get_user_stat(date, app.app_id))
 
-        html = render_to_string('daily_report.html', {'stats': app_stats})
+        html = render_to_string('daily_report.html', {'stats': app_stats, 'sum': summary})
         api_helper.send_html_mail('%s线上推广日报' % date, settings.DAILY_REPORT_EMAIL, html)
         print('Done.')
         os._exit(0)
