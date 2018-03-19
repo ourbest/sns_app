@@ -412,15 +412,22 @@ def get_coupon_details(save):
 
 @api_func_anonymous
 def make_offline(the_date):
+    stat_date_from = 'current_date - interval 1 day'
+    stat_date_to = 'current_date'
+
+    if the_date:
+        stat_date_from = '\'%s 00:00:00\'' % the_date
+        stat_date_to = '\'%s 23:59:59\'' % the_date
+
     apps = {x.app_id: x for x in App.objects.filter(offline=1)}
     ids = ','.join([str(x) for x in apps.keys()])
     query = '''
     select partnerId, count(*) from partner_CouponInst 
-    where useDate between current_date - interval 1 day and current_date AND 
+    where useDate between %s and %s AND 
     partnerId in (%s) GROUP BY partnerId
-    ''' % ids
+    ''' % (stat_date_from, stat_date_to, ids)
 
-    date_str = times.to_date_str(timezone.now(), "%Y-%m-%d")
+    date_str = times.to_date_str(timezone.now(), "%Y-%m-%d") if not the_date else the_date
 
     # 使用量
     with connections['zhiyue'].cursor() as cursor:
