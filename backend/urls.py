@@ -160,4 +160,5 @@ urlpatterns = [
     url(r'coupon/detail$', zhiyue.get_coupon_details),
     url(r'coupon/message/detail$', zhiyue.get_coupon_message_details),
     url(r'coupon/offline$', zhiyue.get_offline_detail),
+
 ]

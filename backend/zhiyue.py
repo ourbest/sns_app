@@ -460,7 +460,7 @@ def make_offline_remain(the_date):
     # 补红包打开数字
     bonus_query = '''
     select partnerId, count(*) from pojo_ZhiyueUser u, partner_UserRewardHistory c 
-    where u.createTime between %s - interval 1 day and %s
+    where u.createTime between %s - interval 2 day and %s - interval 1 day
     and u.userId = c.userId and partnerId in (%s) and c.source='groundPush' group by partnerId
     ''' % (the_date, the_date, ids)
     # 补留存率
@@ -472,7 +472,7 @@ def make_offline_remain(the_date):
     # 补红包补贴
     op_bonus_query = '''
     SELECT partnerId, sum(amount)  FROM partner_RedCouponBonus
-    WHERE partnerId = 1564403 AND rewardDate = %s - INTERVAL 1 DAY
+    WHERE partnerId = 1564403 AND rewardDate = %s - INTERVAL 2 DAY
     GROUP BY partnerId
     ''' % the_date
     with connections['zhiyue'].cursor() as cursor:
