@@ -532,3 +532,95 @@ class DistArticleStat(models.Model):
     dist_wx_phone_count = models.IntegerField('分发的微信手机数', default=0)
     dist_qun_count = models.IntegerField('群数', default=0)
     dist_qun_user = models.IntegerField('群用户数', default=0)
+
+
+class DeviceWeixinGroup(models.Model):
+    """
+    设备的微信群
+    """
+    device = models.ForeignKey(PhoneDevice, on_delete=CASCADE)
+    name = models.CharField('群名', max_length=100)
+    member_count = models.IntegerField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+
+class DeviceWeixinGroupLost(models.Model):
+    """
+    可能被踢的群（只是可能）
+    """
+    device = models.ForeignKey(PhoneDevice, on_delete=CASCADE)
+    name = models.CharField('群名', max_length=100)
+    member_count = models.IntegerField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+
+class UserDailyResourceStat(models.Model):
+    """
+    用户的日统计数据
+    """
+    app = models.ForeignKey(App, on_delete=CASCADE, null=True)
+    user = models.ForeignKey(User, on_delete=CASCADE)
+    stat_date = models.DateField(auto_now_add=True)
+    qq_cnt = models.IntegerField()
+    wx_cnt = models.IntegerField(default=0)
+    phone_cnt = models.IntegerField()
+    qq_acc_cnt = models.IntegerField()
+    qq_group_cnt = models.IntegerField()
+    wx_group_cnt = models.IntegerField()
+    qq_uniq_group_cnt = models.IntegerField()
+    wx_uniq_group_cnt = models.IntegerField()
+    qq_apply_cnt = models.IntegerField()
+    qq_lost_cnt = models.IntegerField()
+    wx_lost_cnt = models.IntegerField()
+    qq_members = models.IntegerField(default=0)
+    wx_members = models.IntegerField(default=0)
+
+
+class AppDailyResourceStat(models.Model):
+    """
+    生活圈资源情况
+    """
+    app = models.ForeignKey(App, on_delete=CASCADE)
+    stat_date = models.DateField(auto_now_add=True)
+    qq_cnt = models.IntegerField('QQ分发数')
+    wx_cnt = models.IntegerField('微信分发数')
+    phone_cnt = models.IntegerField('手机个数')
+    qq_acc_cnt = models.IntegerField('QQ账号数')
+    qq_group_cnt = models.IntegerField('QQ群数')
+    wx_group_cnt = models.IntegerField('微信群数')
+    qq_uniq_group_cnt = models.IntegerField('排重后')
+    wx_uniq_group_cnt = models.IntegerField()
+    qq_apply_cnt = models.IntegerField('QQ申请数')
+    qq_lost_cnt = models.IntegerField('QQ群被踢数')
+    wx_lost_cnt = models.IntegerField()
+    qq_group_new_cnt = models.IntegerField('新群')
+    qq_group_total = models.IntegerField()
+    qq_members = models.IntegerField(default=0)
+    wx_members = models.IntegerField(default=0)
+
+
+class AppWeeklyStat(models.Model):
+    """
+    线上推广周报
+    """
+    app = models.ForeignKey(App, on_delete=CASCADE)
+    qq_pv = models.IntegerField()
+    qq_users = models.IntegerField()
+    wx_pv = models.IntegerField()
+    wx_users = models.IntegerField()
+    operators = models.IntegerField()
+    device_cnt = models.IntegerField()
+    qq_acc_cnt = models.IntegerField()
+    qq_cnt = models.IntegerField('qq分发数')
+    wx_cnt = models.IntegerField('微信分发数')
+    qq_group_cnt = models.IntegerField()
+    wx_group_cnt = models.IntegerField()
+    qq_uniq_group_cnt = models.IntegerField()
+    wx_uniq_group_cnt = models.IntegerField()
+    qq_apply_cnt = models.IntegerField()
+    qq_lost_cnt = models.IntegerField()
+    qq_group_new_cnt = models.IntegerField('新群')
+    qq_group_total = models.IntegerField()
+    qq_members = models.IntegerField(default=0)
+    wx_members = models.IntegerField(default=0)

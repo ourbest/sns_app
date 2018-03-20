@@ -8,7 +8,7 @@ from logzero import logger
 
 from backend import caches
 from backend.models import PhoneDevice, SnsTaskType, App, User, ActiveDevice, SnsUser, SnsGroup, UserAuthApp, \
-    MenuItemPerm, SnsGroupLost, Tag, GroupTag
+    MenuItemPerm, SnsGroupLost, Tag, GroupTag, WxDistLog, DeviceWeixinGroup, DeviceWeixinGroupLost
 from backend.models import SnsUserGroup, SnsGroupSplit
 
 
@@ -62,6 +62,14 @@ def get_active_device(device):
 def mark_task_finish(device_task):
     _set_task_status(device_task, 2)
 
+    try:
+        if device_task.task.type == 5:
+            # 微信分发，同步群列表
+            groups = WxDistLog.objects.filter(task=device_task)
+            sync_wx_groups(device_task.device, groups)
+    except:
+        logger.warning('error sync wx groups', exc_info=1)
+
     from backend import api_helper
     started_at = device_task.started_at
     if started_at:
@@ -69,6 +77,24 @@ def mark_task_finish(device_task):
                            int((device_task.finish_at - started_at).total_seconds() / 60))
     else:
         api_helper.webhook(device_task, '执行完毕')
+
+
+def sync_wx_groups(device, groups):
+    db = DeviceWeixinGroup.objects.filter(device=device)
+    new_values = {x.group_name: x for x in groups}
+    old_values = {x.name: x for x in db}
+    for x in db:
+        if x.name not in new_values:
+            x.delete()
+            DeviceWeixinGroupLost(device=device, name=x.name, member_count=x.member_count).save()
+
+    for x in new_values:
+        v = old_values.get(x.group_name)
+        if v and v.member_count != x.user_count:
+            v.member_count = x.user_count
+            v.save()
+        else:
+            DeviceWeixinGroup(device=device, name=x.group_name, member_count=x.user_count).save()
 
 
 def mark_task_cancel(device_task, notify=True):
