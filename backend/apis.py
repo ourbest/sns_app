@@ -118,7 +118,8 @@ def _after_upload(device_task, task_id, tmp_file, device, file_type):
                     import_qun_stat(upload_file_content, device.label, device_task.status)
                 elif device_task.task.type_id == 1:  # 查群
                     logger.info('查群结果')
-                    import_qun(device_task.task.app_id, upload_file_content, None, device_task.device.owner.email)
+                    import_qun(device_task.task.app_id, upload_file_content,
+                               None, device_task.device.owner.email, None, None, False)
                 elif device_task.task.type_id == 2:  # 加群
                     import_add_result(device_task, upload_file_content)
                 elif device_task.task.type_id == 3:  # 分发
