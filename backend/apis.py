@@ -21,6 +21,7 @@ from qiniu import Auth, put_file, etag
 from backend import model_manager, api_helper, caches, stats, group_splitter
 from backend.api_helper import get_session_user, get_session_app, sns_user_to_json, device_to_json, qun_to_json, \
     deal_dist_result, deal_add_result, ADD_STATUS, parse_dist_article
+from backend.model_manager import save_ignore
 from backend.models import User, App, SnsGroup, SnsGroupSplit, PhoneDevice, SnsUser, SnsUserGroup, SnsTaskDevice, \
     DeviceFile, SnsTaskType, SnsTask, ActiveDevice, SnsApplyTaskLog, UserActionLog, SnsGroupLost, GroupTag, \
     TaskWorkingLog, AppUser, DeviceTaskData, SnsUserKickLog, DistArticle, UserAuthApp, WxDistLog, DistTaskLog
@@ -1013,7 +1014,8 @@ def import_qun_stat(ids, device_id, status):
                         qun.status = 2
                     qun.group_name = qun_name
                     qun.group_user_count = qun_user_cnt
-                    qun.save()
+                    save_ignore(qun)
+                    # qun.save()
 
                     qun.snsgroupsplit_set.filter(phone=device).update(status=3)
 

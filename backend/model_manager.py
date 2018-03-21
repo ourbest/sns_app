@@ -385,3 +385,11 @@ def is_phone_online(device):
 
 def get_wx(owner_id, name):
     return SnsUser.objects.filter(name=name, type=1, owner_id=owner_id).first()
+
+
+def save_ignore(model):
+    try:
+        model.save()
+    except:
+        logger.info("ignore exception when save model %s " % model)
+        pass
