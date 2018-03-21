@@ -1000,7 +1000,7 @@ def import_qun_stat(ids, device_id, status):
 
                         qun.group_user_count = qun_user_cnt
                         qun.name = qun_name
-                        qun.save()
+                        model_manager.save_ignore(qun, True)
                         qun.snsgroupsplit_set.filter(phone=device).update(status=3)
 
                     SnsUserGroup(sns_group=qun, sns_user=sns_user, status=0, active=1).save()
