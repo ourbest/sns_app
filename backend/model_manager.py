@@ -93,12 +93,13 @@ def sync_wx_groups(device, groups):
             DeviceWeixinGroupLost(device=device, name=x.name, member_count=x.member_count).save()
 
     for x in new_values:
-        v = old_values.get(x.group_name)
-        if v and v.member_count != x.user_count:
-            v.member_count = x.user_count
+        v = old_values.get(x)
+        vn = new_values[x]
+        if v and v.member_count != vn.user_count:
+            v.member_count = vn.user_count
             v.save()
         else:
-            DeviceWeixinGroup(device=device, name=x.group_name, member_count=x.user_count).save()
+            DeviceWeixinGroup(device=device, name=x, member_count=vn.user_count).save()
 
 
 def mark_task_cancel(device_task, notify=True):
