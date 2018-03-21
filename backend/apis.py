@@ -130,7 +130,7 @@ def _after_upload(device_task, task_id, tmp_file, device, file_type):
             if task_id == 'stat':
                 import_qun_stat(upload_file_content, None, 2)
             elif task_id == 'qun':
-                import_qun(device.owner.app_id, upload_file_content, None, device.owner.email)
+                import_qun(device.owner.app_id, upload_file_content, None, device.owner.email, None, None, False)
     os.remove(tmp_file)
 
 
@@ -2028,4 +2028,3 @@ def task_groups(task_id, i_page):
         'total': total,
         'items': items
     }
-
