@@ -1808,7 +1808,7 @@ def report_progress(id, q, task_id, p, i_status, i_r, nickname):
 
         if p.isdigit() and device_task.progress != int(p) and p != '0' and q != '0':
             device_task.progress = int(p)
-            device_task.save()
+            model_manager.save_ignore(device_task)
             twl = TaskWorkingLog.objects.filter(device_task=device_task, account__login_name=q).first()
             if not twl:
                 twl = TaskWorkingLog(device_task=device_task, account=qq)
