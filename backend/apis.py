@@ -145,6 +145,8 @@ def import_wx_dist_result(device_task, lines):
                             user_count=cnt)
             log.save()
 
+    model_manager.sync_wx_log(device_task)
+
 
 def import_dist_result(device_task, lines):
     """

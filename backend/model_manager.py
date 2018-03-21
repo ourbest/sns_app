@@ -62,6 +62,16 @@ def get_active_device(device):
 def mark_task_finish(device_task):
     _set_task_status(device_task, 2)
 
+    from backend import api_helper
+    started_at = device_task.started_at
+    if started_at:
+        api_helper.webhook(device_task, '执行完毕, 共耗时%s分钟' %
+                           int((device_task.finish_at - started_at).total_seconds() / 60))
+    else:
+        api_helper.webhook(device_task, '执行完毕')
+
+
+def sync_wx_log(device_task):
     try:
         if device_task.task.type_id == 5:
             # 微信分发，同步群列表
@@ -70,14 +80,6 @@ def mark_task_finish(device_task):
             sync_wx_groups(device_task.device, groups)
     except:
         logger.warning('error sync wx groups', exc_info=1)
-
-    from backend import api_helper
-    started_at = device_task.started_at
-    if started_at:
-        api_helper.webhook(device_task, '执行完毕, 共耗时%s分钟' %
-                           int((device_task.finish_at - started_at).total_seconds() / 60))
-    else:
-        api_helper.webhook(device_task, '执行完毕')
 
 
 def sync_wx_groups(device, groups):
