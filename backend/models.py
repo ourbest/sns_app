@@ -304,6 +304,9 @@ class SnsTaskDevice(models.Model):
     schedule_at = models.DateTimeField(null=True)
     progress = models.IntegerField('进度', default=0)
 
+    def __str__(self):
+        return '%s@%s' % (self.task, self.device)
+
 
 class DeviceFile(models.Model):
     """

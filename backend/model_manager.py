@@ -65,6 +65,7 @@ def mark_task_finish(device_task):
     try:
         if device_task.task.type_id == 5:
             # 微信分发，同步群列表
+            logger.info('同步分发的微信群 %s' % device_task)
             groups = WxDistLog.objects.filter(task=device_task)
             sync_wx_groups(device_task.device, groups)
     except:
