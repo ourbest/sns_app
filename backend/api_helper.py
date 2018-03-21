@@ -587,26 +587,18 @@ def parse_dist_article(data, task, from_time=timezone.now()):
         db = DistArticle.objects.filter(item_id=item_id).first()
         from_time = from_time if from_time > task.schedule_at else task.schedule_at
         if not db:
-            try:
-                db = DistArticle(item_id=item_id, app_id=task.app_id,
-                                 started_at=from_time, created_at=from_time, last_started_at=from_time,
-                                 title=zhiyue_models.get_article_title(item_id))
-                db.save()
-            except:
-                pass  # logger.warning('error saving dist item %s' % item_id, exc_info=1)
+            db = DistArticle(item_id=item_id, app_id=task.app_id,
+                             started_at=from_time, created_at=from_time, last_started_at=from_time,
+                             title=zhiyue_models.get_article_title(item_id))
+            model_manager.save_ignore(db)
+
         else:
-            try:
-                if db.last_started_at != from_time:
-                    db.last_started_at = from_time
-                    db.save(update_fields=['last_started_at'])
-            except:
-                logger.warning('error updating dist item %s' % item_id, exc_info=1)
+            if db.last_started_at != from_time:
+                db.last_started_at = from_time
+                model_manager.save_ignore(db)
 
         if task.article != db:
             task.article = db
-            try:
-                task.save(update_fields=['article'])
-            except:
-                logger.warning('error updating task %s' % task, exc_info=1)
+            model_manager.save_ignore(task)
     else:
         logger.warning('cannot parse task item id %s ' % data)
