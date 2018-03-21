@@ -98,7 +98,7 @@ def sync_wx_groups(device, groups):
         if v and v.member_count != vn.user_count:
             v.member_count = vn.user_count
             v.save()
-        else:
+        elif not v:
             DeviceWeixinGroup(device=device, name=x, member_count=vn.user_count).save()
 
 
