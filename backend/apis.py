@@ -18,7 +18,7 @@ from django.utils import timezone
 from logzero import logger
 from qiniu import Auth, put_file, etag
 
-from backend import model_manager, api_helper, caches, stats
+from backend import model_manager, api_helper, caches, stats, group_splitter
 from backend.api_helper import get_session_user, get_session_app, sns_user_to_json, device_to_json, qun_to_json, \
     deal_dist_result, deal_add_result, ADD_STATUS, parse_dist_article
 from backend.models import User, App, SnsGroup, SnsGroupSplit, PhoneDevice, SnsUser, SnsUserGroup, SnsTaskDevice, \
@@ -1213,52 +1213,7 @@ def split_qq(app, request):
 
 
 def do_split_app(app):
-    users = [x for x in User.objects.filter(app_id=app, status=0) if x.phonedevice_set.filter(status=0).count() > 0]
-
-    if len(users) == 0:
-        return 'ok'
-
-    idx = 0
-    forward = True
-    for x in SnsGroup.objects.filter(app_id=app, status=0).order_by("-group_user_count"):
-        if 0 < x.group_user_count <= 10:
-            try:
-                if x.status != -1:
-                    x.status = -1
-                    x.save(update_fields=['status'])
-            except:
-                pass
-
-            continue
-
-        if x.snsgroupsplit_set.filter(status__in=(0, 1)).count():
-            try:
-                if x.status != 1:
-                    x.status = 1
-                    x.save(update_fields=['status'])
-            except:
-                pass
-
-            continue
-
-        x.status = 1
-        user = users[idx]
-        idx += 1 if forward else -1
-
-        if idx == -1:
-            idx = 0
-            forward = not forward
-        elif idx == len(users):
-            idx = idx - 1
-            forward = not forward
-
-        SnsGroupSplit(group=x, user=user).save()
-        try:
-            x.save(update_fields=['status'])
-        except:
-            pass
-    for u in users:
-        split_qun_to_device(None, u.email)
+    group_splitter.split_qun(app)
     return 'ok'
 
 
@@ -1337,26 +1292,7 @@ def export_qun(request, others, filter, device):
 def split_qun_to_device(request, email):
     user = email if email else get_session_user(request)
     if user:
-        phones = [x for x in PhoneDevice.objects.filter(owner__email=user, status=0) if
-                  x.snsuser_set.filter(friend=1).count() > 0]
-        idx = 0
-        forward = True
-        for x in SnsGroupSplit.objects.filter(user__email=user, phone__isnull=True):
-            phone = phones[idx]
-            idx += 1 if forward else -1
-
-            if idx == -1:
-                idx = 0
-                forward = not forward
-            elif idx == len(phones):
-                idx = idx - 1
-                forward = not forward
-
-            try:
-                x.phone = phone
-                x.save()
-            except:
-                pass
+        group_splitter.split_qun_device(email)
     return 'ok'
 
 
