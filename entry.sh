@@ -2,6 +2,12 @@
 
 mkdir -p logs
 
+if [ "$RQWORKER" = "1" ]
+then
+    exec ./worker.sh
+    exit 0
+fi
+
 if [ "$WORKERS" = "" ]
 then
     WORKERS=4
