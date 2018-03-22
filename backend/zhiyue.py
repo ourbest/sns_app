@@ -13,7 +13,8 @@ from django.utils import timezone
 
 from backend import api_helper, model_manager, stats
 from backend.api_helper import get_session_app
-from backend.models import AppUser, AppDailyStat, UserDailyStat, App, DailyActive, ItemDeviceUser, UserDailyDeviceUser
+from backend.models import AppUser, AppDailyStat, UserDailyStat, App, DailyActive, ItemDeviceUser, UserDailyDeviceUser, \
+    User
 from backend.zhiyue_models import ShareArticleLog, ClipItem, WeizhanCount, AdminPartnerUser, CouponInst, ItemMore, \
     ZhiyueUser, UserRewardHistory, AppConstants, CouponPmSentInfo, CouponDailyStatInfo, OfflineDailyStat, DeviceUser
 
@@ -626,4 +627,12 @@ def sync_remain():
         qq_cnt = ItemDeviceUser.objects.filter(type=0, app=app).count()
         wx_cnt = ItemDeviceUser.objects.filter(type=1, app=app).count()
 
-        AppDailyStat.objects.filter()
+        report_date = (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d')
+        AppDailyStat.objects.filter(report_date=report_date).update(
+            qq_remain=qq_cnt, wx_remain=wx_cnt)
+
+        for user in User.objects.filter(app=app, status=0):
+            qq_cnt = ItemDeviceUser.objects.filter(type=0, owner=user).count()
+            wx_cnt = ItemDeviceUser.objects.filter(type=1, owner=user).count()
+            UserDailyStat.objects.filter(report_date=report_date, user=user).update(
+                qq_remain=qq_cnt, wx_remain=wx_cnt)
