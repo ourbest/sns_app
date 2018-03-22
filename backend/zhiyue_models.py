@@ -119,8 +119,8 @@ class DeviceUser(models.Model):
     extStr = models.CharField(max_length=255)
     city = models.CharField(max_length=255)
     source = models.CharField(max_length=255)
-    sourceItemId = models.IntegerField()
-    sourceUserId = models.IntegerField()
+    sourceItemId = models.BigIntegerField()
+    sourceUserId = models.BigIntegerField()
 
     @staticmethod
     def db_name():

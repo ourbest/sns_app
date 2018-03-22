@@ -394,6 +394,6 @@ def get_wx(owner_id, name):
 def save_ignore(model, force_update=False):
     try:
         model.save(force_update=force_update)
-    except:
-        logger.info("ignore exception when save model %s " % model)
+    except Exception as ex:
+        logger.info("ignore exception %s when save model %s " % (ex, model))
         pass

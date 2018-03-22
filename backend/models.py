@@ -456,6 +456,35 @@ class UserDailyStat(models.Model):
     wx_down = models.IntegerField('微信下载页打开次数')
     qq_install = models.IntegerField('QQ安装数')
     wx_install = models.IntegerField('微信安装数')
+    qq_remain = models.IntegerField('次日留存', default=0)
+    wx_remain = models.IntegerField('次日留存', default=0)
+
+
+class UserDailyDeviceUser(models.Model):
+    """
+    关联安装用户的列表
+    """
+    report_date = models.CharField('统计日期', max_length=20)
+    app = models.ForeignKey(App, on_delete=CASCADE)
+    user = models.ForeignKey(User, on_delete=CASCADE)
+    qq_user_ids = models.TextField()
+    wx_user_ids = models.TextField()
+
+
+class ItemDeviceUser(models.Model):
+    """
+    关联安装情况
+    """
+    app = models.ForeignKey(App, on_delete=CASCADE)
+    owner = models.ForeignKey(User, on_delete=CASCADE)
+    created_at = models.DateTimeField()
+    user_id = models.BigIntegerField(unique=True)
+    item_id = models.BigIntegerField(default=0)
+    type = models.IntegerField(default=0, help_text='0 - QQ, 1 - 微信')
+    remain = models.IntegerField(default=0)
+
+    def __str__(self):
+        return "(User-%s)" % self.user_id
 
 
 class AppDailyStat(models.Model):
@@ -470,6 +499,8 @@ class AppDailyStat(models.Model):
     wx_down = models.IntegerField()
     qq_install = models.IntegerField()
     wx_install = models.IntegerField()
+    qq_remain = models.IntegerField('次日留存数', default=0)
+    wx_remain = models.IntegerField('次日留存数', default=0)
 
 
 class DeviceTaskData(models.Model):
