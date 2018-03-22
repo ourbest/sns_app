@@ -947,7 +947,7 @@ def export_qun(request, others, filter, device):
                 in db]
     elif filter == '未分配':
         db = SnsGroup.objects.filter(app_id=app, status=0).order_by("-pk")
-        return ['%s\t%s\t%s' % (x.group_id, x.group_name, x.group_user_count) for x in db]
+        return ['%s\t%s\t%s\t%s' % (x.group_id, x.group_name, x.group_user_count, x.kick_times) for x in db]
     elif filter == '特定手机':
         if not device:
             return []
