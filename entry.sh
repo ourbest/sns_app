@@ -2,7 +2,7 @@
 
 mkdir -p logs
 
-if [[ "$WORKERS" == "" ]]
+if [ "$WORKERS" = "" ]
 then
     WORKERS=4
 fi
