@@ -50,6 +50,7 @@ INSTALLED_APPS = [
     'backend',
     'utils',
     'robot',
+    'django_rq',
 ]
 
 MIDDLEWARE = [
@@ -65,6 +66,21 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = 'sns_app.urls'
+
+# 10.9.85.190
+
+RQ_QUEUES = {
+    'default': {
+        'HOST': '10.9.85.190',
+        'PORT': 6379,
+        'DB': 0,
+        'DEFAULT_TIMEOUT': 360,
+    },
+}
+
+RQ = {
+    'DEFAULT_RESULT_TTL': 5000,
+}
 
 TEMPLATES = [
     {

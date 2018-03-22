@@ -2,6 +2,7 @@
 from time import sleep
 
 from django.utils import timezone
+from django_rq import job
 from logzero import logger
 
 from backend import model_manager, api_helper, stats, zhiyue_models
@@ -91,7 +92,6 @@ def sync_split():
                 print("%s changed" % group)
             except:
                 pass
-
 
 
 def remove_dup_ids():
@@ -197,3 +197,12 @@ def sync_articles():
     for task in SnsTask.objects.filter(type_id__in=(3, 5), article_id__isnull=True, started_at__isnull=False):
         if task.type_id in (3, 5) and not task.article:
             api_helper.parse_dist_article(task.data, task, task.started_at or task.schedule_at or task.created_at)
+
+
+@job
+def test_job():
+    print('ok')
+
+
+def run():
+    test_job.delay()

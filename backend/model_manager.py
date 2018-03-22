@@ -4,6 +4,7 @@ from datetime import timedelta
 
 from django.db.models import Q, F
 from django.utils import timezone
+from django_rq import job
 from logzero import logger
 
 from backend import caches
@@ -199,15 +200,15 @@ def set_qun_applying(device, qun):
     SnsGroupSplit.objects.filter(phone=device, group=qun).update(status=2, apply_count=F('apply_count') + 1)
 
 
+@job
 def return_applying_to_normal():
     """
     将申请中的群重新设置为待申请
     :return:
     """
     today = timezone.now().replace(hour=0, minute=0, second=0, microsecond=0)
-    SnsGroupSplit.objects.filter(status=2, apply_count__lt=5,
-                                 updated_at__range=(today - timedelta(days=14),
-                                                    today - timedelta(days=7))).update(status=0)
+    SnsGroupSplit.objects.filter(status=2, apply_count__lt=5, updated_at__range=(
+        today - timedelta(days=14), today - timedelta(days=7))).update(status=0)
 
 
 def set_qun_manual(qun):
