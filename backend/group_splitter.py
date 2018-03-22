@@ -1,11 +1,7 @@
-from concurrent.futures import ProcessPoolExecutor
-
 from django_rq import job
 from logzero import logger
 
 from backend.models import User, SnsGroup, SnsGroupSplit, PhoneDevice
-
-_executors = ProcessPoolExecutor(max_workers=1)
 
 
 @job
@@ -103,11 +99,8 @@ def merge_split_group(group):
         has_done = False
         total = len(splitters)
         for idx, splitter in enumerate(splitters):
-            if splitter.status == 0:
-                if has_done or total != idx + 1:
-                    logger.info("Remove dup %s" % splitter)
-                    splitter.delete()
-                else:
-                    has_done = True
+            if has_done or total != idx + 1:
+                logger.info("Remove dup %s" % splitter)
+                splitter.delete()
             else:
                 has_done = True
