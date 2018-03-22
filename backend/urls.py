@@ -150,6 +150,7 @@ urlpatterns = [
     url(r'^daemon/stat/app$', daemons.gauge_data),
     url(r'^daemon/stat/offline$', zhiyue.make_offline),
     url(r'^daemon/stat/off$', zhiyue.make_offline_days),
+    url(r'^daemon/stat/sync/user$', zhiyue.sync_user),
 
     # weixin
     url(r'^wx/contact/sync$', bot_apis.sync_contacts),

@@ -1,5 +1,7 @@
 import json
 import re
+from logzero import logger
+
 from collections import defaultdict
 from datetime import datetime, timedelta
 
@@ -10,6 +12,7 @@ from django.db import connections
 from django.db.models import Count
 from django.http import HttpResponse
 from django.utils import timezone
+from django_rq import job
 
 import backend.stat_utils
 from backend import api_helper, model_manager, stats
@@ -576,7 +579,14 @@ def get_offline_detail(the_date):
                                                                            "%Y-%m-%d"))]
 
 
+@api_func_anonymous
+def sync_user():
+    sync_device_user.delay()
+
+
+@job
 def sync_device_user():
+    logger.info('同步用户数据')
     stat_date = datetime.now()
     from_date = stat_date - timedelta(days=1)
     for app in App.objects.filter(stage__in=('分发期', '留守期')):
@@ -612,8 +622,11 @@ def sync_device_user():
                                         qq_user_ids=','.join([str(x) for x in v[0]]),
                                         wx_user_ids=','.join([str(x) for x in v[1]])))
 
+    sync_remain()
+
 
 def sync_remain():
+    logger.info('同步留存数据')
     to_time = timezone.now().replace(hour=0, minute=0, second=0, microsecond=0)
     from_time = to_time - timedelta(days=1)
     date_range = (from_time, to_time)
