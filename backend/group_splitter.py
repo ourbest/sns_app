@@ -24,6 +24,7 @@ def split_qun(app):
                 if x.status != -1:
                     x.status = -1
                     x.save(update_fields=['status'])
+                    logger.info('%s ignore' % x)
             except:
                 pass
 
@@ -34,6 +35,7 @@ def split_qun(app):
                 if x.status != 1:
                     x.status = 1
                     x.save(update_fields=['status'])
+                    logger.info('%s has been splitted, set status = 1' % x)
             except:
                 pass
 
@@ -53,6 +55,7 @@ def split_qun(app):
         SnsGroupSplit(group=x, user=user).save()
         try:
             x.save(update_fields=['status'])
+            logger.info('%s split to ' % user)
         except:
             pass
     for u in users:
@@ -78,6 +81,7 @@ def split_qun_device(email):
         try:
             x.phone = phone
             x.save()
+            logger.info('%s has been splitted split to %s' % (x, phone))
         except:
             pass
 
