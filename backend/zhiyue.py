@@ -11,6 +11,7 @@ from django.db.models import Count
 from django.http import HttpResponse
 from django.utils import timezone
 
+import backend.stat_utils
 from backend import api_helper, model_manager, stats
 from backend.api_helper import get_session_app
 from backend.models import AppUser, AppDailyStat, UserDailyStat, App, DailyActive, ItemDeviceUser, UserDailyDeviceUser, \
@@ -108,7 +109,7 @@ def count_user_sum(email, date, request):
         datetime.now().replace(hour=0, second=0,
                                minute=0, microsecond=0) if not date else datetime.strptime(date[0:10], '%Y-%m-%d'))
     the_user = api_helper.get_login_user(request, email)
-    return stats.get_user_stat(date, the_user)
+    return backend.stat_utils.get_user_stat(date, the_user)
 
 
 @api_func_anonymous
@@ -143,7 +144,7 @@ def sum_team_dist(date, request, include_sum):
     date = times.localtime(
         datetime.now().replace(hour=0, second=0,
                                minute=0, microsecond=0) if not date else datetime.strptime(date[0:10], '%Y-%m-%d'))
-    return stats.app_daily_stat(app, date, include_sum)
+    return backend.stat_utils.app_daily_stat(app, date, include_sum)
 
 
 def show_open_link(request):

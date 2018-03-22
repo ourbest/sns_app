@@ -16,6 +16,7 @@ from django.utils import timezone
 from logzero import logger
 from qiniu import Auth, put_file, etag
 
+import backend.stat_utils
 from backend import model_manager, api_helper, caches, stats, group_splitter
 from backend.api_helper import get_session_user, get_session_app, sns_user_to_json, device_to_json, qun_to_json, \
     parse_dist_article
@@ -1548,7 +1549,7 @@ def get_share_items(date, email, request):
     the_user = model_manager.get_user(email)
     date = timezone.make_aware(datetime.strptime(date[0:10], '%Y-%m-%d')) if date else timezone.now()
     date = date.replace(microsecond=0, second=0, hour=0, minute=0)
-    return stats.get_user_share_stat(date, the_user)
+    return backend.stat_utils.get_user_share_stat(date, the_user)
 
 
 @api_func_anonymous

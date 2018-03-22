@@ -5,6 +5,7 @@ from django.utils import timezone
 from django_rq import job
 from logzero import logger
 
+import backend.stat_utils
 from backend import model_manager, api_helper, stats, zhiyue_models
 from backend.models import SnsGroupSplit, SnsGroup, SnsUser, SnsUserGroup, SnsTask, DistArticle, DistArticleStat
 
@@ -131,7 +132,7 @@ def extract_all_items():
 def make_stats():
     for item in DistArticle.objects.all():  # filter(created_at__gte=timezone.now() - timedelta(days=3)):
         # qq_stat = stats.get_item_stat(item.app_id, item.item_id, item.started_at)
-        wx_stat = stats.get_item_stat(item.app_id, item.item_id, item.started_at, user_type=1)
+        wx_stat = backend.stat_utils.get_item_stat(item.app_id, item.item_id, item.started_at, user_type=1)
 
         db = DistArticleStat.objects.filter(article=item).first()
         if not db:

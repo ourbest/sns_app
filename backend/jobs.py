@@ -1,17 +1,24 @@
 import os
 import re
 from collections import defaultdict
-from datetime import timedelta
+from datetime import timedelta, datetime
 
+from dj import times
+from django.conf import settings
+from django.db import connection, connections
+from django.template.loader import render_to_string
 from django.utils import timezone
 from django_rq import job
 from logzero import logger
 
-from backend import api_helper, model_manager, group_splitter
+import backend.stat_utils
+from backend import api_helper, model_manager, group_splitter, zhiyue, stats
 from backend.api_helper import ADD_STATUS, deal_add_result, deal_dist_result
 from backend.model_manager import save_ignore
 from backend.models import DeviceFile, SnsUser, SnsGroup, SnsUserGroup, SnsApplyTaskLog, SnsGroupSplit, WxDistLog, \
-    SnsUserKickLog, DeviceTaskData
+    SnsUserKickLog, DeviceTaskData, DailyActive, App, UserDailyStat, AppDailyStat, DeviceWeixinGroup, SnsGroupLost, \
+    DeviceWeixinGroupLost, SnsTask, UserDailyResourceStat, AppDailyResourceStat, DistArticle, DistArticleStat, AppUser
+from backend.stat_utils import get_count, get_user_share_stat, app_daily_stat
 
 
 @job
@@ -371,3 +378,250 @@ def import_add_result(device_task, lines):
             logger.warning('error import line %s' % line, exc_info=1)
 
     model_manager.reset_qun_status(device_task)
+
+
+@job
+def do_save_daily_active():
+    daily_stats = zhiyue.do_get_app_stat()
+    for daily_stat in daily_stats:
+        iphone = int(daily_stat.get('iphone', 0))
+        android = int(daily_stat.get('android', 0))
+        DailyActive(app_id=daily_stat['app_id'], iphone=iphone,
+                    android=android, total=iphone + android).save()
+
+
+@job
+def do_daily_stat(date):
+    date = times.localtime(
+        datetime.now().replace(hour=0, second=0,
+                               minute=0, microsecond=0) if not date else datetime.strptime(date, '%Y-%m-%d'))
+
+    for app in App.objects.filter(stage__in=('留守期', '分发期')):
+        stat = backend.stat_utils.app_daily_stat(app.app_id, date, include_sum=True)
+        qq_stat = stat['qq']
+        wx_stat = stat['wx']
+
+        for index, qs in enumerate(qq_stat):
+            if qs['uid']:
+                ws = wx_stat[index]
+                UserDailyStat(report_date=date.strftime('%Y-%m-%d'),
+                              app=app, user_id=qs['uid'],
+                              qq_pv=qs['weizhan'], wx_pv=ws['weizhan'],
+                              qq_down=qs['download'], wx_down=ws['download'],
+                              qq_install=qs['users'], wx_install=ws['users']).save()
+            else:
+                ws = wx_stat[index]
+                AppDailyStat(report_date=date.strftime('%Y-%m-%d'), app=app,
+                             qq_pv=qs['weizhan'], wx_pv=ws['weizhan'],
+                             qq_down=qs['download'], wx_down=ws['download'],
+                             qq_install=qs['users'], wx_install=ws['users']).save()
+
+    make_resource_stat()
+
+
+def make_resource_stat():
+    today = timezone.now().replace(hour=0, minute=0, second=0, microsecond=0)
+    today_range = (today - timedelta(days=1), today)
+    for app in App.objects.filter(stage__in=('留守期', '分发期', '准备期')):
+        # 记录资源的情况
+        users = app.user_set.filter(status=0)
+        user_stats = []
+        for user in users:
+            group_cnt = SnsUserGroup.objects.filter(sns_user__device__owner=user).count()
+            group_uniq_cnt = SnsUserGroup.objects.filter(sns_user__device__owner=user).values(
+                'sns_group_id').distinct().count()
+            wx_group_cnt = DeviceWeixinGroup.objects.filter(device__owner=user).count()
+            wx_group_uniq_cnt = DeviceWeixinGroup.objects.filter(device__owner=user).values('name').count()
+            qq_apply_cnt = SnsApplyTaskLog.objects.filter(device__owner=user,
+                                                          created_at__range=today_range,
+                                                          memo__in=('已发送验证', '无需验证已加入')).count()
+            qq_lost_cnt = SnsGroupLost.objects.filter(sns_user__owner=user,
+                                                      created_at__range=today_range).count()
+            wx_lost_cnt = DeviceWeixinGroupLost.objects.filter(device__owner=user,
+                                                               created_at__range=today_range).count()
+
+            qq_cnt = SnsTask.objects.filter(creator=user, status=2, started_at__range=today_range, type=3).count()
+            wx_cnt = SnsTask.objects.filter(creator=user, status=2, started_at__range=today_range, type=5).count()
+
+            s = UserDailyResourceStat(app=app, user=user, qq_cnt=qq_cnt, wx_cnt=wx_cnt,
+                                      phone_cnt=user.phonedevice_set.filter(status=0).count(),
+                                      qq_acc_cnt=user.snsuser_set.filter(status=0).count(),
+                                      qq_group_cnt=group_cnt, qq_uniq_group_cnt=group_uniq_cnt,
+                                      wx_group_cnt=wx_group_cnt, wx_uniq_group_cnt=wx_group_uniq_cnt,
+                                      qq_apply_cnt=qq_apply_cnt, qq_lost_cnt=qq_lost_cnt, wx_lost_cnt=wx_lost_cnt)
+            s.save()
+            user_stats.append(s)
+
+        group_total = SnsGroup.objects.filter(app=app).count()
+        group_new = SnsGroup.objects.filter(app=app, created_at__range=today_range).count()
+        group_uniq_cnt = SnsUserGroup.objects.filter(sns_user__app=app).values('sns_group_id').distinct().count()
+        wx_uniq_cnt = DeviceWeixinGroup.objects.filter(device__owner__app=app).values('name').distinct().count()
+
+        s = AppDailyResourceStat(app=app, qq_cnt=0, wx_cnt=0, phone_cnt=0, qq_acc_cnt=0,
+                                 qq_group_cnt=0, qq_uniq_group_cnt=group_uniq_cnt, qq_group_new_cnt=group_new,
+                                 wx_group_cnt=0, wx_uniq_group_cnt=wx_uniq_cnt, qq_group_total=group_total,
+                                 qq_apply_cnt=0, qq_lost_cnt=0, wx_lost_cnt=0)
+        for x in user_stats:
+            s.qq_cnt += x.qq_cnt
+            s.wx_cnt += x.wx_cnt
+            s.phone_cnt += x.phone_cnt
+            s.qq_acc_cnt += x.qq_acc_cnt
+            s.qq_group_cnt += x.qq_group_cnt
+            s.wx_group_cnt += x.wx_group_cnt
+            s.qq_apply_cnt += x.qq_apply_cnt
+            s.qq_lost_cnt += x.qq_lost_cnt
+            s.wx_lost_cnt += x.wx_lost_cnt
+        s.save()
+
+
+@job
+def do_get_item_stat_values(app):
+    item_apps = dict()
+    article_dict = dict()
+    from_time = timezone.now() - timedelta(days=7)
+    query = DistArticle.objects.filter(started_at__gte=from_time)
+
+    if app:
+        query = query.filter(app_id=app)
+    for item in query:
+        if item.app_id not in item_apps:
+            item_apps[item.app_id] = list()
+
+        items = item_apps[item.app_id]
+        items.append(item.item_id)
+        article_dict[item.item_id] = item
+
+    for app_id, items in item_apps.items():
+        qq_stats = batch_item_stat(app_id, items, from_time)
+        wx_stats = {x['item_id']: x for x in batch_item_stat(app_id, items, from_time, user_type=1)}
+
+        for qq_stat in qq_stats:
+            article = article_dict.get(qq_stat['item_id'])
+            db = DistArticleStat.objects.filter(article=article).first()
+            if not db:
+                db = DistArticleStat(article=article)
+
+            db.qq_pv = qq_stat.get('weizhan')
+            db.qq_down = qq_stat.get('download')
+            db.qq_user = qq_stat.get('users')
+            wx_stat = wx_stats.get(article.item_id)
+            if wx_stat:
+                db.wx_pv = wx_stat.get('weizhan')
+                db.wx_down = wx_stat.get('download')
+                db.wx_user = wx_stat.get('users')
+
+            user_ids = {x.creator_id for x in article.snstask_set.all()}
+            db.dist_user_count = len(user_ids)
+
+            db.save()
+
+    with connection.cursor() as cursor:
+        tbl_name = 'tmp_stat_tbl_%s' % int(timezone.now().timestamp())
+        tmp_tbl = 'CREATE TABLE %s (id bigint, owners bigint, groups bigint, devices bigint, users bigint)' % tbl_name
+        tmp_tbl_2 = '''insert into %s (id, owners, groups, devices, users) select a.* from backend_distarticlestat s,
+(select a.id, count(distinct t.creator_id) owners, count(l.group_id) groups,
+ count(distinct d.`device_id`) devices, sum(group_user_count) users
+from 
+  backend_snsgroup g,
+  backend_disttasklog l, backend_snstaskdevice d, 
+  backend_snstask t, backend_distarticle a
+where g.group_id = l.group_id and success=1 and d.task_id=t.id and l.task_id=t.id and t.article_id=a.id and t.type_id=3
+and a.`created_at` > current_date - interval 7 day and d.created_at > now() - interval 8 HOUR group by a.id) a
+where s.`article_id` = a.id''' % tbl_name
+        query = '''update backend_distarticlestat s, %s a
+set s.`dist_qq_user_count` = a.owners,
+s.`dist_qq_phone_count` = a.devices,
+s.`dist_qun_count` = a.groups,
+s.dist_qun_user = a.users
+where s.`article_id` = a.id
+''' % tbl_name
+        cursor.execute(tmp_tbl)
+        cursor.execute(tmp_tbl_2)
+        cursor.execute(query)
+        cursor.execute('drop table %s' % tbl_name)
+
+        query = '''update backend_distarticlestat s,
+(select a.id, count(distinct t.creator_id) owners, count(distinct d.`device_id`) devices
+from backend_snstaskdevice d, 
+  backend_snstask t, backend_distarticle a
+where d.task_id = t.id and t.article_id=a.id and t.type_id=5
+and a.`created_at` > current_date - interval 7 day and d.created_at > now() - interval 8 HOUR group by a.id) a
+set s.dist_wx_user_count = a.owners,
+s.dist_wx_phone_count = devices
+where s.article_id=a.id'''
+
+        cursor.execute(query)
+
+
+def batch_item_stat(app_id, items, from_time, user_type=0):
+    date_end = from_time + timedelta(days=7)
+    ids = [x.cutt_user_id for x in AppUser.objects.filter(user__app_id=app_id, type=user_type)]
+    query = 'SELECT itemId, itemType, count(1) as cnt FROM datasystem_WeizhanItemView ' \
+            'WHERE itemId in (%s) AND shareUserId in (%s) AND time BETWEEN \'%s\' AND \'%s\' ' \
+            'GROUP BY itemId, itemType' % (
+                ','.join(map(str, items)), ','.join(map(str, ids)), times.to_date_str(from_time),
+                times.to_str(date_end, '%Y-%m-%d %H:%M:%S'))
+    device_user_query = 'select sourceItemId, count(1) as cnt from datasystem_DeviceUser ' \
+                        'where sourceItemId in (%s) and sourceUserId in (%s) ' \
+                        'and createTime between \'%s\' AND \'%s\' GROUP BY sourceItemId' % (
+                            ','.join(map(str, items)), ','.join(map(str, ids)), times.to_date_str(from_time),
+                            times.to_date_str(date_end, '%Y-%m-%d %H:%M:%S'))
+    data = dict()
+    if not ids:
+        return []
+    if items:
+        with connections['zhiyue'].cursor() as cursor:
+            cursor.execute(query)
+            rows = cursor.fetchall()
+            for row in rows:
+                data['%s_%s' % (row[0], row[1])] = row[2]
+
+            cursor.execute(device_user_query)
+            rows = cursor.fetchall()
+            for row in rows:
+                data['%s_du' % (row[0],)] = row[1]
+    return [{
+        'item_id': x,
+        'weizhan': get_count(data, x, ''),
+        'reshare': get_count(data, x, '-reshare'),
+        'download': get_count(data, x, '-down') + get_count(data, x, '-mochuang') + data.get(
+            '%s_%s' % (x, 'tongji-down'), 0),
+        'users': data.get('%s_du' % x, 0),
+    } for x in items]
+
+
+@job
+def do_gen_daily_report():
+    # pid = os.fork()
+    # if pid == 0:
+    print('Generate report ...')
+    yesterday = (datetime.now() - timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
+    date = times.to_str(yesterday, '%Y-%m-%d')
+
+    # print(yesterday)
+
+    app_stats = []
+    summary = []
+
+    for app in App.objects.filter(stage__in=('分发期', '留守期')):
+        item_stats = []
+        stat = app_daily_stat(app, date, True)
+        app_stats.append({
+            'app': app.app_name,
+            'items': item_stats,
+            'sum': stat,
+        })
+
+        summary.append({
+            'app': app.app_name,
+            'qq': [x for x in stat['qq'] if x['name'] == '合计'][0],
+            'wx': [x for x in stat['wx'] if x['name'] == '合计'][0],
+        })
+        for user in app.user_set.filter(status=0):
+            item_stats += get_user_share_stat(yesterday, user)
+            # sum_stats.append(get_user_stat(date, app.app_id))
+
+    html = render_to_string('daily_report.html', {'stats': app_stats, 'sum': summary})
+    api_helper.send_html_mail('%s线上推广日报' % date, settings.DAILY_REPORT_EMAIL, html)
+    print('Done.')
+    # os._exit(0)

@@ -15,5 +15,5 @@ def dist(request, page):
 
 
 def internal_report(request):
-    r = requests.get('http://127.0.0.1:8001/api/daily/report')
+    r = requests.get('http://127.0.0.1:8000/api/daily/report')
     return HttpResponse(r.text)
