@@ -171,7 +171,7 @@ def do_import_qun_stat(ids, device_id, status):
                     model_manager.deal_kicked(device.owner)
 
     SnsGroupSplit.objects.filter(phone=device, status=1).update(status=0)
-    SnsGroupSplit.objects.filter(phone=device, status=2, updated_at=timezone.now() - timedelta(days=2)).update(status=0)
+    SnsGroupSplit.objects.filter(phone=device, status=2, updated_at=timezone.now() - timedelta(days=7)).update(status=0)
     logger.info('Import done total %s', total)
 
 
