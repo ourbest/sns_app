@@ -105,6 +105,8 @@ def do_import_qun_stat(ids, device_id, status):
                 sns_user.save()
 
             all_groups = sns_user.snsusergroup_set.all()
+            all_groups_in = [x for x in all_groups if x.status == 0]
+            # now_ids = {x.sns_group_id for x in all_groups}
             all_group_ids = set()
             for (qun_num, qun_name, qun_user_cnt) in accounts:
                 if qun_num in all_group_ids:
@@ -156,9 +158,9 @@ def do_import_qun_stat(ids, device_id, status):
                     qun.snsgroupsplit_set.filter(phone=device).update(status=3)
 
             if status == 2:
-                logger.info('%s 原有%s, 现有%s', sns_user, len(all_groups), len(all_group_ids))
-                for group in all_groups:
-                    lost = 0
+                logger.info('%s 原有%s, 现有%s', sns_user, len(all_groups_in), len(all_group_ids))
+                lost = 0
+                for group in all_groups_in:
                     if group.sns_group_id not in all_group_ids:
                         # 被踢了
                         model_manager.set_qun_kicked(group)
