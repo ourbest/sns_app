@@ -212,7 +212,8 @@ def do_import_qun(app, ids, email, phone, edit_method, i_ignore_dup):
                         if "new" == edit_method:
                             SnsGroupSplit.objects.filter(group=qun, user=login_user, status__in=(0, 1)).delete()
 
-                        SnsGroupSplit(group=qun, user=login_user, phone=device).save()
+                        if qun.snsgroupsplit_set.filter(status__in=(0, 1, 2)).count() == 0:
+                            SnsGroupSplit(group=qun, user=login_user, phone=device).save()
 
                     continue
 
