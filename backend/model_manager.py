@@ -273,6 +273,7 @@ def set_qun_kicked(sns_user_group):
             logger.warning('Error save kicked %s' % sns_user_group, exc_info=1)
 
 
+@job
 def deal_kicked(owner):
     """
     被踢了的群重新分配账号去加
@@ -281,7 +282,7 @@ def deal_kicked(owner):
     devices = list(PhoneDevice.objects.filter(owner=owner, status=0))
     q = SnsGroupLost.objects.filter(status=0, sns_user__owner=owner,
                                     group__app_id=owner.app_id).select_related('sns_user')
-    all = {x.group_id for x in SnsGroupSplit.objects.filter(user=owner, status=0)}
+    all = {x.group_id for x in SnsGroupSplit.objects.filter(user=owner, status__in=(0, 1, 2))}
     for x in q:
         if x.group_id in all:
             continue
