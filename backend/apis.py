@@ -23,7 +23,7 @@ from backend.api_helper import get_session_user, get_session_app, sns_user_to_js
 from backend.jobs import do_re_import, _after_upload, do_import_qun_stat, do_import_qun
 from backend.models import User, App, SnsGroup, SnsGroupSplit, PhoneDevice, SnsUser, SnsUserGroup, SnsTaskDevice, \
     DeviceFile, SnsTaskType, SnsTask, ActiveDevice, SnsApplyTaskLog, UserActionLog, SnsGroupLost, GroupTag, \
-    TaskWorkingLog, AppUser, DeviceTaskData, DistArticle, UserAuthApp, WxDistLog, DistTaskLog
+    TaskWorkingLog, AppUser, DeviceTaskData, DistArticle, UserAuthApp, WxDistLog, DistTaskLog, DeviceWeixinGroup
 from backend.zhiyue_models import ZhiyueUser, ClipItem
 
 
@@ -324,6 +324,38 @@ def team_qun(request, i_page, i_size, keyword, owner, qq, phone):
         'total': total,
         'distinct': distinct,
         'items': [qun_to_json(x, owner=1) for x in query],
+    }
+
+
+@api_func_anonymous
+def team_weixin(request, i_page, i_size, keyword, owner, phone):
+    query = DeviceWeixinGroup.objects.filter(device__owner__app_id=get_session_app(request)).select_related('device',
+                                                                                                            'device__owner')
+    if owner:
+        query = query.filter(device__owner__name=owner)
+    if i_page != 0:
+        if i_size == 0:
+            i_size = 50
+
+    if keyword:
+        query = query.filter(name__contains=keyword)
+
+    if phone:
+        query = query.filter(device__label=phone)
+
+    total = query.count()
+    distinct = query.values('name').distinct().count()
+    query = query[(i_page - 1) * i_size:i_page * i_size]
+
+    return {
+        'total': total,
+        'distinct': distinct,
+        'items': [{'name': x.name,
+                   'member_count': x.member_count,
+                   'device': {
+                       'label': x.device.label, 'phone': x.device.phone_num
+                   },
+                   'owner': x.device.owner.name} for x in query],
     }
 
 
@@ -1601,6 +1633,10 @@ def sum_app_team(app):
         .extra(where=['exists (select 1 from backend_snsusergroup g, backend_snsuser u '
                       'where g.sns_user_id=u.id and u.app_id=%s and u.dist=1 and '
                       'g.status=0 and sns_group_id=backend_snsgroup.group_id)' % app])
+
+    wx = DeviceWeixinGroup.objects.filter(device__owner__app_id=app).count()
+    wx_dist = DeviceWeixinGroup.objects.filter(device__owner__app_id=app).values('name').distinct().count()
+
     return {
         'add': SnsUser.objects.filter(app_id=app, friend=1).count(),
         'dist': SnsUser.objects.filter(app_id=app, dist=1).count(),
@@ -1611,6 +1647,8 @@ def sum_app_team(app):
         'add_sum': query_add.aggregate(Sum('group_user_count'))['group_user_count__sum'],
         'dist_sum': query_dist.aggregate(Sum('group_user_count'))['group_user_count__sum'],
         'dist_count': query_dist.count(),
+        'wx_count': wx,
+        'wx_dist': wx_dist,
         'users': [
             sum_app_user(app, x.id, lambda y: y.update({'name': x.name})) for x in
             User.objects.filter(app_id=app, status=0)
@@ -1624,10 +1662,16 @@ def sum_app_user(app, user_id, callback=None):
                       'where backend_snsusergroup.status=0 and '
                       'sns_user_id=backend_snsuser.id and backend_snsuser.owner_id=%s '
                       'and sns_group_id=backend_snsgroup.group_id)' % user_id])
+
+    wx = DeviceWeixinGroup.objects.filter(device__owner_id=user_id).count()
+    wx_dist = DeviceWeixinGroup.objects.filter(device__owner_id=user_id).values('name').distinct().count()
+
     ret = {
         'sum': query.aggregate(Sum('group_user_count'))['group_user_count__sum'],
         'total': SnsUserGroup.objects.filter(sns_user__app_id=app, sns_user__owner_id=user_id, status=0).count(),
         'count': query.count(),
+        'wx_count': wx,
+        'wx_dist': wx_dist,
     }
     if callback:
         callback(ret)

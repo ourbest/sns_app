@@ -156,6 +156,7 @@ def app_daily_stat(app, date, include_sum=False):
         'download': 0,
         'reshare': 0,
         'users': 0,
+        'remain': 0,
         'name': '合计',
         'uid': 0,
     }
@@ -167,6 +168,7 @@ def app_daily_stat(app, date, include_sum=False):
         'reshare': 0,
         'users': 0,
         'name': '合计',
+        'remain': 0,
         'uid': 0,
     }
     for user in User.objects.filter(app=app, status=0):
@@ -177,6 +179,7 @@ def app_daily_stat(app, date, include_sum=False):
             'download': 0,
             'reshare': 0,
             'users': 0,
+            'remain': 0,
             'uid': user.id,
             'name': user.name,
         }
@@ -187,6 +190,7 @@ def app_daily_stat(app, date, include_sum=False):
             'weizhan': 0,
             'download': 0,
             'reshare': 0,
+            'remain': 0,
             'users': 0,
             'uid': user.id,
             'name': user.name,
@@ -201,12 +205,14 @@ def app_daily_stat(app, date, include_sum=False):
             stat['download'] += qq['download']
             stat['reshare'] += qq['reshare']
             stat['users'] += qq['users']
+            stat['remain'] += qq['remain']
 
             sum['share'] += qq_stat['share']
             sum['weizhan'] += qq['weizhan']
             sum['download'] += qq['download']
             sum['reshare'] += qq['reshare']
             sum['users'] += qq['users']
+            sum['remain'] += qq['remain']
 
     if len(qq_stats) or include_sum:
         qq_stats.append(qq_sum)
@@ -233,5 +239,6 @@ def get_user_stat(date, the_user):
         'download': x.downPageNum,
         'reshare': x.secondShareNum,
         'users': x.appUserNum,
+        'remain': 0,
     } for x in model_manager.query(HighValueUser).filter(partnerId=the_user.app_id, time=date, userType=2,
                                                          userId__in=[x.cutt_user_id for x in cutt_users])]
