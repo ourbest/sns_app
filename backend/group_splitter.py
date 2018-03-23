@@ -4,7 +4,7 @@ from logzero import logger
 from backend.models import User, SnsGroup, SnsGroupSplit, PhoneDevice
 
 
-@job
+@job("default", timeout=3600)
 def split_qun(app):
     #     _executors.submit(_split_qun, app)
     #

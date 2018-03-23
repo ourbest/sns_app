@@ -34,4 +34,5 @@ urlpatterns = [
     url(r'^$', views.home),
     url(r'^dist/(?P<page>.+)$', views.dist),
     url(r'^robot/', include('robot.urls', namespace='robot')),
+    url(r'^django-rq/', include('django_rq.urls')),
 ]

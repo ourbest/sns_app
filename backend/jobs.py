@@ -21,7 +21,7 @@ from backend.models import DeviceFile, SnsUser, SnsGroup, SnsUserGroup, SnsApply
 from backend.stat_utils import get_count, get_user_share_stat, app_daily_stat
 
 
-@job
+@job("default", timeout=3600)
 def do_re_import(i_file_id):
     file = DeviceFile.objects.filter(id=i_file_id).first()
     if file:
@@ -474,7 +474,7 @@ def make_resource_stat():
         s.save()
 
 
-@job
+@job("default", timeout=3600)
 def do_get_item_stat_values(app):
     item_apps = dict()
     article_dict = dict()
