@@ -1,11 +1,13 @@
-from datetime import timedelta
+from datetime import timedelta, datetime
 
 from dj import times
 from django.db import connections
+from django.utils import timezone
+from django_rq import job
 
 from backend import api_helper, model_manager
-from backend.models import AppUser, SnsTask, User
-from backend.zhiyue_models import ClipItem, HighValueUser
+from backend.models import AppUser, SnsTask, User, RuntimeData, ArticleDailyInfo
+from backend.zhiyue_models import ClipItem, HighValueUser, WeizhanItemView
 
 
 def to_stat_json(x, item):
@@ -235,3 +237,57 @@ def get_user_stat(date, the_user):
         'users': x.appUserNum,
     } for x in model_manager.query(HighValueUser).filter(partnerId=the_user.app_id, time=date, userType=2,
                                                          userId__in=[x.cutt_user_id for x in cutt_users])]
+
+
+@job
+def sync_item_stat():
+    ids = model_manager.get_dist_articles(10)
+    first_id = 0
+    last_id = 260099943
+    rd = RuntimeData.objects.filter(name='last_view_id').first()
+    if rd:
+        last_id = int(rd.value)
+    else:
+        rd = RuntimeData(name='last_view_id')
+
+    # 用户
+    from_time = timezone.now()
+    stat_date = datetime.now().strftime('%Y-%m-%d')
+    data = {'%s_%s' % (x.item_id, x.majia_id): x for x in
+            ArticleDailyInfo.objects.filter(stat_date=stat_date)}
+    majia_dict = {x.cutt_user_id: x for x in AppUser.objects.all()}
+
+    for item in model_manager.query(WeizhanItemView).filter(
+            pk__gt=last_id,
+            time__gt=timezone.now() - timedelta(days=1)).order_by('-pk'):
+        if not first_id:
+            first_id = item.viewId
+        if item.itemId and item.itemId in ids and item.shareUserId and item.shareUserId in majia_dict:
+            key = '%s_%s' % (item.itemId, item.shareUserId)
+            if key not in data:
+                data[key] = ArticleDailyInfo(item_id=item.itemId,
+                                             app_id=item.partnerId,
+                                             majia_id=item.shareUserId,
+                                             user=majia_dict[item.shareUserId].user,
+                                             majia_type=majia_dict[item.shareUserId].type,
+                                             stat_date=stat_date)
+            value = data[key]
+
+            if item.itemType in ('article', 'articlea', 'articleb'):
+                value.pv += 1
+                ua = item.ua.lower()
+                if 'android' in ua or 'iphone' in ua:
+                    value.mobile_pv += 1
+            elif item.itemType.endswith('-down') or item.itemType.endswith('-mochuang'):
+                value.down += 1
+            elif item.itemType.endswith('-reshare'):
+                value.reshare += 1
+            if value.query_time != from_time:
+                value.query_time = from_time
+
+    for v in data.values():
+        if v.query_time == from_time:
+            model_manager.save_ignore(v)
+
+    rd.value = str(first_id)
+    model_manager.save_ignore(rd)

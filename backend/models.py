@@ -661,3 +661,28 @@ class AppWeeklyStat(models.Model):
     qq_group_total = models.IntegerField()
     qq_members = models.IntegerField(default=0)
     wx_members = models.IntegerField(default=0)
+
+
+class ArticleDailyInfo(models.Model):
+    """
+    每日PV汇总
+    """
+    app = models.ForeignKey(App, on_delete=CASCADE)
+    stat_date = models.CharField('统计日期', max_length=15)
+    user = models.ForeignKey(User, on_delete=CASCADE, null=True)
+    item_id = models.BigIntegerField("分发的文章")
+    majia_id = models.BigIntegerField("分发马甲")
+    majia_type = models.IntegerField(default=0)
+    pv = models.IntegerField(default=0)
+    uv = models.IntegerField(default=0)
+    reshare = models.IntegerField(default=0)
+    down = models.IntegerField('下载页', default=0)
+    mobile_pv = models.IntegerField(default=0)
+    query_time = models.DateTimeField(default=0)
+    updated_at = models.DateTimeField(auto_now=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+
+class RuntimeData(models.Model):
+    name = models.CharField(max_length=20, primary_key=True)
+    value = models.CharField(max_length=255)

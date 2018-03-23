@@ -9,7 +9,7 @@ from logzero import logger
 
 from backend import caches
 from backend.models import PhoneDevice, SnsTaskType, App, User, ActiveDevice, SnsUser, SnsGroup, UserAuthApp, \
-    MenuItemPerm, SnsGroupLost, Tag, GroupTag, WxDistLog, DeviceWeixinGroup, DeviceWeixinGroupLost
+    MenuItemPerm, SnsGroupLost, Tag, GroupTag, WxDistLog, DeviceWeixinGroup, DeviceWeixinGroupLost, SnsTask, DistArticle
 from backend.models import SnsUserGroup, SnsGroupSplit
 
 
@@ -404,3 +404,8 @@ def save_ignore(model, force_update=False, fields=None):
     except Exception as ex:
         logger.info("ignore exception %s when save model %s " % (ex, model))
         pass
+
+
+def get_dist_articles(days=7):
+    return {x.item_id for x in
+            DistArticle.objects.filter(last_started_at__gt=timezone.now() - timedelta(days=days + 1))}

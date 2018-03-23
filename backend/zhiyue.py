@@ -15,7 +15,7 @@ from django.utils import timezone
 from django_rq import job
 
 import backend.stat_utils
-from backend import api_helper, model_manager, stats
+from backend import api_helper, model_manager, stats, stat_utils
 from backend.api_helper import get_session_app
 from backend.models import AppUser, AppDailyStat, UserDailyStat, App, DailyActive, ItemDeviceUser, UserDailyDeviceUser, \
     User
@@ -582,6 +582,11 @@ def get_offline_detail(the_date):
 @api_func_anonymous
 def sync_user():
     sync_device_user.delay()
+
+
+@api_func_anonymous
+def sync_pv():
+    stat_utils.sync_item_stat.delay()
 
 
 @job
