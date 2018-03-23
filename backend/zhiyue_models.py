@@ -351,3 +351,21 @@ class OfflineDailyStat(models.Model):
     bonus_cost = models.IntegerField('红包奖励', default=0)
     bonus_cash = models.IntegerField('红包提取', default=0)
     total_cost = models.IntegerField('总花费', default=0)
+
+
+class WeizhanItemView(models.Model):
+    viewId = models.BigIntegerField(primary_key=True)
+    itemType = models.CharField(max_length=20)
+    ua = models.CharField(max_length=255)
+    itemId = models.BigIntegerField()
+    shareUserId = models.BigIntegerField()
+    partnerId = models.IntegerField()
+    time = models.DateTimeField()
+
+    @staticmethod
+    def db_name():
+        return 'zhiyue'
+
+    class Meta:
+        db_table = 'datasystem_WeizhanItemView'
+        managed = False
