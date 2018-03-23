@@ -395,9 +395,12 @@ def get_wx(owner_id, name):
     return SnsUser.objects.filter(name=name, type=1, owner_id=owner_id).first()
 
 
-def save_ignore(model, force_update=False):
+def save_ignore(model, force_update=False, fields=None):
     try:
-        model.save(force_update=force_update)
+        if fields:
+            model.save(update_fields=fields)
+        else:
+            model.save(force_update=force_update)
     except Exception as ex:
         logger.info("ignore exception %s when save model %s " % (ex, model))
         pass

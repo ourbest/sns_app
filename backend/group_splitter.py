@@ -99,12 +99,28 @@ def merge_split():
         merge_split_group(group)
 
 
+def merge_join():
+    groups = SnsGroup.objects.filter(status=2)
+    for group in groups:
+        merge_split_group(group)
+
+
 def merge_split_group(group):
-    splitters = group.snsusergroup_set.filter(status__in=(0, 1, 2))
+    splitters = group.snsgroupsplit_set.filter(status__in=(0, 1, 2))
     if len(splitters) > 0:
+        joined = group.snsusergroup_set.filter(status=0)
+
+        if joined:
+            if group.status != 2:
+                group.status = 2
+                model_manager.save_ignore(group, fields=['status'])
+
+            splitters.delete()
+            return
+
         if group.status == 0:
             group.status = 1
-            group.save()
+            model_manager.save_ignore(group, fields=['status'])
 
         has_done = False
         total = len(splitters)
