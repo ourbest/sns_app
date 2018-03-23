@@ -293,10 +293,7 @@ def deal_kicked(owner):
                 device = random.choice(devices)
 
         if x.group.group_user_count >= 10 or x.group.group_user_count == 0:
-            try:
-                SnsGroupSplit(group_id=x.group_id, user_id=device.owner_id, phone=device).save()
-            except:
-                pass
+            save_ignore(SnsGroupSplit(group_id=x.group_id, user_id=device.owner_id, phone=device))
 
     q.update(status=1)
 

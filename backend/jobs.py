@@ -162,9 +162,9 @@ def do_import_qun_stat(ids, device_id, status):
                         # 被踢了
                         model_manager.set_qun_kicked(group)
                         lost += 1
-                    logger.info("total lost %s", lost)
-
                     if lost:
+                        logger.info("QQ %s total lost %s groups", group.sns_user_id, lost)
+
                         model_manager.deal_kicked(device.owner)
 
     SnsGroupSplit.objects.filter(phone=device, status=1).update(status=0)
