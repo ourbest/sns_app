@@ -55,7 +55,7 @@ def split_qun(app):
         SnsGroupSplit(group=x, user=user).save()
         try:
             x.save(update_fields=['status'])
-            logger.info('%s split to ' % user)
+            logger.info('%s split to %s', x, user)
         except:
             pass
     for u in users:

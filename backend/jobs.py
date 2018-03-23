@@ -156,16 +156,17 @@ def do_import_qun_stat(ids, device_id, status):
                     qun.snsgroupsplit_set.filter(phone=device).update(status=3)
 
             if status == 2:
+                logger.info('%s 原有%s, 现有%s', sns_user, len(all_groups), len(all_group_ids))
                 for group in all_groups:
                     lost = 0
                     if group.sns_group_id not in all_group_ids:
                         # 被踢了
                         model_manager.set_qun_kicked(group)
                         lost += 1
-                    if lost:
-                        logger.info("QQ %s total lost %s groups", group.sns_user_id, lost)
 
-                        model_manager.deal_kicked(device.owner)
+                if lost:
+                    logger.info("QQ %s total lost %s groups", sns_user, lost)
+                    model_manager.deal_kicked(device.owner)
 
     SnsGroupSplit.objects.filter(phone=device, status=1).update(status=0)
     SnsGroupSplit.objects.filter(phone=device, status=2, updated_at=timezone.now() - timedelta(days=2)).update(status=0)
