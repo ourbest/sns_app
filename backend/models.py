@@ -214,6 +214,9 @@ class SnsGroupSplit(models.Model):
     phone = models.ForeignKey(PhoneDevice, null=True, verbose_name='设备', on_delete=CASCADE)
     apply_count = models.IntegerField(default=0)
 
+    def __str__(self):
+        return '<Splitter:%s@%s_%s>' % (self.group_id, self.phone_id, self.user_id)
+
 
 #
 # class SnsGroupApply(models.Model):

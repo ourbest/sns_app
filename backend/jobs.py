@@ -594,7 +594,7 @@ def batch_item_stat(app_id, items, from_time, user_type=0):
     } for x in items]
 
 
-@job
+@job("default", timeout=3600)
 def do_gen_daily_report():
     # pid = os.fork()
     # if pid == 0:

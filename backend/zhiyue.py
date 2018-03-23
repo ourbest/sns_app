@@ -627,26 +627,46 @@ def sync_device_user():
 
 def sync_remain():
     logger.info('同步留存数据')
-    to_time = timezone.now().replace(hour=0, minute=0, second=0, microsecond=0)
-    from_time = to_time - timedelta(days=1)
-    date_range = (from_time, to_time)
+    to_time = datetime.now()
+    to_time_str = to_time.strftime('%Y-%m-%d')
+    from_time_str = (to_time - timedelta(days=1)).strftime('%Y-%m-%d')
+    date_range = (from_time_str, to_time_str)
+    create_range = ((to_time - timedelta(days=2)).strftime('%Y-%m-%d'), from_time_str)
     for app in App.objects.filter(stage__in=('分发期', '留守期')):
-        ids = [x.user_id for x in ItemDeviceUser.objects.filter(app=app,
-                                                                created_at__range=(
-                                                                    to_time - timedelta(days=1), to_time))]
+        ids = [x.user_id for x in ItemDeviceUser.objects.filter(app=app, created_at__range=create_range)]
         remains = [x.userId for x in
                    model_manager.query(ZhiyueUser).filter(userId__in=ids, lastActiveTime__range=date_range)]
         ItemDeviceUser.objects.filter(user_id__in=remains).update(remain=1)
 
-        qq_cnt = ItemDeviceUser.objects.filter(type=0, app=app).count()
-        wx_cnt = ItemDeviceUser.objects.filter(type=1, app=app).count()
+        qq_cnt = ItemDeviceUser.objects.filter(type=0, app=app, created_at__range=create_range, remain=1).count()
+        wx_cnt = ItemDeviceUser.objects.filter(type=1, app=app, created_at__range=create_range, remain=1).count()
 
-        report_date = (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d')
-        AppDailyStat.objects.filter(report_date=report_date).update(
+        report_date = (to_time - timedelta(days=2)).strftime('%Y-%m-%d')  # 留存记录是针对前一天的
+        AppDailyStat.objects.filter(report_date=report_date, app=app).update(
             qq_remain=qq_cnt, wx_remain=wx_cnt)
 
         for user in User.objects.filter(app=app, status=0):
-            qq_cnt = ItemDeviceUser.objects.filter(type=0, owner=user).count()
-            wx_cnt = ItemDeviceUser.objects.filter(type=1, owner=user).count()
+            qq_cnt = ItemDeviceUser.objects.filter(type=0, owner=user, created_at__range=create_range).count()
+            wx_cnt = ItemDeviceUser.objects.filter(type=1, owner=user, created_at__range=create_range).count()
+            UserDailyStat.objects.filter(report_date=report_date, user=user).update(
+                qq_remain=qq_cnt, wx_remain=wx_cnt)
+
+
+def calc_save_remain():
+    logger.info('同步留存数据')
+    to_time = datetime.now()
+    from_time_str = (to_time - timedelta(days=1)).strftime('%Y-%m-%d')
+    create_range = ((to_time - timedelta(days=2)).strftime('%Y-%m-%d'), from_time_str)
+    for app in App.objects.filter(stage__in=('分发期', '留守期')):
+        qq_cnt = ItemDeviceUser.objects.filter(type=0, app=app, created_at__range=create_range, remain=1).count()
+        wx_cnt = ItemDeviceUser.objects.filter(type=1, app=app, created_at__range=create_range, remain=1).count()
+
+        report_date = (to_time - timedelta(days=2)).strftime('%Y-%m-%d')  # 留存记录是针对前一天的
+        AppDailyStat.objects.filter(report_date=report_date, app=app).update(
+            qq_remain=qq_cnt, wx_remain=wx_cnt)
+
+        for user in User.objects.filter(app=app, status=0):
+            qq_cnt = ItemDeviceUser.objects.filter(type=0, owner=user, created_at__range=create_range).count()
+            wx_cnt = ItemDeviceUser.objects.filter(type=1, owner=user, created_at__range=create_range).count()
             UserDailyStat.objects.filter(report_date=report_date, user=user).update(
                 qq_remain=qq_cnt, wx_remain=wx_cnt)
