@@ -283,8 +283,13 @@ def deal_kicked(owner):
     q = SnsGroupLost.objects.filter(status=0, sns_user__owner=owner,
                                     group__app_id=owner.app_id).select_related('sns_user')
     all = {x.group_id for x in SnsGroupSplit.objects.filter(user=owner, status__in=(0, 1, 2))}
+
+    # 留守期允许多个重复
+    all_join = {x.group_id for x in
+                SnsUserGroup.objects.filter(sns_user__owner=owner, status=0)} if owner.app.stage != '留守期' else set()
+
     for x in q:
-        if x.group_id in all:
+        if x.group_id in all or x.group_id in all_join:
             continue
 
         device = random.choice(devices)
