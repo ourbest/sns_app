@@ -1,5 +1,6 @@
 from django.db import models
-from backend.models import App
+from backend.models import App, PhoneDevice, SnsTaskType, User, SnsUser
+import datetime
 
 
 class Area(models.Model):
@@ -9,6 +10,9 @@ class Area(models.Model):
     app = models.ForeignKey(App)
     isDelete = models.BooleanField('是否删除', default=False)
 
+    def __str__(self):
+        return '%s(%s)' % (self.area, self.app_id)
+
 
 class Keyword(models.Model):
     """
@@ -17,6 +21,9 @@ class Keyword(models.Model):
     keyword = models.CharField('搜群关键词', max_length=255)
     created_time = models.DateTimeField('创建时间', auto_now_add=True)
     isDelete = models.BooleanField('是否删除', default=False)
+
+    def __str__(self):
+        return self.keyword
 
 
 class Search(models.Model):
@@ -34,3 +41,38 @@ class Search(models.Model):
 
     def __str__(self):
         return self.word
+
+
+class ScheduledTasks(models.Model):
+    """
+    一天：计划的任务
+    """
+    device = models.ForeignKey(PhoneDevice, verbose_name='设备', on_delete=models.CASCADE)
+    type = models.ForeignKey(SnsTaskType, verbose_name='任务类型', on_delete=models.CASCADE)
+    estimated_start_time = models.DateTimeField('预计执行时间', null=True, blank=True)
+    sns_user = models.ForeignKey(SnsUser, verbose_name='帐号', null=True, blank=True, on_delete=models.CASCADE)
+    owner = models.ForeignKey(User, on_delete=models.CASCADE)
+    status = models.IntegerField('状态', default=0, help_text='0 - 未执行，1 - 正在执行，2 - 已完成，-1 - 没群号 -2没搜索词')
+    result = models.CharField('结果', max_length=10, null=True, blank=True)
+
+    def __str__(self):
+        return '<%s,%s,%s>' % (self.estimated_start_time.strftime('%H:%M'), self.device.phone_num, self.type.name)
+
+
+class Config(models.Model):
+    """
+    配置
+    """
+    owner = models.ForeignKey(User, on_delete=models.CASCADE)
+    opening_time = models.TimeField('上班时间', default=datetime.time(8, 0, 0))
+    closing_time = models.TimeField('下班时间', default=datetime.time(20, 0, 0))
+    max_num_of_apply = models.IntegerField('最大加群数/天·QQ', default=3)
+    shortest_interval_apply_of_device = models.IntegerField('设备的最短间隔加群', default=600)
+    max_num_of_search = models.IntegerField('最大查群次数/天·设备', default=5)
+
+
+class TaskLog(models.Model):
+    """
+    任务记录
+    """
+    pass

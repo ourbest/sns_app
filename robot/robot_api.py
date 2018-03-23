@@ -1,0 +1,129 @@
+from dj.utils import api_func_anonymous
+from backend.models import PhoneDevice, User
+from robot.models import ScheduledTasks, Config
+from django.http import HttpResponse
+from .robot import Robot
+import datetime
+
+
+def reset(req):
+    """ 24 : 00 """
+    Robot.clear()
+    config_queryset = Config.objects.all()
+    for config in config_queryset:
+        robot = Robot(config=config)
+        robot.create_scheduled_tasks()
+
+    return HttpResponse('ok')
+
+
+def trusteeship(request):
+    post = request.POST
+    device_id = post.get('device_id')
+    value = post.get('value')
+
+    try:
+        device = PhoneDevice.objects.get(id=device_id)
+    except PhoneDevice.DoesNotExist:
+        return HttpResponse('no')
+
+    if value == '1':
+        # 开
+        device.in_trusteeship = True
+        device.save()
+
+        email = request.session.get('user')
+        user = User.objects.filter(email=email).first()
+        if user:
+            robot = Robot(user=user)
+            robot.create_scheduled_tasks(device)
+
+    elif value == '0':
+        # 关
+        device.in_trusteeship = False
+        device.save()
+
+        ScheduledTasks.objects.filter(device=device, status__in=[0, 1]).delete()
+    else:
+        return HttpResponse('no')
+
+    return HttpResponse('ok')
+
+
+@api_func_anonymous
+def load_config(request):
+    email = request.session.get('user')
+    user = User.objects.filter(email=email).first()
+    if user:
+        config = Config.objects.get_or_create(owner=user)[0]
+
+        return {
+            'fromTime': config.opening_time.strftime('%H:%M'),
+            'toTime': config.closing_time.strftime('%H:%M'),
+            'max': config.max_num_of_apply,
+            'interval': config.shortest_interval_apply_of_device // 60,
+            'times': config.max_num_of_search,
+        }
+
+
+@api_func_anonymous
+def save_config(request, fromTime, toTime, max, interval, times):
+    email = request.session.get('user')
+    try:
+        config = Config.objects.get(owner__email=email)
+    except Config.DoesNotExist:
+        pass
+    else:
+        config.opening_time = datetime.time(*[int(x) for x in fromTime.split(':')])
+        config.closing_time = datetime.time(*[int(x) for x in toTime.split(':')])
+        config.max_num_of_apply = int(max)
+        config.shortest_interval_apply_of_device = int(interval) * 60
+        config.max_num_of_search = int(times)
+        config.save()
+
+        robot = Robot(config=config)
+        ScheduledTasks.objects.filter(owner=config.owner, status=0).delete()
+        robot.create_scheduled_tasks()
+
+    return 'ok'
+
+
+@api_func_anonymous
+def device_list(request):
+    email = request.session.get('user')
+    user = User.objects.filter(email=email).first()
+    if user:
+        device_queryset = PhoneDevice.objects.filter(owner=user, in_trusteeship=True)
+        data = []
+        for device in device_queryset:
+            if device.activedevice_set.exists():
+                online = '是'
+            else:
+                online = '否'
+
+            data.append({
+                'phone': device.phone_num,
+                'online': online,
+                'status': None,
+                'id': device.id
+            })
+
+        return data
+
+
+@api_func_anonymous
+def task_list(i_id):
+    task_queryset = ScheduledTasks.objects.select_related('type', 'sns_user').filter(device_id=i_id).order_by(
+        'estimated_start_time')
+
+    data = []
+    status = {0: '等待执行', 1: '正在执行', 2: '已完成', -1: '待加群已空', -2: '无搜索词'}
+    for task in task_queryset:
+        data.append({
+            'type': task.type.name,
+            'time': task.estimated_start_time.strftime('%H:%M'),
+            'status': status[task.status],
+            'qq': task.sns_user.login_name if task.sns_user else None,
+            'result': task.result
+        })
+    return data
