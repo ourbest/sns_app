@@ -1,6 +1,7 @@
 from django_rq import job
 from logzero import logger
 
+from backend import model_manager
 from backend.models import User, SnsGroup, SnsGroupSplit, PhoneDevice
 
 
@@ -52,12 +53,17 @@ def split_qun(app):
             idx = idx - 1
             forward = not forward
 
-        SnsGroupSplit(group=x, user=user).save()
-        try:
-            x.save(update_fields=['status'])
-            logger.info('%s split to %s', x, user)
-        except:
-            pass
+        if x.snsusergroup_set.filter(status=0).count() == 0:
+            # 不重复分群
+            SnsGroupSplit(group=x, user=user).save()
+            try:
+                x.save(update_fields=['status'])
+                logger.info('%s split to %s', x, user)
+            except:
+                pass
+        else:
+            x.status = 2
+            model_manager.save_ignore(x)
     for u in users:
         split_qun_device(u.email)
 
