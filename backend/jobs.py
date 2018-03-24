@@ -643,7 +643,7 @@ def make_weekly_stat():
     from_date = (datetime.now() - timedelta(days=8)).strftime('%Y-%m-%d')
     to_date_1 = (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d')
     from_date_1 = (datetime.now() - timedelta(days=7)).strftime('%Y-%m-%d')
-    values = list(AppDailyStat.objects.filter(report_date__range=(from_date, to_date)).values(
+    values = list(AppDailyStat.objects.filter(report_date__range=(from_date_1, to_date_1)).values(
         'app_id').annotate(qq_pv=Sum('qq_pv'), wx_pv=Sum('wx_pv'),
                            qq_down=Sum('qq_down'), wx_down=Sum('wx_down'),
                            wx_user=Sum('wx_install'), qq_user=Sum('qq_install'),
