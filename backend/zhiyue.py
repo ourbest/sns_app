@@ -644,7 +644,7 @@ def sync_remain():
         qq_cnt = ItemDeviceUser.objects.filter(type=0, app=app, created_at__range=create_range, remain=1).count()
         wx_cnt = ItemDeviceUser.objects.filter(type=1, app=app, created_at__range=create_range, remain=1).count()
 
-        report_date = (to_time - timedelta(days=2)).strftime('%Y-%m-%d')  # 留存记录是针对前一天的
+        report_date = (to_time - timedelta(days=1)).strftime('%Y-%m-%d')  # 留存记录是针对前一天的
         AppDailyStat.objects.filter(report_date=report_date, app=app).update(
             qq_remain=qq_cnt, wx_remain=wx_cnt)
 
@@ -664,7 +664,7 @@ def calc_save_remain():
         qq_cnt = ItemDeviceUser.objects.filter(type=0, app=app, created_at__range=create_range, remain=1).count()
         wx_cnt = ItemDeviceUser.objects.filter(type=1, app=app, created_at__range=create_range, remain=1).count()
 
-        report_date = (to_time - timedelta(days=2)).strftime('%Y-%m-%d')  # 留存记录是针对前一天的
+        report_date = (to_time - timedelta(days=1)).strftime('%Y-%m-%d')  # 留存记录是针对前一天的
         AppDailyStat.objects.filter(report_date=report_date, app=app).update(
             qq_remain=qq_cnt, wx_remain=wx_cnt)
 
