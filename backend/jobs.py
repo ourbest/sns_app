@@ -460,20 +460,20 @@ def make_resource_stat():
 
         group_total = SnsGroup.objects.filter(app=app).count()
         group_new = SnsGroup.objects.filter(app=app, created_at__range=today_range).count()
-        group_uniq_cnt = SnsUserGroup.objects.filter(sns_user__app=app).values('sns_group_id').distinct().count()
+        group_uniq_cnt = SnsUserGroup.objects.filter(sns_user__app=app, status=0).values('sns_group_id').distinct().count()
+        group_cnt = SnsUserGroup.objects.filter(sns_user__app=app, status=0).count()
         wx_uniq_cnt = DeviceWeixinGroup.objects.filter(device__owner__app=app).values('name').distinct().count()
+        wx_group_cnt = DeviceWeixinGroup.objects.filter(device__owner__app=app).count()
 
         s = AppDailyResourceStat(app=app, qq_cnt=0, wx_cnt=0, phone_cnt=0, qq_acc_cnt=0,
-                                 qq_group_cnt=0, qq_uniq_group_cnt=group_uniq_cnt, qq_group_new_cnt=group_new,
-                                 wx_group_cnt=0, wx_uniq_group_cnt=wx_uniq_cnt, qq_group_total=group_total,
+                                 qq_group_cnt=group_cnt, qq_uniq_group_cnt=group_uniq_cnt, qq_group_new_cnt=group_new,
+                                 wx_group_cnt=wx_group_cnt, wx_uniq_group_cnt=wx_uniq_cnt, qq_group_total=group_total,
                                  qq_apply_cnt=0, qq_lost_cnt=0, wx_lost_cnt=0)
         for x in user_stats:
             s.qq_cnt += x.qq_cnt
             s.wx_cnt += x.wx_cnt
             s.phone_cnt += x.phone_cnt
             s.qq_acc_cnt += x.qq_acc_cnt
-            s.qq_group_cnt += x.qq_group_cnt
-            s.wx_group_cnt += x.wx_group_cnt
             s.qq_apply_cnt += x.qq_apply_cnt
             s.qq_lost_cnt += x.qq_lost_cnt
             s.wx_lost_cnt += x.wx_lost_cnt
@@ -741,4 +741,4 @@ def send_stat_mail():
         })
     html = render_to_string('article_weekly_report.html', {'stats': data})
 
-    api_helper.send_html_mail('{}分发周报'.format(time_range), 'yonghui.chen@cutt.com', html)
+    api_helper.send_html_mail('{}分发周报'.format(time_range), settings.DAILY_REPORT_EMAIL, html)
