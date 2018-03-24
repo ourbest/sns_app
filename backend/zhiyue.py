@@ -263,8 +263,6 @@ def do_get_app_stat():
                 values[row[0]] = sum
                 data.append(sum)
 
-            stats.client.gauge('cutt.app%s.active.%s' % (row[0], row[1]), row[2])
-
             sum['%s' % row[1]] = row[2]
 
     return sorted(data, key=lambda x: int(x['app_id']))
@@ -296,7 +294,7 @@ def get_new_device():
                 data.append(sum)
 
             sum['%s' % row[1]] = row[2]
-            stats.client.gauge('cutt.app%s.new.%s' % (row[0], row[1]), row[2])
+            # stats.client.gauge('cutt.app%s.new.%s' % (row[0], row[1]), row[2])
 
     return sorted(data, key=lambda x: int(x['app_id']))
 

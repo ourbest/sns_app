@@ -1,0 +1,41 @@
+{% load calc %}
+{% for app_item in stats %}
+    <h2>{{ app_item.name }}</h2>
+    <table width="100%" border="1" style="border-collapse: collapse; text-align: center" cellpadding="5">
+        <tr>
+            <th>类型</th>
+            <th>个数</th>
+            <th>&nbsp;</th>
+            <th>PV</th>
+            <th>下载页</th>
+            <th>安装</th>
+            <th>转化率</th>
+        </tr>
+        {% for item in app_item.stats %}
+            <tr>
+                <td rowspan="3">{{ item.article__category }}</td>
+                <td rowspan="3">{{ item.cnt }}</td>
+                <td>QQ</td>
+                <td>{{ item.qq_pv }}</td>
+                <td>{{ item.qq_down }}</td>
+                <td>{{ item.qq_user }}</td>
+                <td>{% rate item.qq_user item.qq_pv 100 4 %}</td>
+            </tr>
+            <tr>
+                <td>微信</td>
+                <td>{{ item.wx_pv }}</td>
+                <td>{{ item.wx_down }}</td>
+                <td>{{ item.wx_user }}</td>
+                <td>{% rate item.wx_user item.wx_pv 100 4 %}</td>
+            </tr>
+            <tr>
+                <td>总计</td>
+                <td>{{ item.wx_pv|add:item.qq_pv }}</td>
+                <td>{{ item.wx_down|add:item.qq_down }}</td>
+                <td>{{ item.wx_user|add:item.qq_user }}</td>
+                <td>{% rate item.wx_user|add:item.qq_user item.wx_pv|add:item.qq_pv 100 4 %}</td>
+            </tr>
+        {% endfor %}
+    </table>
+
+{% endfor %}

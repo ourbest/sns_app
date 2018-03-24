@@ -1,7 +1,8 @@
 import random
 from collections import defaultdict
-from datetime import timedelta
+from datetime import timedelta, datetime
 
+from dj import times
 from django.db.models import Q, F
 from django.utils import timezone
 from django_rq import job
@@ -409,3 +410,13 @@ def save_ignore(model, force_update=False, fields=None):
 def get_dist_articles(days=7):
     return {x.item_id for x in
             DistArticle.objects.filter(last_started_at__gt=timezone.now() - timedelta(days=days + 1))}
+
+
+def get_dist_apps():
+    return App.objects.filter(stage__in=('留守期', '分发期'))
+
+
+def get_date(date=None):
+    return times.localtime(
+        datetime.now().replace(hour=0, second=0,
+                               minute=0, microsecond=0) if not date else datetime.strptime(date[0:10], '%Y-%m-%d'))

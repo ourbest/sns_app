@@ -7,7 +7,7 @@ from django.utils import timezone
 
 from backend import api_helper, model_manager, stats
 from backend.jobs import do_save_daily_active, do_daily_stat
-from backend.models import SnsTask, SnsTaskDevice, App, AppUser
+from backend.models import SnsTask, SnsTaskDevice, App, AppUser, DistArticle
 from backend.zhiyue_models import HighValueUser
 
 
@@ -43,14 +43,15 @@ def daily_stat(date):
 
 @api_func_anonymous
 def gauge_data():
-    app_ids = [x.app_id for x in App.objects.filter(stage__in=('留守期', '分发期'))]
-    cutt_users = {x.cutt_user_id for x in AppUser.objects.filter(type__gte=0)}
-
-    date = times.localtime(datetime.now().replace(hour=0, second=0, minute=0, microsecond=0))
-
-    for stat in model_manager.query(HighValueUser).filter(partnerId__in=app_ids,
-                                                          time=date, userType=2,
-                                                          userId__in=cutt_users).values('partnerId').annotate(
-        pv=Sum('weizhanNum')).annotate(users=Sum('appUserNum')):
-        stats.client.gauge('cutt.app%s.sns.pv' % stat['partnerId'], stat['pv'])
-        stats.client.gauge('cutt.app%s.sns.users' % stat['partnerId'], stat['users'])
+    # app_ids = [x.app_id for x in App.objects.filter(stage__in=('留守期', '分发期'))]
+    # cutt_users = {x.cutt_user_id for x in AppUser.objects.filter(type__gte=0)}
+    #
+    # date = times.localtime(datetime.now().replace(hour=0, second=0, minute=0, microsecond=0))
+    #
+    # for stat in model_manager.query(HighValueUser).filter(partnerId__in=app_ids,
+    #                                                       time=date, userType=2,
+    #                                                       userId__in=cutt_users).values('partnerId').annotate(
+    #     pv=Sum('weizhanNum')).annotate(users=Sum('appUserNum')):
+    #     stats.client.gauge('cutt.app%s.sns.pv' % stat['partnerId'], stat['pv'])
+    #     stats.client.gauge('cutt.app%s.sns.users' % stat['partnerId'], stat['users'])
+    pass

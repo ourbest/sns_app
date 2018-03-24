@@ -424,15 +424,15 @@ def do_daily_stat(date):
 
 
 def make_resource_stat():
-    today = timezone.now().replace(hour=0, minute=0, second=0, microsecond=0)
+    today = times.localtime(datetime.now().replace(hour=0, minute=0, second=0, microsecond=0))
     today_range = (today - timedelta(days=1), today)
     for app in App.objects.filter(stage__in=('留守期', '分发期', '准备期')):
         # 记录资源的情况
         users = app.user_set.filter(status=0)
         user_stats = []
         for user in users:
-            group_cnt = SnsUserGroup.objects.filter(sns_user__device__owner=user).count()
-            group_uniq_cnt = SnsUserGroup.objects.filter(sns_user__device__owner=user).values(
+            group_cnt = SnsUserGroup.objects.filter(sns_user__device__owner=user, status=0).count()
+            group_uniq_cnt = SnsUserGroup.objects.filter(sns_user__device__owner=user, status=0).values(
                 'sns_group_id').distinct().count()
             wx_group_cnt = DeviceWeixinGroup.objects.filter(device__owner=user).count()
             wx_group_uniq_cnt = DeviceWeixinGroup.objects.filter(device__owner=user).values('name').count()
