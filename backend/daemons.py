@@ -6,7 +6,7 @@ from django.db.models import Sum
 from django.utils import timezone
 
 from backend import api_helper, model_manager, stats
-from backend.jobs import do_save_daily_active, do_daily_stat
+from backend.jobs import do_save_daily_active, do_daily_stat, make_weekly_stat
 from backend.models import SnsTask, SnsTaskDevice, App, AppUser, DistArticle
 from backend.zhiyue_models import HighValueUser
 
@@ -55,3 +55,8 @@ def gauge_data():
     #     stats.client.gauge('cutt.app%s.sns.pv' % stat['partnerId'], stat['pv'])
     #     stats.client.gauge('cutt.app%s.sns.users' % stat['partnerId'], stat['users'])
     pass
+
+
+@api_func_anonymous
+def weekly_stat():
+    make_weekly_stat.delay()

@@ -145,6 +145,7 @@ urlpatterns = [
     url(r'^change/ver$', apis.change_js_version),
     url(r'^daemon/check$', daemons.check_online_task),
     url(r'^daemon/stat$', daemons.daily_stat),
+    url(r'^daemon/stat/weekly$', daemons.weekly_stat),
     url(r'^daemon/reset_apply$', apis.reset_applying),
     url(r'^daemon/stat/save$', daemons.save_daily_active),
     url(r'^daemon/stat/article$', stats.get_item_stat_values),

@@ -1,6 +1,45 @@
 {% load calc %}
+<h2>效果统计</h2>
+<table width="100%" border="1" style="border-collapse: collapse; text-align: center" cellpadding="5">
+    <tr>
+        <th>生活圈</th>
+        <th>PV</th>
+        <th>关联安装</th>
+        <th>留存</th>
+        <th>QQ分发次数</th>
+        <th>微信分发次数</th>
+        <th>QQ申请次数</th>
+        <th>QQ数</th>
+        <th>QQ群</th>
+        <th>QQ群（排重）</th>
+        <th>QQ新群</th>
+        <th>QQ总群</th>
+        <th>微信群</th>
+        <th>微信群（排重）</th>
+    </tr>
+    {% for app_item in stats %}
+        <tr>
+            <td>{{ app_item.name }}</td>
+            <td>{{ app_item.stat.qq_pv|add:app_item.stat.wx_pv }}</td>
+            <td>{{ app_item.stat.qq_user|add:app_item.stat.wx_user }}</td>
+            <td>{{ app_item.stat.qq_remain|add:app_item.stat.wx_remain }}</td>
+            <td>{{ app_item.stat.qq_cnt }}</td>
+            <td>{{ app_item.stat.wx_cnt }}</td>
+            <td>{{ app_item.stat.qq_apply_cnt }}</td>
+            <td>{{ app_item.stat.qq_acc_cnt }}</td>
+            <td>{{ app_item.stat.qq_group_cnt }}</td>
+            <td>{{ app_item.stat.qq_uniq_group_cnt }}</td>
+            <td>{{ app_item.stat.qq_group_new_cnt }}</td>
+            <td>{{ app_item.stat.qq_group_total }}</td>
+            <td>{{ app_item.stat.wx_group_cnt }}</td>
+            <td>{{ app_item.stat.wx_uniq_group_cnt }}</td>
+        </tr>
+    {% endfor %}
+</table>
+
 {% for app_item in stats %}
     <h2>{{ app_item.name }}</h2>
+    <h3>分类统计</h3>
     <table width="100%" border="1" style="border-collapse: collapse; text-align: center" cellpadding="5">
         <tr>
             <th>类型</th>
@@ -38,4 +77,42 @@
         {% endfor %}
     </table>
 
+    <h3>效果好的文章</h3>
+    <table width="100%" border="1" style="border-collapse: collapse; text-align: center" cellpadding="5">
+        <tr>
+            <th>文章</th>
+            <th>分类</th>
+            <th>pv</th>
+            <th>安装</th>
+            <th>转化率</th>
+        </tr>
+        {% for item in app_item.best %}
+            <tr>
+                <td>{{ item.title }}</td>
+                <td>{{ item.category }}</td>
+                <td>{{ item.pv }}</td>
+                <td>{{ item.users }}</td>
+                <td>{% rate item.users item.pv 100 4 %}</td>
+            </tr>
+        {% endfor %}
+    </table>
+    <h3>效果差的文章</h3>
+    <table width="100%" border="1" style="border-collapse: collapse; text-align: center" cellpadding="5">
+        <tr>
+            <th>文章</th>
+            <th>分类</th>
+            <th>pv</th>
+            <th>安装</th>
+            <th>转化率</th>
+        </tr>
+        {% for item in app_item.worst %}
+            <tr>
+                <td align="left">{{ item.title }}</td>
+                <td>{{ item.category }}</td>
+                <td>{{ item.pv }}</td>
+                <td>{{ item.users }}</td>
+                <td>{% rate item.users item.pv 100 4 %}</td>
+            </tr>
+        {% endfor %}
+    </table>
 {% endfor %}

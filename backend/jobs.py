@@ -6,6 +6,7 @@ from datetime import timedelta, datetime
 from dj import times
 from django.conf import settings
 from django.db import connection, connections
+from django.db.models import Sum
 from django.template.loader import render_to_string
 from django.utils import timezone
 from django_rq import job
@@ -17,8 +18,9 @@ from backend.api_helper import ADD_STATUS, deal_add_result, deal_dist_result
 from backend.model_manager import save_ignore
 from backend.models import DeviceFile, SnsUser, SnsGroup, SnsUserGroup, SnsApplyTaskLog, SnsGroupSplit, WxDistLog, \
     SnsUserKickLog, DeviceTaskData, DailyActive, App, UserDailyStat, AppDailyStat, DeviceWeixinGroup, SnsGroupLost, \
-    DeviceWeixinGroupLost, SnsTask, UserDailyResourceStat, AppDailyResourceStat, DistArticle, DistArticleStat, AppUser
-from backend.stat_utils import get_count, get_user_share_stat, app_daily_stat
+    DeviceWeixinGroupLost, SnsTask, UserDailyResourceStat, AppDailyResourceStat, DistArticle, DistArticleStat, AppUser, \
+    AppWeeklyStat, User
+from backend.stat_utils import get_count, get_user_share_stat, app_daily_stat, classify_data_app
 
 
 @job("default", timeout=3600)
@@ -629,3 +631,114 @@ def do_gen_daily_report():
     api_helper.send_html_mail('%s线上推广日报' % date, settings.DAILY_REPORT_EMAIL, html)
     print('Done.')
     # os._exit(0)
+
+
+@job
+def make_weekly_stat():
+    """
+    周日到周六的数据，周一跑
+    :return:
+    """
+    to_date = (datetime.now() - timedelta(days=2)).strftime('%Y-%m-%d')
+    from_date = (datetime.now() - timedelta(days=8)).strftime('%Y-%m-%d')
+    values = list(AppDailyStat.objects.filter(report_date__range=(from_date, to_date)).values(
+        'app_id').annotate(qq_pv=Sum('qq_pv'), wx_pv=Sum('wx_pv'),
+                           qq_down=Sum('qq_down'), wx_down=Sum('wx_down'),
+                           wx_user=Sum('wx_install'), qq_user=Sum('qq_install'),
+                           wx_remain=Sum('wx_remain'), qq_remain=Sum('qq_remain')))
+
+    res_sum = {x['app_id']: x for x in
+               list(AppDailyResourceStat.objects.filter(stat_date__range=(from_date, to_date)).values(
+                   'app_id').annotate(qq_cnt=Sum('qq_cnt'), wx_cnt=Sum('wx_cnt'),
+                                      qq_apply_cnt=Sum('qq_apply_cnt'), qq_lost_cnt=Sum('qq_lost_cnt'),
+                                      qq_group_new_cnt=Sum('qq_group_new_cnt')))}
+
+    for value in values:
+        app_id = value['app_id']
+        stat = AppWeeklyStat(app_id=app_id, stat_date='{} 到 {}'.format(from_date, to_date),
+                             qq_pv=value['qq_pv'], wx_pv=value['wx_pv'],
+                             qq_down=value['qq_down'], wx_down=value['wx_down'],
+                             qq_user=value['qq_user'], wx_user=value['wx_user'],
+                             qq_remain=value['qq_remain'], wx_remain=value['wx_remain'])
+
+        user_cnt = User.objects.filter(app_id=app_id, status=0).count()
+        stat.operators = user_cnt
+        res = AppDailyResourceStat.objects.filter(stat_date=to_date, app_id=app_id).first()
+        stat.qq_group_cnt = res.qq_group_cnt
+        stat.wx_group_cnt = res.wx_group_cnt
+        stat.qq_uniq_group_cnt = res.qq_uniq_group_cnt
+        stat.wx_uniq_group_cnt = res.wx_uniq_group_cnt
+        stat.qq_group_total = res.qq_group_total
+        stat.phone_cnt = res.phone_cnt
+        stat.qq_acc_cnt = res.qq_acc_cnt
+        stat.qq_members = res.qq_members
+        stat.wx_members = res.wx_members
+        stat.qq_cnt = res_sum[app_id]['qq_cnt']
+        stat.wx_cnt = res_sum[app_id]['wx_cnt']
+        stat.qq_apply_cnt = res_sum[app_id]['qq_apply_cnt']
+        stat.qq_lost_cnt = res_sum[app_id]['qq_lost_cnt']
+        stat.qq_group_new_cnt = res_sum[app_id]['qq_group_new_cnt']
+
+        stat.save()
+
+    send_stat_mail()
+
+
+@job
+def send_stat_mail():
+    data = []
+    from_str = (datetime.now() - timedelta(days=8)).strftime('%Y-%m-%d')
+    to_str = (datetime.now() - timedelta(days=2)).strftime('%Y-%m-%d')
+    time_range = '{} 到 {}'.format(from_str, to_str)
+    for app in model_manager.get_dist_apps():
+        best = '''
+        select a.`title`, a.`category`, wx_user+qq_user as users, wx_pv+qq_pv as pv, 
+        (`wx_user` + qq_user) / (`wx_pv`+qq_pv) as rate from backend_distarticlestat s, backend_distarticle a
+        where s.article_id=a.id and a.`last_started_at` between current_date - interval 8 day 
+        and current_date - interval 1 day
+        and a.app_id={} and `wx_user` + qq_user > 10
+        order by users desc limit 10
+        '''.format(app.app_id)
+
+        worst = '''
+        select a.`title`, a.`category`, wx_user+qq_user as users, wx_pv+qq_pv as pv, 
+        (`wx_user` + qq_user) / (`wx_pv`+qq_pv) as rate from backend_distarticlestat s, backend_distarticle a
+        where s.article_id=a.id and a.`last_started_at` between current_date - interval 8 day 
+        and current_date - interval 1 day
+        and a.app_id={} and `wx_user` + qq_user < 5
+        order by pv desc limit 10
+        '''.format(app.app_id)
+        # best_articles = list()
+        with connection.cursor() as cursor:
+            cursor.execute(best)
+            rows = cursor.fetchall()
+            best_articles = [{
+                'title': r[0],
+                'category': r[1],
+                'users': r[2],
+                'pv': r[3],
+                'rate': r[4]
+            } for r in rows]
+
+            cursor.execute(worst)
+            rows = cursor.fetchall()
+            worst_articles = [{
+                'title': r[0],
+                'category': r[1],
+                'users': r[2],
+                'pv': r[3],
+                'rate': r[4]
+            } for r in rows]
+
+        st = AppWeeklyStat.objects.filter(app_id=app.app_id, stat_date=time_range).first()
+
+        data.append({
+            'name': app.app_name,
+            'stats': classify_data_app(app),
+            'best': best_articles,
+            'worst': worst_articles,
+            'stat': st,
+        })
+    html = render_to_string('article_weekly_report.html', {'stats': data})
+
+    api_helper.send_html_mail('{}分发周报'.format(time_range), 'yonghui.chen@cutt.com', html)

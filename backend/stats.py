@@ -1,14 +1,14 @@
 from datetime import timedelta
 
 from dj.utils import api_func_anonymous
+from django.db import connection
 from django.db.models import Sum, Count
 from django.template.loader import render_to_string
-from django.utils import timezone
+from django_rq import job
 
 from backend import api_helper, model_manager
-from backend.jobs import do_get_item_stat_values, do_gen_daily_report
-from backend.models import DistArticle, DistArticleStat, App
-from backend.stat_utils import to_stat_json
+from backend.models import DistArticle, DistArticleStat
+from backend.stat_utils import to_stat_json, classify_data_app
 from backend.zhiyue_models import ShareArticleLog
 
 
@@ -29,6 +29,7 @@ def get_user_share(app_id, user, date):
 
 @api_func_anonymous
 def gen_daily_report():
+    from backend.jobs import do_gen_daily_report
     do_gen_daily_report.delay()
 
 
@@ -38,6 +39,7 @@ def get_item_stat_values(app):
     统计7天内的文章
     :return:
     """
+    from backend.jobs import do_get_item_stat_values
     do_get_item_stat_values.delay(app)
 
 
@@ -72,25 +74,3 @@ def classify_data(request):
     """
     app = api_helper.get_session_app(request)
     return classify_data_app(app)
-
-
-def classify_data_app(app):
-    date = model_manager.get_date()
-    return list(DistArticleStat.objects.filter(article__app_id=app,
-                                               article__last_started_at__range=(date - timedelta(
-                                                   days=7), date)).values(
-        'article__category').annotate(qq_pv=Sum('qq_pv'), wx_pv=Sum('wx_pv'),
-                                      qq_down=Sum('qq_down'), wx_down=Sum('wx_down'),
-                                      wx_user=Sum('wx_user'), qq_user=Sum('qq_user'),
-                                      cnt=Count('article')))
-
-
-def send_stat_mail():
-    data = []
-    for app in model_manager.get_dist_apps():
-        data.append({
-            'name': app.app_name,
-            'stats': classify_data_app(app),
-        })
-    html = render_to_string('article_weekly_report.html', {'stats': data})
-    api_helper.send_html_mail('分发周报', 'yonghui.chen@cutt.com', html)

@@ -2,11 +2,12 @@ from datetime import timedelta, datetime
 
 from dj import times
 from django.db import connections
+from django.db.models import Sum, Count
 from django.utils import timezone
 from django_rq import job
 
 from backend import api_helper, model_manager
-from backend.models import AppUser, SnsTask, User, RuntimeData, ArticleDailyInfo
+from backend.models import AppUser, SnsTask, User, RuntimeData, ArticleDailyInfo, DistArticleStat
 from backend.zhiyue_models import ClipItem, HighValueUser, WeizhanItemView
 
 
@@ -298,3 +299,14 @@ def sync_item_stat():
 
     rd.value = str(first_id)
     model_manager.save_ignore(rd)
+
+
+def classify_data_app(app):
+    date = model_manager.get_date() - timedelta(days=1)
+    return list(DistArticleStat.objects.filter(article__app_id=app,
+                                               article__last_started_at__range=(date - timedelta(
+                                                   days=7), date)).values(
+        'article__category').annotate(qq_pv=Sum('qq_pv'), wx_pv=Sum('wx_pv'),
+                                      qq_down=Sum('qq_down'), wx_down=Sum('wx_down'),
+                                      wx_user=Sum('wx_user'), qq_user=Sum('qq_user'),
+                                      cnt=Count('article')))
