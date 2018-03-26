@@ -386,6 +386,7 @@ def mark_task_started(device_task):
     device_task.status = 1
     device_task.started_at = timezone.now()
     device_task.save()
+    task_manager.reload_next_task(device_task.device.label)
 
 
 def is_phone_online(device):
