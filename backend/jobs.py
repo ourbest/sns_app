@@ -641,16 +641,16 @@ def make_weekly_stat():
     """
     to_date = (datetime.now() - timedelta(days=2)).strftime('%Y-%m-%d')
     from_date = (datetime.now() - timedelta(days=8)).strftime('%Y-%m-%d')
-    to_date_1 = (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d')
-    from_date_1 = (datetime.now() - timedelta(days=7)).strftime('%Y-%m-%d')
-    values = list(AppDailyStat.objects.filter(report_date__range=(from_date_1, to_date_1)).values(
+    # to_date_1 = (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d')
+    # from_date_1 = (datetime.now() - timedelta(days=7)).strftime('%Y-%m-%d')
+    values = list(AppDailyStat.objects.filter(report_date__range=(from_date, to_date)).values(
         'app_id').annotate(qq_pv=Sum('qq_pv'), wx_pv=Sum('wx_pv'),
                            qq_down=Sum('qq_down'), wx_down=Sum('wx_down'),
                            wx_user=Sum('wx_install'), qq_user=Sum('qq_install'),
                            wx_remain=Sum('wx_remain'), qq_remain=Sum('qq_remain')))
 
     res_sum = {x['app_id']: x for x in
-               list(AppDailyResourceStat.objects.filter(stat_date__range=(from_date_1, to_date_1)).values(
+               list(AppDailyResourceStat.objects.filter(stat_date__range=(from_date, to_date)).values(
                    'app_id').annotate(qq_cnt=Sum('qq_cnt'), wx_cnt=Sum('wx_cnt'),
                                       qq_apply_cnt=Sum('qq_apply_cnt'), qq_lost_cnt=Sum('qq_lost_cnt'),
                                       qq_group_new_cnt=Sum('qq_group_new_cnt')))}
@@ -665,7 +665,7 @@ def make_weekly_stat():
 
         user_cnt = User.objects.filter(app_id=app_id, status=0).count()
         stat.operators = user_cnt
-        res = AppDailyResourceStat.objects.filter(stat_date=to_date_1, app_id=app_id).first()
+        res = AppDailyResourceStat.objects.filter(app_id=app_id).order_by("-pk").first()
         stat.qq_group_cnt = res.qq_group_cnt
         stat.wx_group_cnt = res.wx_group_cnt
         stat.qq_uniq_group_cnt = res.qq_uniq_group_cnt
