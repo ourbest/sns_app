@@ -69,9 +69,11 @@ ROOT_URLCONF = 'sns_app.urls'
 
 # 10.9.85.190
 
+REDIS_SERVER = '10.9.85.190'
+
 RQ_QUEUES = {
     'default': {
-        'HOST': '10.9.85.190',
+        'HOST': REDIS_SERVER,
         'PORT': 6379,
         'DB': 0,
         'DEFAULT_TIMEOUT': 360,
@@ -179,3 +181,14 @@ try:
     from .local_settings import *
 except ImportError:
     pass
+
+
+CACHES = {
+    'default': {
+        'BACKEND': 'django_redis.cache.RedisCache',
+        'LOCATION': 'redis://%s:6379/0' % REDIS_SERVER,
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+        },
+    },
+}

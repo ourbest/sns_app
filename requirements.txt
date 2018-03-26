@@ -16,3 +16,4 @@ raven
 statsd
 rq
 django_rq
+django-redis

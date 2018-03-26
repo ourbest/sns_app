@@ -8,7 +8,7 @@ from django.utils import timezone
 from django_rq import job
 from logzero import logger
 
-from backend import caches
+from backend import caches, task_manager
 from backend.models import PhoneDevice, SnsTaskType, App, User, ActiveDevice, SnsUser, SnsGroup, UserAuthApp, \
     MenuItemPerm, SnsGroupLost, Tag, GroupTag, WxDistLog, DeviceWeixinGroup, DeviceWeixinGroupLost, SnsTask, DistArticle
 from backend.models import SnsUserGroup, SnsGroupSplit
@@ -121,6 +121,7 @@ def _set_task_status(device_task, status):
         device_task.device.save(update_fields='status')
 
     check_task_status(device_task.task)
+    task_manager.reload_next_task(device_task.device.label)
 
 
 def check_task_status(task):

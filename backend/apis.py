@@ -17,7 +17,7 @@ from logzero import logger
 from qiniu import Auth, put_file, etag
 
 import backend.stat_utils
-from backend import model_manager, api_helper, caches, stats, group_splitter
+from backend import model_manager, api_helper, caches, stats, group_splitter, task_manager
 from backend.api_helper import get_session_user, get_session_app, sns_user_to_json, device_to_json, qun_to_json, \
     parse_dist_article
 from backend.jobs import do_re_import, _after_upload, do_import_qun_stat, do_import_qun
@@ -139,12 +139,13 @@ def task(id, i_text=0):
             ad.active_at = timezone.now()
             ad.status = 0
 
-        for x in SnsTaskDevice.objects.filter(device__label=id, status__in=(1, 10, 11, 12)):
-            model_manager.mark_task_cancel(x)
+        device_task = task_manager.get_working_task(id)
+        # SnsTaskDevice.objects.filter(device__label=id, status=0,
+        #                              schedule_at__lte=timezone.now()).first()
 
-        device_task = SnsTaskDevice.objects.filter(device__label=id, status=0,
-                                                   schedule_at__lte=timezone.now()).first()
         if device_task:
+            task_manager.mark_task_cancel(id, True)
+
             try:
                 content = get_task_content(device_task)
                 ad.status = 1
@@ -161,6 +162,8 @@ def task(id, i_text=0):
 
         else:
             ad.status = 0
+            task_manager.mark_task_cancel(id)
+
         ad.save()
 
     return {} if i_text == 0 else HttpResponse('', content_type='application/octet-stream')
@@ -1277,6 +1280,7 @@ def update_task_status(device_task_id, i_status):
     if db and db.status != i_status:
         db.status = i_status
         db.save()
+        task_manager.reload_next_task(db.device.label)
         model_manager.check_task_status(db.task)
 
 
@@ -1305,6 +1309,7 @@ def create_task(type, params, phone, request, date):
 
         for device in devices:
             SnsTaskDevice(task=task, device=device, schedule_at=scheduler_date, data=task.data).save()
+            task_manager.reload_next_task(device.label)
 
         return "ok"
     api_error(1001, '不存在的手机')
