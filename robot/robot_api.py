@@ -4,6 +4,7 @@ from robot.models import ScheduledTasks, Config, TaskLog
 from django.http import HttpResponse
 from .robot import Robot
 import datetime
+from dj import times
 
 
 def reset(req):
@@ -119,7 +120,7 @@ def task_list(request, i_id):
     for task in task_list1:
         data.append({
             'type': task.type.name,
-            'time': task.start_time.strftime('%H:%M'),
+            'time': times.to_str(task.start_time, '%H:%M:%S'),
             'status': status[task.status],
             'qq': task.sns_user.login_name if task.sns_user else None,
             'result': task.result,
@@ -137,7 +138,7 @@ def task_list(request, i_id):
     for task in task_list2:
         data.append({
             'type': task.type.name,
-            'time': task.estimated_start_time.strftime('%H:%M'),
+            'time': times.to_str(task.estimated_start_time, '%H:%M:%S'),
             'status': '等待执行',
             'qq': task.sns_user.login_name if task.sns_user else None,
             'result': None,

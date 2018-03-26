@@ -1,4 +1,4 @@
-from .models import Area, Keyword, Search, TaskLog
+from .models import Area, Keyword, Search
 from backend.models import App, SnsGroup
 import datetime
 
@@ -56,7 +56,3 @@ def update_search(word=None, group_id=None, group_name=None, group_user_count=No
         search.search_count += 1
         search.last_time = datetime.datetime.now()
         search.save()
-
-
-def create_task_log(device):
-    pass

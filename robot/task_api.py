@@ -2,8 +2,8 @@ from backend.models import SnsGroupSplit
 from django.http import HttpResponse
 from .models import ScheduledTasks, Search, TaskLog
 from robot.robot import Robot
-from random import choice
 from . import models_manager
+from django.utils import timezone
 
 
 def get_task_api(request):
@@ -42,9 +42,12 @@ def get_task_api(request):
 
 def get_task_content(task):
     if not isinstance(task, TaskLog):
-        task = TaskLog.objects.create(device=task.device,
-                                      type=task.type,
-                                      sns_user=task.sns_user)
+        device = task.device
+        task_type = task.type
+        sns_user = task.sns_user
+        task.delete()
+
+        task = TaskLog.objects.create(device=device, type=task_type, sns_user=sns_user)
 
     task_type = task.type_id
     if task_type == 1:
@@ -84,14 +87,12 @@ def get_apply_content(task):
 
 
 def get_search_content(task):
-    search_queryset = Search.objects.filter(status=0)
-    if not search_queryset.exists():
+    search = Search.objects.filter(status=0, area__app_id=task.sns_user.app_id).order_by('?').first()
+    if not search:
         task.status = -1
         task.result = '无搜索词'
         task.save()
         return None
-
-    search = choice(search_queryset)
 
     models_manager.update_search(search=search)
 
@@ -110,6 +111,19 @@ def get_statistics_content(task):
 def task_result_api(request):
     post = request.POST
     task_type = post.get('type')
+
+    status = post.get('status')
+    if not status:
+        try:
+            task = TaskLog.objects.get(id=post.get('id'))
+        except TaskLog.DoesNotExist:
+            pass
+        else:
+            task.status = status
+            result = post.get('result')
+            if result:
+                task.result = post.get('result')
+            task.save()
 
     if task_type == '1':
         search_result(request)
@@ -186,15 +200,18 @@ def apply_result(request):
         elif result == '5':
             update_sns_group_split_status(group, 3)
             task.status = 1
+            task.finish_time = timezone.now()
             task.result = group
             task.save()
         elif result == '6' or result == '9':
             update_sns_group_split_status(group, 0)
             task.status = -1
             task.result = '加群受限'
+            task.save()
         elif result == '8':
             update_sns_group_split_status(group, 2)
             task.status = 1
+            task.finish_time = timezone.now()
             task.result = group
             task.save()
         else:
