@@ -22,7 +22,7 @@ class SearchAdmin(admin.ModelAdmin):
 
 @admin.register(ScheduledTasks)
 class ScheduledTasksAdmin(admin.ModelAdmin):
-    list_display = ('device', 'type', 'estimated_start_time', 'sns_user', 'owner', 'status', 'result')
+    list_display = ('device', 'type', 'estimated_start_time', 'sns_user')
 
 
 @admin.register(Config)

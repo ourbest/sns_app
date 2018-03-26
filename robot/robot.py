@@ -28,7 +28,7 @@ class Robot:
         :return:
         """
         return SnsUser.objects.filter(owner=self.user, friend=1, status=0, device=device,
-                                      today_apply__lt=self.config.max_num_of_search)
+                                      today_apply__lt=self.config.max_num_of_apply)
 
     def at_working_time(self):
         """判断是否在工作时间"""
@@ -184,9 +184,10 @@ class Robot:
                     seconds += interval[0]
 
                     if not time_split:
-                        time_split.append((datetime.datetime.now(), task['time']))
+                        time_split.append(
+                            (datetime.datetime.now(), task['time'].replace(second=task['time'].second + 1)))
                     else:
-                        time_split.append((time_split[-1][1], task['time']))
+                        time_split.append((time_split[-1][1], task['time'].replace(second=task['time'].second + 1)))
 
                 time_split.append((time_split[-1][1], datetime.datetime.now().replace(hour=23, minute=59, second=59)))
 
@@ -203,6 +204,7 @@ class Robot:
 
     @staticmethod
     def __join_statistics(time_split, task_list, device: PhoneDevice):
+        return None
         """插入统计任务"""
         if device.today_statistics >= 1:
             return None
@@ -266,7 +268,8 @@ class Robot:
                 else:
                     task_list.append(dic)
 
-    def __bulk_save(self, device_dict):
+    @staticmethod
+    def __bulk_save(device_dict):
         tasks = []
         for device_id, task_list in device_dict.items():
             for task in task_list:
@@ -276,7 +279,6 @@ class Robot:
                     estimated_start_time=task['time'] if timezone.is_aware(task['time']) else timezone.make_aware(
                         task['time']),
                     sns_user_id=task['sns_user_id'],
-                    owner=self.user
                 ))
 
         return ScheduledTasks.objects.bulk_create(tasks)
@@ -286,3 +288,20 @@ class Robot:
         SnsUser.objects.exclude(today_apply=0).update(today_apply=0)
         PhoneDevice.objects.exclude(today_search=0).update(today_search=0)
         ScheduledTasks.objects.all().delete()
+
+    @staticmethod
+    def check_timeout(start_time):
+        time_diff = (timezone.now() - start_time).total_seconds()
+        if 0 <= time_diff <= TASK_TIMEOUT:
+            return 1
+        elif time_diff > TASK_TIMEOUT:
+            return -1
+        else:
+            return 0
+
+    def update_scheduled_tasks(self, device=None):
+        if device:
+            ScheduledTasks.objects.filter(device=device).delete()
+        else:
+            ScheduledTasks.objects.filter(device__owner=self.user).delete()
+        return self.create_scheduled_tasks(devices=device)

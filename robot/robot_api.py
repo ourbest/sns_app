@@ -1,6 +1,6 @@
 from dj.utils import api_func_anonymous
 from backend.models import PhoneDevice, User
-from robot.models import ScheduledTasks, Config
+from robot.models import ScheduledTasks, Config, TaskLog
 from django.http import HttpResponse
 from .robot import Robot
 import datetime
@@ -43,7 +43,7 @@ def trusteeship(request):
         device.in_trusteeship = False
         device.save()
 
-        ScheduledTasks.objects.filter(device=device, status__in=[0, 1]).delete()
+        ScheduledTasks.objects.filter(device=device).delete()
     else:
         return HttpResponse('no')
 
@@ -82,8 +82,7 @@ def save_config(request, fromTime, toTime, max, interval, times):
         config.save()
 
         robot = Robot(config=config)
-        ScheduledTasks.objects.filter(owner=config.owner, status=0).delete()
-        robot.create_scheduled_tasks()
+        robot.update_scheduled_tasks()
 
     return 'ok'
 
@@ -112,18 +111,35 @@ def device_list(request):
 
 
 @api_func_anonymous
-def task_list(i_id):
-    task_queryset = ScheduledTasks.objects.select_related('type', 'sns_user').filter(device_id=i_id).order_by(
-        'estimated_start_time')
-
+def task_list(request, i_id):
     data = []
-    status = {0: '等待执行', 1: '正在执行', 2: '已完成', -1: '待加群已空', -2: '无搜索词'}
-    for task in task_queryset:
+
+    task_list1 = TaskLog.objects.select_related('type', 'sns_user').filter(device_id=i_id).order_by('start_time')
+    status = {0: '正在执行', 1: '已完成', -1: '已中断', -2: '被打断', }
+    for task in task_list1:
+        data.append({
+            'type': task.type.name,
+            'time': task.start_time.strftime('%H:%M'),
+            'status': status[task.status],
+            'qq': task.sns_user.login_name if task.sns_user else None,
+            'result': task.result,
+        })
+
+    task_list2 = ScheduledTasks.objects.select_related('type', 'sns_user').filter(device_id=i_id).order_by(
+        'estimated_start_time')
+    if task_list2.exists():
+        if Robot.check_timeout(task_list2.first().estimated_start_time) == -1:
+            user = User.objects.filter(email=request.session.get('user')).first()
+            device = PhoneDevice.objects.filter(id=i_id).first()
+            if user and device:
+                Robot(user=user).update_scheduled_tasks(device)
+
+    for task in task_list2:
         data.append({
             'type': task.type.name,
             'time': task.estimated_start_time.strftime('%H:%M'),
-            'status': status[task.status],
+            'status': '等待执行',
             'qq': task.sns_user.login_name if task.sns_user else None,
-            'result': task.result
+            'result': None,
         })
     return data

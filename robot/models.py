@@ -46,17 +46,29 @@ class Search(models.Model):
 class ScheduledTasks(models.Model):
     """
     一天：计划的任务
+    临时的任务列表
     """
     device = models.ForeignKey(PhoneDevice, verbose_name='设备', on_delete=models.CASCADE)
     type = models.ForeignKey(SnsTaskType, verbose_name='任务类型', on_delete=models.CASCADE)
     estimated_start_time = models.DateTimeField('预计执行时间', null=True, blank=True)
     sns_user = models.ForeignKey(SnsUser, verbose_name='帐号', null=True, blank=True, on_delete=models.CASCADE)
-    owner = models.ForeignKey(User, on_delete=models.CASCADE)
-    status = models.IntegerField('状态', default=0, help_text='0 - 未执行，1 - 正在执行，2 - 已完成，-1 - 没群号 -2没搜索词')
-    result = models.CharField('结果', max_length=10, null=True, blank=True)
 
     def __str__(self):
         return '<%s,%s,%s>' % (self.estimated_start_time.strftime('%H:%M'), self.device.phone_num, self.type.name)
+
+
+class TaskLog(models.Model):
+    """
+    实际的任务列表
+    """
+    device = models.ForeignKey(PhoneDevice, on_delete=models.CASCADE)
+    type = models.ForeignKey(SnsTaskType, on_delete=models.CASCADE)
+    start_time = models.DateTimeField('开始时间', auto_now_add=True)
+    sns_user = models.ForeignKey(SnsUser, null=True, blank=True, on_delete=models.CASCADE)
+
+    finish_time = models.DateTimeField('完成时间', null=True, blank=True)
+    status = models.IntegerField('状态', default=0, help_text='0 - 正在/继续执行，1 - 完成，-1 - 中断，-2 - 打断')
+    result = models.CharField('结果', max_length=255, null=True, blank=True)
 
 
 class Config(models.Model):
@@ -69,10 +81,3 @@ class Config(models.Model):
     max_num_of_apply = models.IntegerField('最大加群数/天·QQ', default=3)
     shortest_interval_apply_of_device = models.IntegerField('设备的最短间隔加群', default=600)
     max_num_of_search = models.IntegerField('最大查群次数/天·设备', default=5)
-
-
-class TaskLog(models.Model):
-    """
-    任务记录
-    """
-    pass
