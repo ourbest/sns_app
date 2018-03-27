@@ -17,14 +17,14 @@ def get_task_api(request):
             return get_task_content(task)
         elif check == -1:
             task.status = -1
+            task.result = '超时'
             task.save()
 
             device = task.device
             user = device.owner
             Robot(user=user).update_scheduled_tasks(device)
 
-    task = ScheduledTasks.objects.select_related('device').filter(device__phone_num=phone_num,
-                                                                  status=0).order_by(
+    task = ScheduledTasks.objects.select_related('device').filter(device__phone_num=phone_num).order_by(
         'estimated_start_time').first()
     if task:
         check = Robot.check_timeout(task.estimated_start_time)
@@ -65,8 +65,8 @@ def get_apply_content(task):
     group = SnsGroupSplit.objects.filter(phone_id=task.device_id, status=0).order_by('?').first()
     if group:
         group_id = group.group_id
-        group.status = 1
-        group.save()
+        # group.status = 1
+        # group.save()
     else:
         task.status = -1
         task.result = '无群号'
@@ -87,7 +87,7 @@ def get_apply_content(task):
 
 
 def get_search_content(task):
-    search = Search.objects.filter(status=0, area__app_id=task.sns_user.app_id).order_by('?').first()
+    search = Search.objects.filter(status=0, area__app_id=task.device.owner.app_id).order_by('?').first()
     if not search:
         task.status = -1
         task.result = '无搜索词'
@@ -108,34 +108,44 @@ def get_statistics_content(task):
            'type={type}\n'.format(type=task.type_id, task_id=task.id)
 
 
+# 接收手机端任务结果
 def task_result_api(request):
     post = request.POST
-    task_type = post.get('type')
-
-    status = post.get('status')
-    if not status:
-        try:
-            task = TaskLog.objects.get(id=post.get('id'))
-        except TaskLog.DoesNotExist:
-            pass
-        else:
-            task.status = status
+    task_id = post.get('task_id')
+    try:
+        task = TaskLog.objects.get(id=task_id)
+    except TaskLog.DoesNotExist:
+        pass
+    else:
+        status = post.get('status')
+        if status != '0':
+            task.status = int(status)
             result = post.get('result')
             if result:
                 task.result = post.get('result')
             task.save()
 
-    if task_type == '1':
-        search_result(request)
-    elif task_type == '2':
-        apply_result(request)
-    elif task_type == '4':
-        pass
+        task_type = task.type_id
+
+        if status == '1':
+            if task_type == 1:
+                models_manager.update_phone_device(today_search=True)
+            elif task_type == 2:
+                models_manager.update_sns_user(today_apply=True)
+            elif task_type == 4:
+                models_manager.update_phone_device(today_statistics=True)
+
+        if task_type == 1:
+            search_result(request, task)
+        elif task_type == 2:
+            apply_result(request, task)
+        elif task_type == 4:
+            pass
 
     return HttpResponse('ok')
 
 
-def search_result(request):
+def search_result(request, task):
     data = request.POST
 
     word = data.get('word')
@@ -144,24 +154,18 @@ def search_result(request):
     group_user_count = data.get('group_user_count')
 
     if models_manager.update_search(word, group_id, group_name, group_user_count):
-        task_id = data.get('task_id')
-        try:
-            task = TaskLog.objects.get(id=task_id)
-        except TaskLog.DoesNotExist:
-            pass
+        group_user_count = data.get('group_user_count')
+        result = task.result
+        if result:
+            lis = result.split('/')
+            result = str(int(lis[0]) + 1) + '/' + str(int(lis[1]) + int(group_user_count))
         else:
-            group_user_count = data.get('group_user_count')
-            result = task.result
-            if result:
-                lis = result.split('/')
-                result = str(int(lis[0]) + 1) + '/' + str(int(lis[1]) + int(group_user_count))
-            else:
-                result = '1/' + group_user_count
-            task.result = result
-            task.save()
+            result = '1/' + group_user_count
+        task.result = result
+        task.save()
 
 
-def apply_result(request):
+def apply_result(request, task):
     data = request.POST
     """
     结果：
@@ -179,43 +183,45 @@ def apply_result(request):
     11满员群
     12不允许加入
     """
-    task_id = data.get('task_id')
     result = data.get('result')
     group = data.get('group')
 
-    try:
-        task = TaskLog.objects.get(id=task_id)
-    except TaskLog.DoesNotExist:
-        pass
+    if not result.isdigit():
+        update_sns_group_split_status(group, 0)
+        task.status = -1
+        task.result = result
+        task.save()
+    elif result == '1' or result == '3' or result == '10' or result == '11' or result == '12':
+        update_sns_group_split_status(group, -1)
+    elif result == '2':
+        update_sns_group_split_status(group, 3)
+    elif result == '5':
+        update_sns_group_split_status(group, 3)
+        task.status = 1
+        task.finish_time = timezone.now()
+        task.result = group
+        task.save()
+
+        models_manager.update_sns_user(today_apply=True)
+    elif result == '6' or result == '9':
+        update_sns_group_split_status(group, 0)
+        task.status = -1
+        task.result = '加群受限'
+        task.save()
+
+        robot = Robot(user=task.device.owner)
+        models_manager.update_sns_user(today_apply=robot.config.max_num_of_apply)
+        robot.update_scheduled_tasks(task.device)
+    elif result == '8':
+        update_sns_group_split_status(group, 2)
+        task.status = 1
+        task.finish_time = timezone.now()
+        task.result = group
+        task.save()
+
+        models_manager.update_sns_user(today_apply=True)
     else:
-        if result.isdigit():
-            update_sns_group_split_status(group, 0)
-            task.status = -1
-            task.result = result
-            task.save()
-        elif result == '1' or result == '3' or result == '10' or result == '11' or result == '12':
-            update_sns_group_split_status(group, -1)
-        elif result == '2':
-            update_sns_group_split_status(group, 3)
-        elif result == '5':
-            update_sns_group_split_status(group, 3)
-            task.status = 1
-            task.finish_time = timezone.now()
-            task.result = group
-            task.save()
-        elif result == '6' or result == '9':
-            update_sns_group_split_status(group, 0)
-            task.status = -1
-            task.result = '加群受限'
-            task.save()
-        elif result == '8':
-            update_sns_group_split_status(group, 2)
-            task.status = 1
-            task.finish_time = timezone.now()
-            task.result = group
-            task.save()
-        else:
-            raise ValueError('error result=' + result)
+        raise ValueError('error result=' + result)
 
 
 def update_sns_group_split_status(group_id, status):

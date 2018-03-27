@@ -1,6 +1,7 @@
 from .models import Area, Keyword, Search
-from backend.models import App, SnsGroup
+from backend.models import App, SnsGroup, PhoneDevice, SnsUser
 import datetime
+from django.utils import timezone
 
 
 def create_area(app_id, area_name):
@@ -56,3 +57,26 @@ def update_search(word=None, group_id=None, group_name=None, group_user_count=No
         search.search_count += 1
         search.last_time = datetime.datetime.now()
         search.save()
+
+
+def update_phone_device(today_search=False, today_statistics=False, **kwargs):
+    device = PhoneDevice.objects.filter(**kwargs).first()
+    if device:
+        if today_search:
+            device.today_search += 1
+            device.last_apply = timezone.now()
+        if today_statistics:
+            device.today_statistics += 1
+
+        device.save()
+
+
+def update_sns_user(today_apply=False, **kwargs):
+    sns_user = SnsUser.objects.filter(**kwargs).first()
+    if sns_user:
+        if today_apply:
+            if isinstance(today_apply, bool):
+                sns_user.today_apply += 1
+            elif isinstance(today_apply, int):
+                sns_user.today_apply += today_apply
+        sns_user.save()
