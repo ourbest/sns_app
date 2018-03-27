@@ -632,9 +632,10 @@ def sync_recent_user():
                     ids_map_owner[majia.type].append(device_user.deviceUserId)
 
         if app.offline:
-            for coupon in model_manager.query(CouponInst).filter(partnerId=app.pk, status=1,
-                                                                 useDate__gt=timezone.now() - timedelta(
-                                                                     minutes=30)):
+
+            coupons = model_manager.query(CouponInst).filter(partnerId=app.pk, status=1,
+                                                             useDate__gt=timezone.now() - timedelta(minutes=30))
+            for coupon in coupons:
                 model_manager.save_ignore(OfflineUser(user_id=coupon.userId, app_id=coupon.partnerId,
                                                       created_at=coupon.useDate))
 
@@ -644,6 +645,7 @@ def sync_device_user():
     logger.info('同步用户数据')
     stat_date = datetime.now()
     from_date = stat_date - timedelta(days=1)
+    date_range = (from_date.strftime('%Y-%m-%d'), stat_date.strftime('%Y-%m-%d'))
     for app in App.objects.filter(stage__in=('分发期', '留守期')):
         majias = {x.cutt_user_id: x for x in AppUser.objects.filter(type__in=(0, 1), user__app=app, user__status=0)}
         qq_user_ids = []
@@ -651,9 +653,7 @@ def sync_device_user():
         if majias:
             ids_map = defaultdict(dict)
             for device_user in model_manager.query(DeviceUser).filter(sourceUserId__in=majias.keys(),
-                                                                      createTime__range=(
-                                                                              from_date.strftime('%Y-%m-%d'),
-                                                                              stat_date.strftime('%Y-%m-%d'))):
+                                                                      createTime__range=date_range):
                 majia = majias.get(device_user.sourceUserId)
                 owner = majia.user
                 model_manager.save_ignore(ItemDeviceUser(app=app, owner=owner,
@@ -680,12 +680,14 @@ def sync_device_user():
                                         wx_user_ids=','.join([str(x) for x in v[1]])))
 
         if app.offline:
-            for coupon in model_manager.query(CouponInst).filter(partnerId=app.pk, status=1,
-                                                                 useDate__range=(
-                                                                         from_date.strftime('%Y-%m-%d'),
-                                                                         stat_date.strftime('%Y-%m-%d'))):
-                model_manager.save_ignore(OfflineUser(user_id=coupon.userId, app_id=coupon.partnerId,
-                                                      created_at=coupon.useDate))
+            coupons = model_manager.query(CouponInst).filter(partnerId=app.pk, status=1, useDate__range=date_range)
+
+            cnt = OfflineUser.objects.filter(app_id=app.app_id, created_at__range=date_range).count()
+
+            if cnt != coupons.count():
+                for coupon in coupons:
+                    model_manager.save_ignore(OfflineUser(user_id=coupon.userId, app_id=coupon.partnerId,
+                                                          created_at=coupon.useDate))
 
     sync_remain()
 
