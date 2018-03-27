@@ -694,3 +694,10 @@ class ArticleDailyInfo(models.Model):
 class RuntimeData(models.Model):
     name = models.CharField(max_length=20, primary_key=True)
     value = models.CharField(max_length=255)
+
+
+class OfflineUser(models.Model):
+    user_id = models.BigIntegerField(primary_key=True)
+    app = models.ForeignKey(App, on_delete=CASCADE)
+    created_at = models.DateTimeField()
+    remain = models.IntegerField()

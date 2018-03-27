@@ -9,6 +9,7 @@ import backend.stat_utils
 from backend import model_manager, api_helper, stats, zhiyue_models
 from backend.models import SnsGroupSplit, SnsGroup, SnsUser, SnsUserGroup, SnsTask, DistArticle, DistArticleStat, \
     ItemDeviceUser
+from backend.zhiyue_models import DeviceUser
 
 
 def clean_finished():
@@ -211,4 +212,8 @@ def run():
 
 
 def sync_ip():
-    ItemDeviceUser.objects.filter()
+    for u in ItemDeviceUser.objects.filter(ip=''):
+        du = model_manager.query(DeviceUser).filter(deviceUserId=u.user_id).first()
+        u.ip = du.ip
+        u.city = du.city
+        u.save()

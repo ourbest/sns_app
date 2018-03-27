@@ -13,7 +13,7 @@ from django_rq import job
 from logzero import logger
 
 import backend.stat_utils
-from backend import api_helper, model_manager, group_splitter, zhiyue, stats
+from backend import api_helper, model_manager, group_splitter, zhiyue
 from backend.api_helper import ADD_STATUS, deal_add_result, deal_dist_result
 from backend.model_manager import save_ignore
 from backend.models import DeviceFile, SnsUser, SnsGroup, SnsUserGroup, SnsApplyTaskLog, SnsGroupSplit, WxDistLog, \

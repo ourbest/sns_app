@@ -18,7 +18,7 @@ import backend.stat_utils
 from backend import api_helper, model_manager, stat_utils
 from backend.api_helper import get_session_app
 from backend.models import AppUser, AppDailyStat, UserDailyStat, App, DailyActive, ItemDeviceUser, UserDailyDeviceUser, \
-    User
+    User, OfflineUser
 from backend.zhiyue_models import ShareArticleLog, ClipItem, WeizhanCount, AdminPartnerUser, CouponInst, ItemMore, \
     ZhiyueUser, UserRewardHistory, AppConstants, CouponPmSentInfo, CouponDailyStatInfo, OfflineDailyStat, DeviceUser
 
@@ -631,6 +631,12 @@ def sync_recent_user():
                 if majia.type in ids_map_owner:
                     ids_map_owner[majia.type].append(device_user.deviceUserId)
 
+        if app.offline:
+            for coupon in model_manager.query(CouponInst).filter(partnerId=app.pk, status=1,
+                                                                 useDate__gt=timezone.now() - timedelta(
+                                                                     minutes=30)):
+                model_manager.save_ignore(OfflineUser(user_id=coupon.userId, created_at=coupon.useDate))
+
 
 @job
 def sync_device_user():
@@ -672,6 +678,13 @@ def sync_device_user():
                                         qq_user_ids=','.join([str(x) for x in v[0]]),
                                         wx_user_ids=','.join([str(x) for x in v[1]])))
 
+        if app.offline:
+            for coupon in model_manager.query(CouponInst).filter(partnerId=app.pk, status=1,
+                                                                 useDate__range=(
+                                                                         from_date.strftime('%Y-%m-%d'),
+                                                                         stat_date.strftime('%Y-%m-%d'))):
+                model_manager.save_ignore(OfflineUser(user_id=coupon.userId, created_at=coupon.useDate))
+
     sync_remain()
 
 
@@ -700,6 +713,16 @@ def sync_remain():
             wx_cnt = ItemDeviceUser.objects.filter(type=1, owner=user, created_at__range=create_range).count()
             UserDailyStat.objects.filter(report_date=report_date, user=user).update(
                 qq_remain=qq_cnt, wx_remain=wx_cnt)
+
+        if app.offline:
+            offline_users = OfflineUser.objects.filter(app=app, created_at__range=create_range)
+            user_ids = [x.user_id for x in offline_users]
+            remain_ids = {x.userId for x in
+                          model_manager.query(ZhiyueUser).filter(userId__in=user_ids, lastActiveTime__range=date_range)}
+            for u in offline_users:
+                if u.user_id in remain_ids:
+                    u.remain = 1
+                    model_manager.save_ignore(u, fields=['remain'])
 
 
 def calc_save_remain():
