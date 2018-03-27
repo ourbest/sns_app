@@ -153,6 +153,7 @@ urlpatterns = [
     url(r'^daemon/stat/offline$', zhiyue.make_offline),
     url(r'^daemon/stat/off$', zhiyue.make_offline_days),
     url(r'^daemon/stat/sync/user$', zhiyue.sync_user),
+    url(r'^daemon/stat/rt/user$', zhiyue.sync_user_realtime),
     url(r'^daemon/stat/pv$', zhiyue.sync_pv),
 
     # weixin

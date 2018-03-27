@@ -587,8 +587,49 @@ def sync_user():
 
 
 @api_func_anonymous
+def sync_user_realtime():
+    sync_recent_user.delay()
+
+
+@api_func_anonymous
 def sync_pv():
     stat_utils.sync_item_stat.delay()
+
+
+@job
+def sync_recent_user():
+    """
+    同步最新的用户数据
+    :return:
+    """
+    logger.info('同步最新数据')
+    for app in App.objects.filter(stage__in=('分发期', '留守期')):
+        majias = {x.cutt_user_id: x for x in AppUser.objects.filter(type__in=(0, 1), user__app=app, user__status=0)}
+        qq_user_ids = []
+        wx_user_ids = []
+        if majias:
+            ids_map = defaultdict(dict)
+            for device_user in model_manager.query(DeviceUser).filter(sourceUserId__in=majias.keys(),
+                                                                      createTime__gt=timezone.now() - timedelta(
+                                                                          minutes=30)):
+                majia = majias.get(device_user.sourceUserId)
+                owner = majia.user
+                model_manager.save_ignore(ItemDeviceUser(app=app, owner=owner,
+                                                         created_at=device_user.createTime,
+                                                         user_id=device_user.deviceUserId,
+                                                         item_id=device_user.sourceItemId,
+                                                         type=majia.type,
+                                                         ip=device_user.ip,
+                                                         city=device_user.city))
+                (wx_user_ids if majia.type else qq_user_ids).append(device_user.deviceUserId)
+
+                ids_map_owner = ids_map[owner]
+                if len(ids_map_owner) == 0:
+                    ids_map_owner[0] = list()
+                    ids_map_owner[1] = list()
+
+                if majia.type in ids_map_owner:
+                    ids_map_owner[majia.type].append(device_user.deviceUserId)
 
 
 @job
