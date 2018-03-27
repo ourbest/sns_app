@@ -635,7 +635,8 @@ def sync_recent_user():
             for coupon in model_manager.query(CouponInst).filter(partnerId=app.pk, status=1,
                                                                  useDate__gt=timezone.now() - timedelta(
                                                                      minutes=30)):
-                model_manager.save_ignore(OfflineUser(user_id=coupon.userId, created_at=coupon.useDate))
+                model_manager.save_ignore(OfflineUser(user_id=coupon.userId, app_id=coupon.partnerId,
+                                                      created_at=coupon.useDate))
 
 
 @job
@@ -683,7 +684,8 @@ def sync_device_user():
                                                                  useDate__range=(
                                                                          from_date.strftime('%Y-%m-%d'),
                                                                          stat_date.strftime('%Y-%m-%d'))):
-                model_manager.save_ignore(OfflineUser(user_id=coupon.userId, created_at=coupon.useDate))
+                model_manager.save_ignore(OfflineUser(user_id=coupon.userId, app_id=coupon.partnerId,
+                                                      created_at=coupon.useDate))
 
     sync_remain()
 
