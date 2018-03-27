@@ -2,6 +2,7 @@ from datetime import timedelta, datetime
 
 from dj import times
 from dj.utils import api_func_anonymous
+from django.db import connection
 from django.db.models import Count
 
 from backend import api_helper
@@ -63,6 +64,20 @@ def team_articles(request, i_page, i_size, url):
         'total': total,
         'items': [to_stat_json(x, stat_data.get(x.id)) for x in articles]
     }
+
+
+@api_func_anonymous
+def team_category(request):
+    app = api_helper.get_session_app(request)
+    query = """
+    select category, sum(`qq_user`+wx_user) users, sum(qq_pv+wx_pv) pv from backend_distarticle a, backend_distarticlestat s
+    where a.`last_started_at` > current_date - interval 7 day and a.app_id={} and s.`article_id` = a.id
+    group by category order by pv desc
+    """.format(app)
+
+    with connection.cursor() as cursor:
+        cursor.execute(query)
+        rows = cursor.fetchall()
 
 
 @api_func_anonymous
