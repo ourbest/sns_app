@@ -78,6 +78,11 @@ def team_category(request):
     with connection.cursor() as cursor:
         cursor.execute(query)
         rows = cursor.fetchall()
+        return [{
+            'category': category,
+            'users': users,
+            'pv': pv
+        } for [category, users, pv] in rows]
 
 
 @api_func_anonymous
