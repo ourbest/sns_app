@@ -1,6 +1,6 @@
 from django.db import models
 from django.db.models import CASCADE
-
+import datetime
 from backend.models import App
 from backend.models import App, PhoneDevice, SnsTaskType, User, SnsUser
 
@@ -72,6 +72,9 @@ class TaskLog(models.Model):
     status = models.IntegerField('状态', default=0, help_text='0 - 正在/继续执行，1 - 完成，-1 - 中断，-2 - 打断')
     result = models.CharField('结果', max_length=255, null=True, blank=True)
 
+    def __str__(self):
+        return '<%s,%s>' % (self.device.phone_num, self.type.name)
+
 
 class Config(models.Model):
     """
@@ -83,3 +86,6 @@ class Config(models.Model):
     max_num_of_apply = models.IntegerField('最大加群数/天·QQ', default=3)
     shortest_interval_apply_of_device = models.IntegerField('设备的最短间隔加群', default=600)
     max_num_of_search = models.IntegerField('最大查群次数/天·设备', default=5)
+
+    def __str__(self):
+        return self.owner.name

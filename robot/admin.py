@@ -32,4 +32,4 @@ class ConfigAdmin(admin.ModelAdmin):
 
 @admin.register(TaskLog)
 class TaskLogAdmin(admin.ModelAdmin):
-    pass
+    list_display = ('device', 'type', 'start_time', 'sns_user', 'finish_time', 'status', 'result')
