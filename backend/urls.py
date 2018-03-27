@@ -166,4 +166,6 @@ urlpatterns = [
     url(r'coupon/message/detail$', zhiyue.get_coupon_message_details),
     url(r'coupon/offline$', zhiyue.get_offline_detail),
 
+    # stat
+    url(r'stat/city$', stats.item_user_loc)
 ]

@@ -1,13 +1,11 @@
-from datetime import timedelta
+from datetime import timedelta, datetime
 
+from dj import times
 from dj.utils import api_func_anonymous
-from django.db import connection
-from django.db.models import Sum, Count
-from django.template.loader import render_to_string
-from django_rq import job
+from django.db.models import Count
 
-from backend import api_helper, model_manager
-from backend.models import DistArticle, DistArticleStat
+from backend import api_helper
+from backend.models import DistArticle, DistArticleStat, ItemDeviceUser
 from backend.stat_utils import to_stat_json, classify_data_app
 from backend.zhiyue_models import ShareArticleLog
 
@@ -65,6 +63,18 @@ def team_articles(request, i_page, i_size, url):
         'total': total,
         'items': [to_stat_json(x, stat_data.get(x.id)) for x in articles]
     }
+
+
+@api_func_anonymous
+def item_user_loc(request):
+    app = api_helper.get_session_app(request)
+    today = times.localtime(datetime.now().replace(hour=0, minute=0, second=0, microsecond=0))
+    return [{
+        'city': x['city'][1:-1].split(', ')[-1],
+        'cnt': x['cnt']
+    } for x in ItemDeviceUser.objects.filter(app_id=app,
+                                             created_at__gt=today - timedelta(days=7)).values('city').annotate(
+        cnt=Count('city')).order_by("-cnt")]
 
 
 def classify_data(request):
