@@ -485,6 +485,8 @@ class ItemDeviceUser(models.Model):
     item_id = models.BigIntegerField(default=0)
     type = models.IntegerField(default=0, help_text='0 - QQ, 1 - 微信')
     remain = models.IntegerField(default=0)
+    ip = models.CharField(max_length=20, default='')
+    city = models.CharField(max_length=50, default='')
 
     def __str__(self):
         return "(User-%s)" % self.user_id

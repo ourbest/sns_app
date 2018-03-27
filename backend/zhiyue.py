@@ -430,7 +430,7 @@ def make_offline(the_date):
     partnerId in (%s) GROUP BY partnerId
     ''' % (stat_date_from, stat_date_to, ids)
 
-    date_str = times.to_date_str(timezone.now(), "%Y-%m-%d") if not the_date else the_date
+    date_str = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d") if not the_date else the_date
 
     # 使用量
     with connections['zhiyue'].cursor() as cursor:
@@ -449,12 +449,12 @@ def make_offline(the_date):
 
 @api_func_anonymous
 def make_offline_remain(the_date):
-    stat_date = timezone.now()
+    stat_date = datetime.now()
 
     if not the_date:
         the_date = 'current_date'
     else:
-        stat_date = timezone.make_aware(datetime.strptime(the_date, '%Y-%m-%d'))
+        stat_date = datetime.strptime(the_date, '%Y-%m-%d')
         the_date = "'%s'" % the_date
 
     apps = {x.app_id: x for x in App.objects.filter(offline=1)}
@@ -483,21 +483,9 @@ def make_offline_remain(the_date):
         rows = cursor.fetchall()
         values = defaultdict(dict)
         for [app_id, cnt, ext_info, remain_day] in rows:
-            percent = 1
-            low_cnt = int(json.loads(ext_info).get('LowQualityCnt', 0))
+            percent = _get_percent(ext_info)
 
-            if low_cnt == 1:
-                percent = 0.95
-            elif low_cnt == 2:
-                percent = 0.9
-            elif low_cnt == 3:
-                percent = 0.8
-            elif low_cnt == 4:
-                percent = 0.5
-            elif low_cnt >= 5:
-                percent = 0
-
-            total = math.ceil(apps[app_id].price * cnt * percent)
+            total = apps[app_id].price * cnt * percent
             r = values[app_id]
             r['total'] = r.get('total', 0) + total
             remain_cnt = 0
@@ -532,6 +520,22 @@ def make_offline_remain(the_date):
             stat.save(force_update=True)
         except:
             pass
+
+
+def _get_percent(ext_info):
+    low_cnt = int(json.loads(ext_info).get('LowQualityCnt', 0))
+    percent = 1
+    if low_cnt == 1:
+        percent = 0.95
+    elif low_cnt == 2:
+        percent = 0.9
+    elif low_cnt == 3:
+        percent = 0.8
+    elif low_cnt == 4:
+        percent = 0.5
+    elif low_cnt >= 5:
+        percent = 0
+    return percent
 
 
 @api_func_anonymous
@@ -608,7 +612,9 @@ def sync_device_user():
                                                          created_at=device_user.createTime,
                                                          user_id=device_user.deviceUserId,
                                                          item_id=device_user.sourceItemId,
-                                                         type=majia.type))
+                                                         type=majia.type,
+                                                         ip=device_user.ip,
+                                                         city=device_user.city))
                 (wx_user_ids if majia.type else qq_user_ids).append(device_user.deviceUserId)
 
                 ids_map_owner = ids_map[owner]
@@ -673,3 +679,66 @@ def calc_save_remain():
             wx_cnt = ItemDeviceUser.objects.filter(type=1, owner=user, created_at__range=create_range).count()
             UserDailyStat.objects.filter(report_date=report_date, user=user).update(
                 qq_remain=qq_cnt, wx_remain=wx_cnt)
+
+
+def re_calc_off():
+    for i in range(0, 14):
+        _re_calc((datetime.now() - timedelta(days=i)).strftime('%Y-%m-%d'))
+
+
+def _re_calc(the_date):
+    stat_date_from = '\'%s 00:00:00\'' % the_date
+    stat_date_to = '\'%s 23:59:59\'' % the_date
+
+    apps = {x.app_id: x for x in App.objects.filter(offline=1)}
+    ids = ','.join([str(x) for x in apps.keys()])
+    query = '''
+        select partnerId, count(*) from partner_CouponInst 
+        where useDate between %s and %s AND 
+        partnerId in (%s) GROUP BY partnerId
+        ''' % (stat_date_from, stat_date_to, ids)
+
+    date_str = times.to_date_str(datetime.now() - timedelta(days=1), "%Y-%m-%d") if not the_date else the_date
+
+    # 使用量
+    with connections['zhiyue'].cursor() as cursor:
+        cursor.execute(query)
+        rows = cursor.fetchall()
+        for [app_id, cnt] in rows:
+            try:
+                row = OfflineDailyStat.objects.filter(app_id=app_id, stat_date=date_str).update(user_num=cnt)
+                if row == 0:
+                    OfflineDailyStat(app_id=app_id, stat_date=date_str, user_num=cnt).save()
+            except:
+                pass
+
+        query_q = '''
+            select partnerId, useNum, extInfo, remainDay from partner_ShopCouponStatSum
+            WHERE useDate = '%s' AND partnerId in (%s)
+            ''' % (the_date, ids)
+
+        cursor.execute(query_q)
+        rows = cursor.fetchall()
+        total_map = dict()
+        remain_map = dict()
+
+        if len(rows):
+            for [app_id, cnt, ext_info, remain_day] in rows:
+                percent = _get_percent(ext_info)
+
+                if app_id not in total_map:
+                    total_map[app_id] = 0
+                    remain_map[app_id] = 0
+
+                total_map[app_id] += apps[app_id].price * cnt * percent
+                if remain_day:
+                    day_ = re.split(';', remain_day)[0]
+                    if day_:
+                        remain_cnt = int(re.split('-', day_)[1])
+                        remain_map[app_id] += remain_cnt
+
+            for app_id in apps:
+                total = total_map[app_id]
+                OfflineDailyStat.objects.filter(app_id=app_id, stat_date=date_str).update(user_cost=total,
+                                                                                          total_cost=total,
+                                                                                          remain=remain_map[app_id])
