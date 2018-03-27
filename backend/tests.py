@@ -7,7 +7,8 @@ from logzero import logger
 
 import backend.stat_utils
 from backend import model_manager, api_helper, stats, zhiyue_models
-from backend.models import SnsGroupSplit, SnsGroup, SnsUser, SnsUserGroup, SnsTask, DistArticle, DistArticleStat
+from backend.models import SnsGroupSplit, SnsGroup, SnsUser, SnsUserGroup, SnsTask, DistArticle, DistArticleStat, \
+    ItemDeviceUser
 
 
 def clean_finished():
@@ -207,3 +208,7 @@ def test_job():
 
 def run():
     test_job.delay()
+
+
+def sync_ip():
+    ItemDeviceUser.objects.filter()

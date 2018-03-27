@@ -344,6 +344,11 @@ def add_add_qun(device_task):
 
     groups = get_add_groups(cnt, device_task)
 
+    if 'client=qq' in device_task.data:
+        data += 'client=qq\n'
+    elif 'client=tim' in device_task.data:
+        data += 'client=tim\n'
+
     idx = 0
     user_lines = []
     group_lines = []
