@@ -5,7 +5,7 @@ import random
 import re
 from . import models_manager
 import datetime
-from .decorator import permission_update
+from . import decorator
 
 
 def handle_request(request):
@@ -20,9 +20,7 @@ def handle_request(request):
             search = random.choice(search_queryset)
             word = search.word
 
-            search.search_count += 1
-            search.last_time = datetime.datetime.now()
-            search.save()
+            models_manager.update_search(search=search)
 
             return HttpResponse('[ok]' + word)
         else:
@@ -33,33 +31,11 @@ def handle_request(request):
         group_name = post.get('group_name')
         group_user_count = post.get('group_user_count')
 
-        search_queryset = Search.objects.select_related('area__app').filter(word=word)
-        if search_queryset:
-            app = search_queryset.first().area.app
-        else:
-            app = None
-
-        if group_id and group_name and group_user_count and app:
-            if group_id.isdigit() and group_user_count.isdigit():
-                old_group = SnsGroup.objects.filter(group_id=group_id)
-                if old_group:
-                    # 群存在,更新一下数据
-                    old_group.update(group_name=group_name, group_user_count=int(group_user_count))
-                else:
-                    # 群不存在，创建并更新Search数据
-                    SnsGroup.objects.create(group_id=group_id, group_name=group_name,
-                                            group_user_count=int(group_user_count),
-                                            app=app)
-
-                    search = search_queryset.first()
-                    search.group_increment += 1
-                    search.group_user_increment += int(group_user_count)
-                    search.save()
-
+        models_manager.update_search(word, group_id, group_name, group_user_count)
         return HttpResponse('ok')
 
 
-@permission_update
+@decorator.permission_update
 def update(request):
     """
     处理Search更改数据的请求
@@ -150,7 +126,7 @@ def data(request):
     """
     Ajax请求，将search的数据返回
     """
-    area_data = Area.objects.filter(isDelete=False).order_by('-id')
+    area_data = Area.objects.filter(isDelete=False).order_by('app_id')
     keyword_data = Keyword.objects.filter(isDelete=False).order_by('-id')
     search_queryset = Search.objects.select_related('area__app').all()
     search_data = search_queryset.filter(search_count__gt=0).order_by('-last_time')
