@@ -700,4 +700,4 @@ class OfflineUser(models.Model):
     user_id = models.BigIntegerField(primary_key=True)
     app = models.ForeignKey(App, on_delete=CASCADE)
     created_at = models.DateTimeField()
-    remain = models.IntegerField()
+    remain = models.IntegerField(default=0)
