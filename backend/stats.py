@@ -68,6 +68,11 @@ def team_articles(request, i_page, i_size, url):
 
 @api_func_anonymous
 def team_category(request):
+    """
+    分类效果图
+    :param request:
+    :return:
+    """
     app = api_helper.get_session_app(request)
     query = """
     select category, sum(`qq_user`+wx_user) users, sum(qq_pv+wx_pv) pv from backend_distarticle a, backend_distarticlestat s
