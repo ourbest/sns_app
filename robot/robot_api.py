@@ -116,7 +116,9 @@ def device_list(request):
 def task_list(request, i_id):
     data = []
 
-    task_list1 = TaskLog.objects.select_related('type', 'sns_user').filter(device_id=i_id).order_by('start_time')
+    task_list1 = TaskLog.objects.select_related('type', 'sns_user').filter(device_id=i_id,
+                                                                           start_time__gte=timezone.now().date()).order_by(
+        'start_time')
     status = {0: '正在执行', 1: '已完成', -1: '已中断', -2: '被打断', }
     for task in task_list1:
         data.append({
