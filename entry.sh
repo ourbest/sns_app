@@ -2,7 +2,7 @@
 
 mkdir -p logs
 
-if [ "$RQWORKER" = "1" ]
+if [ "$RQWORKER" = "1"  -o "$1" = "worker" ]
 then
     exec ./worker.sh
     exit 0
