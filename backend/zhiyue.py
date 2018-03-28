@@ -1,11 +1,8 @@
 import json
 import re
-from logzero import logger
-
 from collections import defaultdict
 from datetime import datetime, timedelta
 
-import math
 from dj import times
 from dj.utils import api_func_anonymous
 from django.db import connections
@@ -13,6 +10,7 @@ from django.db.models import Count
 from django.http import HttpResponse
 from django.utils import timezone
 from django_rq import job
+from logzero import logger
 
 import backend.stat_utils
 from backend import api_helper, model_manager, stat_utils
@@ -639,6 +637,8 @@ def sync_recent_user():
                 model_manager.save_ignore(OfflineUser(user_id=coupon.userId, app_id=coupon.partnerId,
                                                       created_at=coupon.useDate))
 
+    sync_online_remain()
+
 
 @job
 def sync_device_user():
@@ -810,3 +810,16 @@ def _re_calc(the_date):
                 OfflineDailyStat.objects.filter(app_id=app_id, stat_date=date_str).update(user_cost=total,
                                                                                           total_cost=total,
                                                                                           remain=remain_map[app_id])
+
+
+def sync_online_remain():
+    to_time = datetime.now()
+    to_time_str = to_time.strftime('%Y-%m-%d')
+    from_time_str = (to_time - timedelta(days=1)).strftime('%Y-%m-%d')
+    date_range = (from_time_str, to_time_str)
+    for app in App.objects.filter(stage__in=('分发期', '留守期')):
+        ids = [x.user_id for x in ItemDeviceUser.objects.filter(app=app, created_at__range=date_range, remain=0)]
+        remains = [x.userId for x in
+                   model_manager.query(ZhiyueUser).filter(userId__in=ids, lastActiveTime__gt=to_time_str)]
+        ItemDeviceUser.objects.filter(user_id__in=remains, app=app,
+                                      created_at__range=date_range, remain=0).update(remain=1)
