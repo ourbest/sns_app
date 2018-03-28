@@ -4,6 +4,7 @@ from .models import ScheduledTasks, Search, TaskLog
 from robot.robot import Robot
 from . import models_manager
 from django.utils import timezone
+import re
 
 
 def get_task_api(request):
@@ -118,15 +119,7 @@ def task_result_api(request):
         pass
     else:
         status = post.get('status')
-        if status != '0':
-            task.status = int(status)
-            result = post.get('result')
-            if result:
-                task.result = post.get('result')
-            task.save()
-
         task_type = task.type_id
-
         if status == '1':
             if task_type == 1:
                 models_manager.update_phone_device(today_search=True)
@@ -134,6 +127,19 @@ def task_result_api(request):
                 models_manager.update_sns_user(today_apply=True)
             elif task_type == 4:
                 models_manager.update_phone_device(today_statistics=True)
+
+            task.finish_time = timezone.now()
+            task.status = int(status)
+            result = post.get('result')
+            if result:
+                task.result = result
+            task.save()
+        elif status == '-1' or status == '-2':
+            task.status = int(status)
+            result = post.get('result')
+            if result:
+                task.result = result
+            task.save()
 
         if task_type == 1:
             search_result(request, task)
@@ -156,7 +162,7 @@ def search_result(request, task):
     if models_manager.update_search(word, group_id, group_name, group_user_count):
         group_user_count = data.get('group_user_count')
         result = task.result
-        if result:
+        if re.match('^\d+/\d+$', result):
             lis = result.split('/')
             result = str(int(lis[0]) + 1) + '/' + str(int(lis[1]) + int(group_user_count))
         else:
@@ -166,7 +172,6 @@ def search_result(request, task):
 
 
 def apply_result(request, task):
-    data = request.POST
     """
     结果：
     0申请入群（不是最后结果）
@@ -183,45 +188,35 @@ def apply_result(request, task):
     11满员群
     12不允许加入
     """
-    result = data.get('result')
+    data = request.POST
+    apply_ret = data.get('apply_ret')
     group = data.get('group')
+    if apply_ret:
+        if apply_ret == '1' or apply_ret == '3' or apply_ret == '10' or apply_ret == '11' or apply_ret == '12':
+            update_sns_group_split_status(group, -1)
+        elif apply_ret == '2':
+            update_sns_group_split_status(group, 3)
+        elif apply_ret == '5':
+            update_sns_group_split_status(group, 3)
+            task.result = group
+            task.save()
 
-    if not result.isdigit():
-        update_sns_group_split_status(group, 0)
-        task.status = -1
-        task.result = result
-        task.save()
-    elif result == '1' or result == '3' or result == '10' or result == '11' or result == '12':
-        update_sns_group_split_status(group, -1)
-    elif result == '2':
-        update_sns_group_split_status(group, 3)
-    elif result == '5':
-        update_sns_group_split_status(group, 3)
-        task.status = 1
-        task.finish_time = timezone.now()
-        task.result = group
-        task.save()
+        elif apply_ret == '6' or apply_ret == '9':
+            update_sns_group_split_status(group, 0)
+            task.result = '加群受限'
+            task.save()
 
-        models_manager.update_sns_user(today_apply=True)
-    elif result == '6' or result == '9':
-        update_sns_group_split_status(group, 0)
-        task.status = -1
-        task.result = '加群受限'
-        task.save()
-
-        robot = Robot(user=task.device.owner)
-        models_manager.update_sns_user(today_apply=robot.config.max_num_of_apply)
-        robot.update_scheduled_tasks(task.device)
-    elif result == '8':
-        update_sns_group_split_status(group, 2)
-        task.status = 1
-        task.finish_time = timezone.now()
-        task.result = group
-        task.save()
-
-        models_manager.update_sns_user(today_apply=True)
+            robot = Robot(user=task.device.owner)
+            models_manager.update_sns_user(today_apply=robot.config.max_num_of_apply)
+            robot.update_scheduled_tasks(task.device)
+        elif apply_ret == '8':
+            update_sns_group_split_status(group, 2)
+            task.result = group
+            task.save()
+        else:
+            raise ValueError('error apply_ret=' + apply_ret)
     else:
-        raise ValueError('error result=' + result)
+        update_sns_group_split_status(group, 0)
 
 
 def update_sns_group_split_status(group_id, status):

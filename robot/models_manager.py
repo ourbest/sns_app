@@ -78,5 +78,5 @@ def update_sns_user(today_apply=False, **kwargs):
             if isinstance(today_apply, bool):
                 sns_user.today_apply += 1
             elif isinstance(today_apply, int):
-                sns_user.today_apply += today_apply
+                sns_user.today_apply = today_apply
         sns_user.save()
