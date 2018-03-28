@@ -17,3 +17,7 @@ statsd
 rq
 django_rq
 django-redis
+PyHive
+thrift
+sasl
+thrift_sasl

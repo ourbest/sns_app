@@ -823,3 +823,47 @@ def sync_online_remain():
                    model_manager.query(ZhiyueUser).filter(userId__in=ids, lastActiveTime__gt=to_time_str)]
         ItemDeviceUser.objects.filter(user_id__in=remains, app=app,
                                       created_at__range=date_range, remain=0).update(remain=1)
+
+
+@job("default", timeout=600)
+def sync_online_from_hive(the_date):
+    to_time = datetime.strptime(the_date, '%Y-%m-%d')
+    next_day = (to_time + timedelta(days=1)).strftime('%Y-%m-%d')
+    create_range = (to_time, next_day)
+    from pyhive import hive
+
+    cursor = hive.connect('10.19.9.13').cursor()
+    try:
+        for app in App.objects.filter(stage__in=('分发期', '留守期')):
+            ids = [x.user_id for x in ItemDeviceUser.objects.filter(app=app, created_at__range=create_range, remain=0)]
+            query = """
+            select DISTINCT deviceuserid from userstartup where partnerid=%s and dt = '%s' and deviceuserid in (%s)
+            """ % (str(app.app_id), next_day, ','.join([str(x) for x in ids]))
+            cursor.execute(query)
+            rows = cursor.fetchall()
+            ItemDeviceUser.objects.filter(app=app, created_at__range=create_range, remain=0,
+                                          user_id__in=[x[0] for x in rows]).update(remain=1)
+    finally:
+        cursor.close()
+
+
+@job("default", timeout=600)
+def sync_offline_from_hive(the_date):
+    to_time = datetime.strptime(the_date, '%Y-%m-%d')
+    next_day = (to_time + timedelta(days=1)).strftime('%Y-%m-%d')
+    create_range = (to_time, next_day)
+    from pyhive import hive
+
+    cursor = hive.connect('10.19.9.13').cursor()
+    try:
+        for app in App.objects.filter(stage__in=('分发期', '留守期')):
+            ids = [x.user_id for x in OfflineUser.objects.filter(app=app, created_at__range=create_range, remain=0)]
+            query = """
+            select DISTINCT userid from userstartup where partnerid=%s and dt = '%s' and userid in (%s)
+            """ % (str(app.app_id), next_day, ','.join([str(x) for x in ids]))
+            cursor.execute(query)
+            rows = cursor.fetchall()
+            OfflineUser.objects.filter(app=app, created_at__range=create_range, remain=0,
+                                       user_id__in=[x[0] for x in rows]).update(remain=1)
+    finally:
+        cursor.close()
