@@ -168,5 +168,6 @@ urlpatterns = [
 
     # stat
     url(r'stat/city$', stats.item_user_loc),
-    url(r'stat/category$', stats.team_category)
+    url(r'stat/category$', stats.team_category),
+    url(r'stat/remain$', stats.article_remain)
 ]

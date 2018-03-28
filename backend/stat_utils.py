@@ -7,7 +7,7 @@ from django.utils import timezone
 from django_rq import job
 
 from backend import api_helper, model_manager
-from backend.models import AppUser, SnsTask, User, RuntimeData, ArticleDailyInfo, DistArticleStat
+from backend.models import AppUser, SnsTask, User, RuntimeData, ArticleDailyInfo, DistArticleStat, ItemDeviceUser
 from backend.zhiyue_models import ClipItem, HighValueUser, WeizhanItemView
 
 
@@ -199,6 +199,12 @@ def app_daily_stat(app, date, include_sum=False):
             'name': user.name,
         }
 
+        remains = {x['type']: x['cnt'] for x in
+                   ItemDeviceUser.objects.filter(owner=user, remain=1,
+                                                 created_at__range=(
+                                                     date, date + timedelta(days=1))).values('type').annotate(
+                       cnt=Count('user_id'))}
+
         wx_stats.append(wx_stat)
         for qq in stats:
             stat = qq_stat if qq['type'] == 'QQ' else wx_stat
@@ -208,14 +214,18 @@ def app_daily_stat(app, date, include_sum=False):
             stat['download'] += qq['download']
             stat['reshare'] += qq['reshare']
             stat['users'] += qq['users']
-            stat['remain'] += qq['remain']
 
-            sum['share'] += qq_stat['share']
+            sum['share'] += qq['share']
             sum['weizhan'] += qq['weizhan']
             sum['download'] += qq['download']
             sum['reshare'] += qq['reshare']
             sum['users'] += qq['users']
-            sum['remain'] += qq['remain']
+
+        wx_stat['remain'] = remains.get(1, 0)  # [1]
+        qq_stat['remain'] = remains.get(0, 0)
+
+        qq_sum['remain'] += qq_stat['remain']
+        wx_sum['remain'] += wx_stat['remain']
 
     if len(qq_stats) or include_sum:
         qq_stats.append(qq_sum)

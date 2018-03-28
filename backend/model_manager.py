@@ -422,3 +422,7 @@ def get_date(date=None):
     return times.localtime(
         datetime.now().replace(hour=0, second=0,
                                minute=0, microsecond=0) if not date else datetime.strptime(date[0:10], '%Y-%m-%d'))
+
+
+def get_user_by_id(user_id):
+    return User.objects.filter(pk=user_id).first()

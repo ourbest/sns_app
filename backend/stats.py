@@ -5,8 +5,8 @@ from dj.utils import api_func_anonymous
 from django.db import connection
 from django.db.models import Count
 
-from backend import api_helper
-from backend.models import DistArticle, DistArticleStat, ItemDeviceUser
+from backend import api_helper, model_manager
+from backend.models import DistArticle, DistArticleStat, ItemDeviceUser, User
 from backend.stat_utils import to_stat_json, classify_data_app
 from backend.zhiyue_models import ShareArticleLog
 
@@ -109,3 +109,54 @@ def classify_data(request):
     """
     app = api_helper.get_session_app(request)
     return classify_data_app(app)
+
+
+@api_func_anonymous
+def article_remain(request, from_date, to_date):
+    from_date = from_date[0:10]
+    to_date = to_date[0:10]
+    app = api_helper.get_session_app(request)
+    query = """
+    select item_id, owner_id, count(*), count(case when remain=1 then 1 else null end) from backend_itemdeviceuser 
+    where app_id={} 
+    and created_at between '{}' and '{}' + interval 1 DAY group by item_id, owner_id order by count(*) DESC
+    """.format(app, from_date, to_date)
+
+    with connection.cursor() as cursor:
+        cursor.execute(query)
+        rows = cursor.fetchall()
+
+    item_ids = {x[0] for x in rows}
+    articles = {x.item_id: x.title for x in DistArticle.objects.filter(item_id__in=item_ids)}
+    ret = list()
+
+    users = {u.id: u for u in User.objects.filter(app_id=app)}
+
+    untitled = dict()
+
+    for x in rows:
+        if x[0] in articles:
+            if x[1] not in users:
+                users[x[1]] = model_manager.get_user_by_id(x[1])
+            ret.append({
+                'title': articles[x[0]],
+                'item_id': x[0],
+                'name': users.get(x[1]).name,
+                'users': x[2],
+                'remain': x[3],
+            })
+        else:
+            if x[1] not in untitled:
+                untitled[x[1]] = {
+                    'title': '(其它文章)',
+                    'item_id': 0,
+                    'name': users.get(x[1]).name,
+                    'users': 0,
+                    'remain': 0,
+                }
+
+            s = untitled[x[1]]
+            s['users'] += x[2]
+            s['remain'] += x[3]
+
+    return ret + list(untitled.values())
