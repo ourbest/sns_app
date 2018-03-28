@@ -28,7 +28,7 @@ def reload_next_task(phone_label):
         device_task = SnsTaskDevice()
 
     key = 'task-{}'.format(phone_label)
-    cache.set(key, device_task, timeout=3600)
+    cache.set(key, device_task, timeout=600)
     return device_task
 
 
