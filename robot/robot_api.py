@@ -34,11 +34,8 @@ def trusteeship(request):
         device.in_trusteeship = True
         device.save()
 
-        email = request.session.get('user')
-        user = User.objects.filter(email=email).first()
-        if user:
-            robot = Robot(user=user)
-            robot.create_scheduled_tasks(device)
+        robot = Robot(user=device.owner)
+        robot.create_scheduled_tasks(device)
 
     elif value == '0':
         # 关

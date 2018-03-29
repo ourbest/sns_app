@@ -1239,8 +1239,12 @@ def update_account_attr(sns_id, name, value):
 def update_device_attr(i_device_id, name, value):
     device = PhoneDevice.objects.filter(id=i_device_id).first()
     if name == 'robot':
-        device.in_trusteeship = False if int(value) else True
-        device.save()
+        # device.in_trusteeship = False if int(value) else True
+        # device.save()
+        requests.post('http://localhost:8000/robot/device/trusteeship', {
+            'device_id': i_device_id,
+            'value': 0 if int(value) else 1
+        })
         return 'ok'
 
     if value.isdigit():
