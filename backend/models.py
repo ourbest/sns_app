@@ -66,6 +66,7 @@ class PhoneDevice(models.Model):
     owner = models.ForeignKey(User, null=True, blank=True, verbose_name='所有者', on_delete=CASCADE)
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='添加时间')
     memo = models.CharField('备注', null=True, blank=True, max_length=50)
+    in_trusteeship = models.BooleanField('托管', default=False)
 
     @property
     def friend_text(self):
