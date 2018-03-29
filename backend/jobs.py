@@ -460,7 +460,8 @@ def make_resource_stat():
 
         group_total = SnsGroup.objects.filter(app=app).count()
         group_new = SnsGroup.objects.filter(app=app, created_at__range=today_range).count()
-        group_uniq_cnt = SnsUserGroup.objects.filter(sns_user__app=app, status=0).values('sns_group_id').distinct().count()
+        group_uniq_cnt = SnsUserGroup.objects.filter(sns_user__app=app, status=0).values(
+            'sns_group_id').distinct().count()
         group_cnt = SnsUserGroup.objects.filter(sns_user__app=app, status=0).count()
         wx_uniq_cnt = DeviceWeixinGroup.objects.filter(device__owner__app=app).values('name').distinct().count()
         wx_group_cnt = DeviceWeixinGroup.objects.filter(device__owner__app=app).count()
@@ -609,6 +610,8 @@ def do_gen_daily_report():
     app_stats = []
     summary = []
 
+    sum_yesterday = []
+
     for app in App.objects.filter(stage__in=('分发期', '留守期')):
         item_stats = []
         stat = app_daily_stat(app, date, True)
@@ -627,7 +630,16 @@ def do_gen_daily_report():
             item_stats += get_user_share_stat(yesterday, user)
             # sum_stats.append(get_user_stat(date, app.app_id))
 
-    html = render_to_string('daily_report.html', {'stats': app_stats, 'sum': summary})
+        yesterday_stat = AppDailyStat.objects.filter(
+            report_date=times.to_str(yesterday - timedelta(days=1), '%Y-%m-%d'), app=app).first()
+        sum_yesterday.append({
+            'app': app.app_name,
+            'weizhan': yesterday_stat.qq_pv + yesterday_stat.wx_pv,
+            'users': yesterday_stat.qq_install + yesterday_stat.wx_install,
+            'remain': yesterday_stat.qq_remain + yesterday_stat.wx_remain
+        })
+
+    html = render_to_string('daily_report.html', {'stats': app_stats, 'sum': summary, 'sum_yesterday': sum_yesterday})
     api_helper.send_html_mail('%s线上推广日报' % date, settings.DAILY_REPORT_EMAIL, html)
     print('Done.')
     # os._exit(0)
