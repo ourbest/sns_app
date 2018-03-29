@@ -122,11 +122,11 @@ def task_result_api(request):
         task_type = task.type_id
         if status == '1':
             if task_type == 1:
-                models_manager.update_operation_device(today_search=True)
+                models_manager.update_operation_device(task.device, today_search=True)
             elif task_type == 2:
-                models_manager.update_operation_sns_user(today_apply=True)
+                models_manager.update_operation_sns_user(task.sns_user, today_apply=True)
             elif task_type == 4:
-                models_manager.update_operation_device(today_statistics=True)
+                models_manager.update_operation_device(task.device, today_statistics=True)
 
             task.finish_time = timezone.now()
             task.status = int(status)
@@ -162,11 +162,11 @@ def search_result(request, task):
     if models_manager.update_search(word, group_id, group_name, group_user_count):
         group_user_count = data.get('group_user_count')
         result = task.result
-        if re.match('^\d+/\d+$', result):
+        if result and re.match('^\d+/\d+$', result):
             lis = result.split('/')
             result = str(int(lis[0]) + 1) + '/' + str(int(lis[1]) + int(group_user_count))
         else:
-            result = '1/' + group_user_count
+            result = '1/' + str(group_user_count)
         task.result = result
         task.save()
 
@@ -207,7 +207,7 @@ def apply_result(request, task):
             task.save()
 
             robot = Robot(user=task.device.owner)
-            models_manager.update_operation_sns_user(today_apply=robot.config.max_num_of_apply)
+            models_manager.update_operation_sns_user(task.sns_user, today_apply=robot.config.max_num_of_apply)
             robot.update_scheduled_tasks(task.device)
         elif apply_ret == '8':
             update_sns_group_split_status(group, 2)
