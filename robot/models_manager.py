@@ -59,8 +59,8 @@ def update_search(word=None, group_id=None, group_name=None, group_user_count=No
         search.save()
 
 
-def update_operation_device(today_search=False, today_statistics=False, **kwargs):
-    operation = OperationDevice.objects.filter(**kwargs).first()
+def update_operation_device(device, today_search=False, today_statistics=False):
+    operation = OperationDevice.objects.filter(device=device).first()
     if operation:
         if today_search:
             operation.today_search += 1
@@ -71,14 +71,13 @@ def update_operation_device(today_search=False, today_statistics=False, **kwargs
         operation.save()
 
 
-def update_operation_sns_user(today_apply=False, **kwargs):
-    operation = OperationSnsUser.objects.filter(**kwargs).first()
+def update_operation_sns_user(sns_user, today_apply: bool or int = False):
+    operation = OperationSnsUser.objects.filter(sns_user=sns_user).first()
     if operation:
-        if today_apply:
-            if isinstance(today_apply, bool):
-                operation.today_apply += 1
-            elif isinstance(today_apply, int):
-                operation.today_apply = today_apply
+        if isinstance(today_apply, bool) and today_apply:
+            operation.today_apply += 1
+        elif isinstance(today_apply, int):
+            operation.today_apply = today_apply
 
         operation.save()
 
