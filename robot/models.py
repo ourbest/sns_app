@@ -89,3 +89,21 @@ class Config(models.Model):
 
     def __str__(self):
         return self.owner.name
+
+
+class OperationDevice(models.Model):
+    """
+    设备操作记录
+    """
+    device = models.ForeignKey(PhoneDevice, on_delete=models.CASCADE)
+    last_apply = models.DateTimeField('最近一次加群的时间', null=True, blank=True)
+    today_search = models.IntegerField('今日查群次数', default=0)
+    today_statistics = models.IntegerField('今日统计次数', default=0)
+
+
+class OperationSnsUser(models.Model):
+    """
+    帐号操作记录
+    """
+    sns_user = models.ForeignKey(SnsUser, on_delete=models.CASCADE)
+    today_apply = models.IntegerField('今日加群数', default=0)

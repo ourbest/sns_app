@@ -67,9 +67,6 @@ class PhoneDevice(models.Model):
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='添加时间')
     memo = models.CharField('备注', null=True, blank=True, max_length=50)
     in_trusteeship = models.BooleanField('托管', default=False)
-    last_apply = models.DateTimeField('最近一次加群的时间', null=True, blank=True)
-    today_search = models.IntegerField('今日查群次数', default=0)
-    today_statistics = models.IntegerField('今日统计次数', default=0)
 
     @property
     def friend_text(self):
@@ -123,7 +120,6 @@ class SnsUser(models.Model):
     friend = models.IntegerField('可加群', default=1)
     search = models.IntegerField('可查群', default=0)
     provider = models.CharField('登录的软件(qq、tim)', default='qq', max_length=10)
-    today_apply = models.IntegerField('今日加群数', default=0)
 
     def __str__(self):
         return "%s(%s)" % (self.name, self.login_name)

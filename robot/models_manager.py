@@ -1,4 +1,4 @@
-from .models import Area, Keyword, Search
+from .models import Area, Keyword, Search, OperationDevice, OperationSnsUser
 from backend.models import App, SnsGroup, PhoneDevice, SnsUser
 import datetime
 from django.utils import timezone
@@ -59,24 +59,33 @@ def update_search(word=None, group_id=None, group_name=None, group_user_count=No
         search.save()
 
 
-def update_phone_device(today_search=False, today_statistics=False, **kwargs):
-    device = PhoneDevice.objects.filter(**kwargs).first()
-    if device:
+def update_operation_device(today_search=False, today_statistics=False, **kwargs):
+    operation = OperationDevice.objects.filter(**kwargs).first()
+    if operation:
         if today_search:
-            device.today_search += 1
-            device.last_apply = timezone.now()
+            operation.today_search += 1
+            operation.last_apply = timezone.now()
         if today_statistics:
-            device.today_statistics += 1
+            operation.today_statistics += 1
 
-        device.save()
+        operation.save()
 
 
-def update_sns_user(today_apply=False, **kwargs):
-    sns_user = SnsUser.objects.filter(**kwargs).first()
-    if sns_user:
+def update_operation_sns_user(today_apply=False, **kwargs):
+    operation = OperationSnsUser.objects.filter(**kwargs).first()
+    if operation:
         if today_apply:
             if isinstance(today_apply, bool):
-                sns_user.today_apply += 1
+                operation.today_apply += 1
             elif isinstance(today_apply, int):
-                sns_user.today_apply = today_apply
-        sns_user.save()
+                operation.today_apply = today_apply
+
+        operation.save()
+
+
+def operation_of_sns_user(sns_user: SnsUser):
+    return OperationSnsUser.objects.get_or_create(sns_user=sns_user)[0]
+
+
+def operation_of_device(device: PhoneDevice):
+    return OperationDevice.objects.get_or_create(device=device)[0]

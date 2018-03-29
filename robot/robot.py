@@ -1,10 +1,11 @@
 from backend.models import SnsUser, User, PhoneDevice
-from robot.models import Config, ScheduledTasks
+from robot.models import Config, ScheduledTasks, OperationSnsUser, OperationDevice
 import datetime
 from django.utils import timezone
 import time
 import random
 from collections import Iterable
+from . import models_manager
 
 TASK_TIMEOUT = 600  # 秒
 ENOUGH_TIME = 3600  # 秒
@@ -21,14 +22,22 @@ class Robot:
         """被托管的设备"""
         return PhoneDevice.objects.filter(owner=self.user, status=0, in_trusteeship=True)
 
-    def __may_apply_of_sns_user(self, device):
+    def _may_apply_of_sns_user(self, device):
         """
         返回还能加群的帐号的查询集
         :param device: 要查询的设备
         :return:
         """
+        no_operation = SnsUser.objects.filter(owner=self.user, friend=1, status=0, device=device,
+                                              operationsnsuser__isnull=True)
+        if no_operation.exists():
+            save_list = []
+            for x in no_operation:
+                save_list.append(OperationSnsUser(sns_user=x))
+            OperationSnsUser.objects.bulk_create(save_list)
+
         return SnsUser.objects.filter(owner=self.user, friend=1, status=0, device=device,
-                                      today_apply__lt=self.config.max_num_of_apply)
+                                      operationsnsuser__today_apply__lt=self.config.max_num_of_apply)
 
     def at_working_time(self):
         """判断是否在工作时间"""
@@ -140,13 +149,13 @@ class Robot:
         device_queryset = devices if devices else self.managed_devices
         for device in device_queryset:
             task_list = []
-            sns_user_queryset = self.__may_apply_of_sns_user(device)
+            sns_user_queryset = self._may_apply_of_sns_user(device)
             if sns_user_queryset.exists():
                 # 给任务加入序号
                 x, y = 0, sns_user_queryset.count()
                 for sns_user in sns_user_queryset:
                     order = x
-                    for i in range(max_num - sns_user.today_apply):
+                    for i in range(max_num - models_manager.operation_of_sns_user(sns_user).today_apply):
                         task_list.append({
                             'sns_user_id': sns_user.id,
                             'type': 2,
@@ -159,8 +168,10 @@ class Robot:
                 task_list.sort(key=lambda obj: obj['order'])
 
                 # 加入预计时间
-                before = device.last_apply
+                before = models_manager.operation_of_device(device).last_apply
                 if before:
+                    if timezone.is_naive(before):
+                        before = timezone.make_aware(before)
                     time_diff = (now - before).total_seconds() - shortest
                 else:
                     time_diff = 0
@@ -206,7 +217,7 @@ class Robot:
     def __join_statistics(time_split, task_list, device: PhoneDevice):
         return None
         """插入统计任务"""
-        if device.today_statistics >= 1:
+        if models_manager.operation_of_device(device).today_statistics >= 1:
             return None
 
         # 算出时间最大的切片
@@ -240,7 +251,7 @@ class Robot:
     def __join_search(self, time_split, task_list, device: PhoneDevice):
         """插入查群任务"""
         max_num = self.config.max_num_of_search
-        num = device.today_search
+        num = models_manager.operation_of_device(device=device).today_search
 
         for x in time_split:
             if num >= max_num:
@@ -285,8 +296,8 @@ class Robot:
 
     @staticmethod
     def clear():
-        SnsUser.objects.exclude(today_apply=0).update(today_apply=0)
-        PhoneDevice.objects.exclude(today_search=0).update(today_search=0)
+        OperationSnsUser.objects.all().update(today_apply=0)
+        OperationDevice.objects.all().update(today_search=0)
         ScheduledTasks.objects.all().delete()
 
     @staticmethod

@@ -122,11 +122,11 @@ def task_result_api(request):
         task_type = task.type_id
         if status == '1':
             if task_type == 1:
-                models_manager.update_phone_device(today_search=True)
+                models_manager.update_operation_device(today_search=True)
             elif task_type == 2:
-                models_manager.update_sns_user(today_apply=True)
+                models_manager.update_operation_sns_user(today_apply=True)
             elif task_type == 4:
-                models_manager.update_phone_device(today_statistics=True)
+                models_manager.update_operation_device(today_statistics=True)
 
             task.finish_time = timezone.now()
             task.status = int(status)
@@ -207,7 +207,7 @@ def apply_result(request, task):
             task.save()
 
             robot = Robot(user=task.device.owner)
-            models_manager.update_sns_user(today_apply=robot.config.max_num_of_apply)
+            models_manager.update_operation_sns_user(today_apply=robot.config.max_num_of_apply)
             robot.update_scheduled_tasks(task.device)
         elif apply_ret == '8':
             update_sns_group_split_status(group, 2)
