@@ -1143,6 +1143,7 @@ def devices(request, email, i_uid, i_active):
         return [{'id': x.id, 'label': x.label, 'memo': x.memo, 'num': x.phone_num,
                  'display': x.friend_text,
                  'online': x.id in online,
+                 'robot': 0 if x.in_trusteeship else 1,
                  'status': x.status}
                 for x in query]
 
@@ -1153,6 +1154,7 @@ def devices(request, email, i_uid, i_active):
         if i_active:
             query = query.filter(status=0)
         return [{'id': x.id, 'label': x.label, 'owner': x.owner.name, 'memo': x.memo,
+                 'robot': 0 if x.in_trusteeship else 1,
                  'display': x.friend_text,
                  'num': x.phone_num, 'online': x.id in online, 'status': x.status}
                 for x in query]
@@ -1164,6 +1166,7 @@ def team_devices(request):
     online = {x.device_id for x in model_manager.get_team_online(app)}
     query = PhoneDevice.objects.filter(owner__app_id=app).select_related('owner')
     return [{'id': x.id, 'label': x.label, 'owner': x.owner.name, 'memo': x.memo,
+             'robot': 0 if x.in_trusteeship else 1,
              'num': x.phone_num, 'online': x.id in online, 'status': x.status}
             for x in query]
 
@@ -1234,10 +1237,15 @@ def update_account_attr(sns_id, name, value):
 
 @api_func_anonymous
 def update_device_attr(i_device_id, name, value):
+    device = PhoneDevice.objects.filter(id=i_device_id).first()
+    if name == 'robot':
+        device.in_trusteeship = False if int(value) else True
+        device.save()
+        return 'ok'
+
     if value.isdigit():
         value = int(value)
 
-    device = PhoneDevice.objects.filter(id=i_device_id).first()
     if device:
         setattr(device, name, value)
         device.save()
