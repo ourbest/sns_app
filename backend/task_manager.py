@@ -2,7 +2,7 @@ from django.utils import timezone
 from django.core.cache import cache
 
 from backend import model_manager
-from backend.models import SnsTaskDevice
+from backend.models import SnsTaskDevice, ActiveDevice
 
 
 def get_working_task(phone_label):
@@ -38,3 +38,16 @@ def mark_task_cancel(phone_label, force=True):
         cache.set(key, '1', timeout=120)
         for x in SnsTaskDevice.objects.filter(device__label=phone_label, status__in=(1, 10, 11, 12)):
             model_manager.mark_task_cancel(x)
+
+
+def set_device_active(device):
+    key = 'active-%s' % device.label
+    if cache.get(key) == '1':
+        cache.set(key, '1', timeout=180)
+        ad = model_manager.get_active_device(device)
+        if not ad:
+            ad = ActiveDevice(device=device, status=1, active_at=timezone.now())
+        else:
+            ad.active_at = timezone.now()
+            ad.status = 1
+        ad.save()

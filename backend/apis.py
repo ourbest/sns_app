@@ -17,13 +17,14 @@ from logzero import logger
 from qiniu import Auth, put_file, etag
 
 import backend.stat_utils
-from backend import model_manager, api_helper, caches, stats, group_splitter, task_manager
+from backend import model_manager, api_helper, caches, group_splitter, task_manager
 from backend.api_helper import get_session_user, get_session_app, sns_user_to_json, device_to_json, qun_to_json, \
     parse_dist_article
 from backend.jobs import do_re_import, _after_upload, do_import_qun_stat, do_import_qun
 from backend.models import User, App, SnsGroup, SnsGroupSplit, PhoneDevice, SnsUser, SnsUserGroup, SnsTaskDevice, \
     DeviceFile, SnsTaskType, SnsTask, ActiveDevice, SnsApplyTaskLog, UserActionLog, SnsGroupLost, GroupTag, \
     TaskWorkingLog, AppUser, DeviceTaskData, DistArticle, UserAuthApp, WxDistLog, DistTaskLog, DeviceWeixinGroup
+from backend.task_manager import set_device_active
 from backend.zhiyue_models import ZhiyueUser, ClipItem
 
 
@@ -1497,6 +1498,7 @@ def report_result(id, task_id, line):
         return response
     device_task = SnsTaskDevice.objects.filter(device__label=id, task_id=task_id).first()
     if device_task:
+        task_manager.set_device_active(device_task.device)
         if device_task.status == 0:
             model_manager.mark_task_started(device_task)
         api_helper.deal_result_line(device_task, line)
@@ -1521,6 +1523,7 @@ def report_progress(id, q, task_id, p, i_status, i_r, nickname):
             pass
 
     if device_task:
+        task_manager.set_device_active(device_task.device)
         if device_task.status == 0:
             model_manager.mark_task_started(device_task)
 
@@ -1542,13 +1545,7 @@ def report_progress(id, q, task_id, p, i_status, i_r, nickname):
                 model_manager.mark_task_cancel(device_task, notify=False)
                 api_helper.webhook(device_task, '任务出现异常，本机下线，请检查日志', force=True)
 
-        ad = model_manager.get_active_device(device_task.device)
-        if not ad:
-            ad = ActiveDevice(device=device_task.device, status=1, active_at=timezone.now())
-        else:
-            ad.active_at = timezone.now()
-            ad.status = 1
-        ad.save()
+        set_device_active(device_task.device)
 
         if device_task.status == 10:
             response = HttpResponse('command=暂停')
