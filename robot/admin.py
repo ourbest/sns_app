@@ -33,3 +33,13 @@ class ConfigAdmin(admin.ModelAdmin):
 @admin.register(TaskLog)
 class TaskLogAdmin(admin.ModelAdmin):
     list_display = ('device', 'type', 'start_time', 'sns_user', 'finish_time', 'status', 'result')
+
+
+@admin.register(OperationDevice)
+class OperationDevice(admin.ModelAdmin):
+    list_display = ('device', 'last_apply', 'today_search', 'today_statistics')
+
+
+@admin.register(OperationSnsUser)
+class OperationSnsUserAdmin(admin.ModelAdmin):
+    list_display = ('sns_user', 'today_apply')
