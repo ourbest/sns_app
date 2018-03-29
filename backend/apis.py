@@ -1497,6 +1497,8 @@ def report_result(id, task_id, line):
         return response
     device_task = SnsTaskDevice.objects.filter(device__label=id, task_id=task_id).first()
     if device_task:
+        if device_task.status == 0:
+            model_manager.mark_task_started(device_task)
         api_helper.deal_result_line(device_task, line)
 
     return response
