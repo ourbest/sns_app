@@ -34,7 +34,7 @@ def reload_next_task(phone_label):
 
 def mark_task_cancel(phone_label, force=True):
     key = 'flash-%s' % phone_label
-    if cache.get(key) == '1' or force:
+    if cache.get(key) != '1' or force:
         cache.set(key, '1', timeout=120)
         for x in SnsTaskDevice.objects.filter(device__label=phone_label, status__in=(1, 10, 11, 12)):
             model_manager.mark_task_cancel(x)
@@ -42,7 +42,7 @@ def mark_task_cancel(phone_label, force=True):
 
 def set_device_active(device):
     key = 'active-%s' % device.label
-    if cache.get(key) == '1':
+    if cache.get(key) != '1':
         cache.set(key, '1', timeout=180)
         ad = model_manager.get_active_device(device)
         if not ad:

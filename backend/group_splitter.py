@@ -93,6 +93,18 @@ def split_qun_device(email):
 
 
 @job
+def re_split(email):
+    SnsGroupSplit.objects.filter(user__email=email).update(phone=None)
+    split_qun_device(email)
+
+
+@job("default", timeout=600)
+def re_split_app(app):
+    for user in User.objects.filter(app_id=app, status=0):
+        re_split(user.email)
+
+
+@job
 def merge_split():
     groups = SnsGroup.objects.filter(status__in=(0, 1))
     for group in groups:

@@ -825,6 +825,17 @@ def sync_online_remain():
                                       created_at__range=date_range, remain=0).update(remain=1)
 
 
+def sync_report_online_remain(report):
+    from_time_str = report.report_date
+    to_time_str = times.to_str(datetime.strptime(from_time_str, '%Y-%m-%d') + timedelta(days=1), '%Y-%m-%d')
+    date_range = (from_time_str, to_time_str)
+    qq_cnt = ItemDeviceUser.objects.filter(app=report.app, created_at__range=date_range, remain=1, type=0).count()
+    wx_cnt = ItemDeviceUser.objects.filter(app=report.app, created_at__range=date_range, remain=1, type=1).count()
+    report.qq_remain = qq_cnt
+    report.wx_remain = wx_cnt
+    model_manager.save_ignore(report)
+
+
 @job("default", timeout=600)
 def sync_online_from_hive(the_date):
     to_time = datetime.strptime(the_date, '%Y-%m-%d')

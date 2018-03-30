@@ -632,6 +632,10 @@ def do_gen_daily_report():
 
         yesterday_stat = AppDailyStat.objects.filter(
             report_date=times.to_str(yesterday - timedelta(days=1), '%Y-%m-%d'), app=app).first()
+
+        if yesterday_stat.qq_remain == 0 or True:
+            zhiyue.sync_report_online_remain(yesterday_stat)
+
         sum_yesterday.append({
             'app': app.app_name,
             'weizhan': yesterday_stat.qq_pv + yesterday_stat.wx_pv,

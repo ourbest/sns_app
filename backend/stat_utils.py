@@ -202,7 +202,9 @@ def app_daily_stat(app, date, include_sum=False):
         remains = {x['type']: x['cnt'] for x in
                    ItemDeviceUser.objects.filter(owner=user, remain=1,
                                                  created_at__range=(
-                                                     date, date + timedelta(days=1))).values('type').annotate(
+                                                     date,
+                                                     datetime.strptime(date, '%Y-%m-%d') + timedelta(days=1))).values(
+                       'type').annotate(
                        cnt=Count('user_id'))}
 
         wx_stats.append(wx_stat)
