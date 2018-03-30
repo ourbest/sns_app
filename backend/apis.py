@@ -1123,7 +1123,8 @@ def logout(request):
 @api_func_anonymous
 def users(request, app_id):
     app = get_session_app(request) if not app_id else app_id
-    return [{'id': x.id, 'email': x.email, 'name': x.name, 'role': x.role} for x in User.objects.filter(app_id=app)]
+    return [{'id': x.id, 'email': x.email, 'name': x.name, 'role': x.role} for x in
+            User.objects.filter(app_id=app, status=0)]
 
 
 @api_func_anonymous
