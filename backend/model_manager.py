@@ -36,17 +36,17 @@ def get_user(email):
 
 def get_online(email):
     return ActiveDevice.objects.filter(device__owner__email=email).filter(
-        active_at__gt=(timezone.now() - timedelta(seconds=300)))
+        active_at__gt=(timezone.now() - timedelta(seconds=600)))
 
 
 def get_team_online(app):
     return ActiveDevice.objects.filter(device__owner__app_id=app).filter(
-        active_at__gt=(timezone.now() - timedelta(seconds=300)))
+        active_at__gt=(timezone.now() - timedelta(seconds=600)))
 
 
 def get_online_by_id(uid):
     return ActiveDevice.objects.filter(device__owner_id=uid).filter(
-        active_at__gt=(timezone.now() - timedelta(seconds=300)))
+        active_at__gt=(timezone.now() - timedelta(seconds=600)))
 
 
 def get_qq(qq_id):
