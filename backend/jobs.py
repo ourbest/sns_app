@@ -59,6 +59,8 @@ def _after_upload(device_task, task_id, tmp_file, device, file_type):
                     import_dist_result(device_task, upload_file_content)
                 elif device_task.task.type_id == 5:  # 微信分发
                     import_wx_dist_result(device_task, upload_file_content)
+                elif device_task.task.type_id == 6:  # 微信统计
+                    import_wx_qun(device_task, upload_file_content)
                 api_helper.merge_task_result(device_task.task, upload_file_content)
 
             if task_id == 'stat':
@@ -271,6 +273,20 @@ def import_wx_dist_result(device_task, lines):
             log.save()
 
     model_manager.sync_wx_log(device_task)
+
+
+def import_wx_qun(device_task, lines):
+    reg = r'(.+)\t\((\d+)\)$'
+    groups = list()
+    for line in lines.split('\n'):
+        match = re.match(reg, line)
+        if match:
+            (name, cnt) = match.groups()
+            i = int(cnt)
+            if i:
+                groups.append([name, i])
+
+    model_manager.sync_wx_groups_imports(device_task, groups)
 
 
 def import_dist_result(device_task, lines):

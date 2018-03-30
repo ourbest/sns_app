@@ -104,6 +104,26 @@ def sync_wx_groups(device, groups):
             DeviceWeixinGroup(device=device, name=x, member_count=vn.user_count).save()
 
 
+def sync_wx_groups_imports(device, groups):
+    db = DeviceWeixinGroup.objects.filter(device=device)
+    new_values = {x[0]: x for x in groups}
+    old_values = {x.name: x for x in db}
+    logger.info('老的微信群数:%s，新的微信群数:%s' % (len(new_values), len(old_values)))
+    for x in db:
+        if x.name not in new_values:
+            x.delete()
+            DeviceWeixinGroupLost(device=device, name=x.name, member_count=x.member_count).save()
+
+    for x in new_values:
+        v = old_values.get(x)
+        vn = new_values[x]
+        if v and v.member_count != vn[1]:
+            v.member_count = vn[1]
+            v.save()
+        elif not v:
+            DeviceWeixinGroup(device=device, name=x, member_count=vn[1]).save()
+
+
 def mark_task_cancel(device_task, notify=True):
     _set_task_status(device_task, 3)
     if device_task.started_at and notify:

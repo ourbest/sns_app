@@ -40,14 +40,14 @@ def mark_task_cancel(phone_label, force=True):
             model_manager.mark_task_cancel(x)
 
 
-def set_device_active(device):
+def set_device_active(device, working=0):
     key = 'active-%s' % device.label
     if cache.get(key) != '1':
         cache.set(key, '1', timeout=180)
         ad = model_manager.get_active_device(device)
         if not ad:
-            ad = ActiveDevice(device=device, status=1, active_at=timezone.now())
+            ad = ActiveDevice(device=device, status=working, active_at=timezone.now())
         else:
             ad.active_at = timezone.now()
-            ad.status = 1
+            ad.status = working
         ad.save()

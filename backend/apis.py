@@ -1491,7 +1491,7 @@ def report_result(id, task_id, line):
         return response
     device_task = SnsTaskDevice.objects.filter(device__label=id, task_id=task_id).first()
     if device_task:
-        task_manager.set_device_active(device_task.device)
+        task_manager.set_device_active(device_task.device, 1)
         if device_task.status == 0:
             model_manager.mark_task_started(device_task)
         api_helper.deal_result_line(device_task, line)
@@ -1516,7 +1516,7 @@ def report_progress(id, q, task_id, p, i_status, i_r, nickname):
             pass
 
     if device_task:
-        task_manager.set_device_active(device_task.device)
+        task_manager.set_device_active(device_task.device, 1)
         if device_task.status == 0:
             model_manager.mark_task_started(device_task)
 
@@ -1538,7 +1538,7 @@ def report_progress(id, q, task_id, p, i_status, i_r, nickname):
                 model_manager.mark_task_cancel(device_task, notify=False)
                 api_helper.webhook(device_task, '任务出现异常，本机下线，请检查日志', force=True)
 
-        set_device_active(device_task.device)
+        set_device_active(device_task.device, 1)
 
         if device_task.status == 10:
             response = HttpResponse('command=暂停')
