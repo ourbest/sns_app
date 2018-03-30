@@ -22,7 +22,7 @@ def check_online_task():
             task.save()
 
     for task in SnsTaskDevice.objects.filter(
-            schedule_at__range=(now - timedelta(minutes=4), now - timedelta(minutes=2)), status=0):
+            schedule_at__range=(now - timedelta(minutes=12), now - timedelta(minutes=10)), status=0):
         # 应该开始但是没开始的
         if not model_manager.is_phone_online(task.device):
             logger.warning('任务无法执行%s, 因为手机%s未在线', task.id, task.device.friend_text)
