@@ -20,12 +20,13 @@ import backend.stat_utils
 from backend import model_manager, api_helper, caches, group_splitter, task_manager
 from backend.api_helper import get_session_user, get_session_app, sns_user_to_json, device_to_json, qun_to_json, \
     parse_dist_article
-from backend.jobs import do_re_import, _after_upload, do_import_qun_stat, do_import_qun
+from backend.jobs import do_re_import, _after_upload, do_import_qun_stat, do_import_qun, reload_phone_task
 from backend.models import User, App, SnsGroup, SnsGroupSplit, PhoneDevice, SnsUser, SnsUserGroup, SnsTaskDevice, \
     DeviceFile, SnsTaskType, SnsTask, ActiveDevice, SnsApplyTaskLog, UserActionLog, SnsGroupLost, GroupTag, \
     TaskWorkingLog, AppUser, DeviceTaskData, DistArticle, UserAuthApp, WxDistLog, DistTaskLog, DeviceWeixinGroup
 from backend.task_manager import set_device_active
 from backend.zhiyue_models import ZhiyueUser, ClipItem
+from . import schedulers
 
 
 @api_func_anonymous
@@ -1309,6 +1310,8 @@ def create_task(type, params, phone, request, date):
                        app_id=get_session_app(request), status=0, schedule_at=scheduler_date,
                        data=params, creator=user)
         task.save()
+
+        schedulers.run_at(task.schedule_at.timestamp() + 5, reload_phone_task, task.id)
 
         # if '分发' in task_type.name:
         #     pass

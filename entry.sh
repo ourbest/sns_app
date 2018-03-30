@@ -8,6 +8,11 @@ then
     exit 0
 fi
 
+if [ "$1" = "scheduler" ]
+    python manage.py rq-scheduler
+    exit 0
+then
+
 if [ "$WORKERS" = "" ]
 then
     WORKERS=4
