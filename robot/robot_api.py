@@ -131,10 +131,9 @@ def task_list(request, i_id):
         'estimated_start_time')
     if task_list2.exists():
         if Robot.check_timeout(task_list2.first().estimated_start_time) == -1:
-            user = User.objects.filter(email=request.session.get('user')).first()
             device = PhoneDevice.objects.filter(id=i_id).first()
-            if user and device:
-                Robot(user=user).update_scheduled_tasks(device)
+            if device:
+                Robot(user=device.owner).update_scheduled_tasks(device)
 
     for task in task_list2:
         data.append({
