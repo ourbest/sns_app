@@ -6,6 +6,8 @@ import time
 import random
 from collections import Iterable
 from . import models_manager
+from dj import times
+from django.db.models import Q
 
 TASK_TIMEOUT = 600  # 秒
 ENOUGH_TIME = 3600  # 秒
@@ -296,9 +298,11 @@ class Robot:
 
     @staticmethod
     def clear():
-        OperationSnsUser.objects.all().update(today_apply=0)
-        OperationDevice.objects.all().update(today_search=0)
-        ScheduledTasks.objects.all().delete()
+        OperationSnsUser.objects.exclude(today_apply=0).update(today_apply=0)
+        OperationDevice.objects.exclude(Q(today_search=0) & Q(today_statistics=0)).update(today_search=0,
+                                                                                          today_statistics=0)
+        today_end = times.localtime(timezone.now().replace(hour=23, minute=59, second=59, microsecond=999999))
+        ScheduledTasks.objects.filter(estimated_start_time__lte=today_end).delete()
 
     @staticmethod
     def check_timeout(start_time):

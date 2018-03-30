@@ -193,16 +193,16 @@ def apply_result(request, task):
     group = data.get('group')
     if apply_ret:
         if apply_ret == '1' or apply_ret == '3' or apply_ret == '10' or apply_ret == '11' or apply_ret == '12':
-            update_sns_group_split_status(group, -1)
+            update_sns_group_split_status(group, task.device, -1)
         elif apply_ret == '2':
-            update_sns_group_split_status(group, 3)
+            update_sns_group_split_status(group, task.device, 3)
         elif apply_ret == '5':
-            update_sns_group_split_status(group, 3)
+            update_sns_group_split_status(group, task.device, 3)
             task.result = group
             task.save()
 
         elif apply_ret == '6' or apply_ret == '9':
-            update_sns_group_split_status(group, 0)
+            update_sns_group_split_status(group, task.device, 0)
             task.result = '加群受限'
             task.save()
 
@@ -210,21 +210,14 @@ def apply_result(request, task):
             models_manager.update_operation_sns_user(task.sns_user, today_apply=robot.config.max_num_of_apply)
             robot.update_scheduled_tasks(task.device)
         elif apply_ret == '8':
-            update_sns_group_split_status(group, 2)
+            update_sns_group_split_status(group, task.device, 2)
             task.result = group
             task.save()
         else:
             raise ValueError('error apply_ret=' + apply_ret)
     else:
-        update_sns_group_split_status(group, 0)
+        update_sns_group_split_status(group, task.device, 0)
 
 
-def update_sns_group_split_status(group_id, status):
-    try:
-        group = SnsGroupSplit.objects.get(group_id=group_id)
-    except SnsGroupSplit.DoesNotExist:
-        pass
-    else:
-        group.status = status
-        group.save()
-        return group
+def update_sns_group_split_status(group_id, device, status):
+    SnsGroupSplit.objects.filter(group_id=group_id, phone=device).update(status=status)
