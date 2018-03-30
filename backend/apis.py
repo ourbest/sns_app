@@ -133,13 +133,7 @@ def _make_task_content(device_task):
 def task(id, i_text=0):
     device = model_manager.get_phone(id)
     if device:
-        ad = model_manager.get_active_device(device)
-        if not ad:
-            ad = ActiveDevice(device=device, status=0, active_at=timezone.now())
-        else:
-            ad.active_at = timezone.now()
-            ad.status = 0
-
+        task_manager.set_device_active(device)
         device_task = task_manager.get_working_task(id)
         # SnsTaskDevice.objects.filter(device__label=id, status=0,
         #                              schedule_at__lte=timezone.now()).first()
@@ -149,8 +143,9 @@ def task(id, i_text=0):
 
             try:
                 content = get_task_content(device_task)
+                ad = model_manager.get_active_device(device)
                 ad.status = 1
-                ad.save()
+                model_manager.save_ignore(ad)
 
                 logger.info("发送任务%s - %s" % (device_task.id, id))
 
@@ -162,10 +157,7 @@ def task(id, i_text=0):
                 logger.warning('Error process task %s' % id, exc_info=1)
 
         else:
-            ad.status = 0
             task_manager.mark_task_cancel(id)
-
-        ad.save()
 
     return {} if i_text == 0 else HttpResponse('', content_type='application/octet-stream')
 
