@@ -309,7 +309,7 @@ class SnsTaskDevice(models.Model):
     progress = models.IntegerField('进度', default=0)
 
     def __str__(self):
-        return '%s@%s' % (self.task, self.device)
+        return '%s@%s' % (self.task if self.task else 'N/A', self.device if self.device else 'N/A')
 
 
 class DeviceFile(models.Model):
