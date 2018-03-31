@@ -10,7 +10,7 @@ fi
 
 if [ "$1" = "scheduler" ]
 then
-    python manage.py rq-scheduler
+    python manage.py rqscheduler
     exit 0
 fi
 
