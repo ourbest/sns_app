@@ -197,10 +197,11 @@ class Robot:
                     seconds += interval[0]
 
                     if not time_split:
-                        time_split.append(
-                            (datetime.datetime.now(), task['time'].replace(second=task['time'].second + 1)))
+                        t_start = datetime.datetime.now()
                     else:
-                        time_split.append((time_split[-1][1], task['time'].replace(second=task['time'].second + 1)))
+                        t_start = time_split[-1][1]
+                    t_end = task['time'] + datetime.timedelta(seconds=1)
+                    time_split.append((t_start, t_end))
 
                 time_split.append((time_split[-1][1], datetime.datetime.now().replace(hour=23, minute=59, second=59)))
 
