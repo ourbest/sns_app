@@ -9,9 +9,10 @@ then
 fi
 
 if [ "$1" = "scheduler" ]
+then
     python manage.py rq-scheduler
     exit 0
-then
+fi
 
 if [ "$WORKERS" = "" ]
 then
