@@ -17,4 +17,4 @@ def get_scheduler():
 def run_at(timestamp, func, *args, **kwargs):
     if isinstance(timestamp, datetime):
         timestamp = timestamp.timestamp()
-    get_scheduler().enqueue_in(timedelta(seconds=datetime.now().timestamp() - timestamp), func, args, kwargs)
+    get_scheduler().enqueue_in(timedelta(seconds=datetime.now().timestamp() - timestamp), func, *args, **kwargs)

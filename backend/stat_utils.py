@@ -199,11 +199,12 @@ def app_daily_stat(app, date, include_sum=False):
             'name': user.name,
         }
 
+        date_inst = datetime.strptime(date, '%Y-%m-%d') if isinstance(date, str) else date
         remains = {x['type']: x['cnt'] for x in
                    ItemDeviceUser.objects.filter(owner=user, remain=1,
                                                  created_at__range=(
                                                      date,
-                                                     datetime.strptime(date, '%Y-%m-%d') + timedelta(days=1))).values(
+                                                     date_inst + timedelta(days=1))).values(
                        'type').annotate(
                        cnt=Count('user_id'))}
 
