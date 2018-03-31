@@ -19,7 +19,7 @@ from backend.model_manager import save_ignore
 from backend.models import DeviceFile, SnsUser, SnsGroup, SnsUserGroup, SnsApplyTaskLog, SnsGroupSplit, WxDistLog, \
     SnsUserKickLog, DeviceTaskData, DailyActive, App, UserDailyStat, AppDailyStat, DeviceWeixinGroup, SnsGroupLost, \
     DeviceWeixinGroupLost, SnsTask, UserDailyResourceStat, AppDailyResourceStat, DistArticle, DistArticleStat, AppUser, \
-    AppWeeklyStat, User
+    AppWeeklyStat, User, SnsTaskDevice
 from backend.stat_utils import get_count, get_user_share_stat, app_daily_stat, classify_data_app
 
 
@@ -776,3 +776,13 @@ def send_stat_mail():
     html = render_to_string('article_weekly_report.html', {'stats': data})
 
     api_helper.send_html_mail('{}分发周报'.format(time_range), settings.DAILY_REPORT_EMAIL, html)
+
+
+def echo(word):
+    print('%s at %s' % (word, datetime.now()))
+
+
+def reload_phone_task(task_id):
+    for device_task in SnsTaskDevice.objects.filter(task_id=task_id).select_related('device'):
+        from backend import task_manager
+        task_manager.reload_next_task(device_task.device.label)

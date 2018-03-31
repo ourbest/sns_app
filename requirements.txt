@@ -21,3 +21,4 @@ PyHive
 thrift
 sasl
 thrift_sasl
+rq_scheduler
