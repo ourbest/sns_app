@@ -699,6 +699,7 @@ def sync_remain():
     from_time_str = (to_time - timedelta(days=1)).strftime('%Y-%m-%d')
     date_range = (from_time_str, to_time_str)
     create_range = ((to_time - timedelta(days=2)).strftime('%Y-%m-%d'), from_time_str)
+    report_date = (to_time - timedelta(days=2)).strftime('%Y-%m-%d')  # 留存记录是针对前一天的
     for app in App.objects.filter(stage__in=('分发期', '留守期')):
         ids = [x.user_id for x in ItemDeviceUser.objects.filter(app=app, created_at__range=create_range)]
         remains = [x.userId for x in
@@ -708,7 +709,6 @@ def sync_remain():
         qq_cnt = ItemDeviceUser.objects.filter(type=0, app=app, created_at__range=create_range, remain=1).count()
         wx_cnt = ItemDeviceUser.objects.filter(type=1, app=app, created_at__range=create_range, remain=1).count()
 
-        report_date = (to_time - timedelta(days=1)).strftime('%Y-%m-%d')  # 留存记录是针对前一天的
         AppDailyStat.objects.filter(report_date=report_date, app=app).update(
             qq_remain=qq_cnt, wx_remain=wx_cnt)
 
@@ -834,6 +834,25 @@ def sync_report_online_remain(report):
     report.qq_remain = qq_cnt
     report.wx_remain = wx_cnt
     model_manager.save_ignore(report)
+
+
+def sync_remain_at(report_date):
+    date_range = (report_date, '%s 23:59:59' % report_date)
+    for app in App.objects.filter(stage__in=('分发期', '留守期')):
+        for user in User.objects.filter(app=app, status=0):
+            qq_cnt = ItemDeviceUser.objects.filter(app=app, owner=user, created_at__range=date_range, remain=1,
+                                                   type=0).count()
+            wx_cnt = ItemDeviceUser.objects.filter(app=app, owner=user, created_at__range=date_range, remain=1,
+                                                   type=1).count()
+            UserDailyStat.objects.filter(report_date=report_date, user=user).update(
+                qq_remain=qq_cnt, wx_remain=wx_cnt)
+
+        qq_cnt = ItemDeviceUser.objects.filter(app=app, created_at__range=date_range, remain=1,
+                                               type=0).count()
+        wx_cnt = ItemDeviceUser.objects.filter(app=app, created_at__range=date_range, remain=1,
+                                               type=1).count()
+        AppDailyStat.objects.filter(report_date=report_date, app=app).update(
+            qq_remain=qq_cnt, wx_remain=wx_cnt)
 
 
 @job("default", timeout=600)

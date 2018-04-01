@@ -702,3 +702,28 @@ class OfflineUser(models.Model):
     app = models.ForeignKey(App, on_delete=CASCADE)
     created_at = models.DateTimeField()
     remain = models.IntegerField(default=0)
+
+
+class KPIPeriod(models.Model):
+    app = models.ForeignKey(App, on_delete=CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+    from_date = models.CharField(max_length=20)
+    to_date = models.CharField(max_length=20)
+    pv = models.IntegerField(default=0)
+    users = models.IntegerField(default=0)
+    remains = models.IntegerField(default=0)
+    editors = models.CharField(max_length=255)
+
+    def __str__(self):
+        return "{} - {}".format(self.from_date, self.to_date)
+
+    @property
+    def json(self):
+        return {
+            'from_date': self.from_date,
+            'to_date': self.to_date,
+            'pv': self.pv,
+            'users': self.users,
+            'remains': self.remains,
+            'editors': self.editors,
+        }

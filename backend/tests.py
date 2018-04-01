@@ -1,4 +1,5 @@
 # Create your tests here.
+from datetime import datetime, timedelta
 from time import sleep
 
 from django.utils import timezone
@@ -6,9 +7,9 @@ from django_rq import job
 from logzero import logger
 
 import backend.stat_utils
-from backend import model_manager, api_helper, stats, zhiyue_models
+from backend import model_manager, api_helper, stats, zhiyue_models, zhiyue
 from backend.models import SnsGroupSplit, SnsGroup, SnsUser, SnsUserGroup, SnsTask, DistArticle, DistArticleStat, \
-    ItemDeviceUser
+    ItemDeviceUser, App, AppDailyStat, User, UserDailyStat
 from backend.zhiyue_models import DeviceUser
 
 
@@ -217,3 +218,27 @@ def sync_ip():
         u.ip = du.ip
         u.city = du.city
         u.save()
+
+
+def test_remain():
+    logger.info('同步留存数据')
+    to_time = datetime.now()
+    to_time_str = to_time.strftime('%Y-%m-%d')
+    from_time_str = (to_time - timedelta(days=1)).strftime('%Y-%m-%d')
+    date_range = (from_time_str, to_time_str)
+    create_range = ((to_time - timedelta(days=2)).strftime('%Y-%m-%d'), from_time_str)
+    report_date = (to_time - timedelta(days=2)).strftime('%Y-%m-%d')  # 留存记录是针对前一天的
+    for app in App.objects.filter(stage__in=('分发期', '留守期')):
+        for user in User.objects.filter(app=app, status=0):
+            qq_cnt = ItemDeviceUser.objects.filter(type=0, owner=user, created_at__range=create_range).count()
+            wx_cnt = ItemDeviceUser.objects.filter(type=1, owner=user, created_at__range=create_range).count()
+            UserDailyStat.objects.filter(report_date=report_date, user=user).update(
+                qq_remain=qq_cnt, wx_remain=wx_cnt)
+
+
+def sync_remain_days():
+    today = datetime.now()
+    for days in range(1, 10):
+        date = (today - timedelta(days=days)).strftime('%Y-%m-%d')
+        print(date)
+        zhiyue.sync_remain_at(date)
