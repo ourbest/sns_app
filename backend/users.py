@@ -12,6 +12,14 @@ def user_info(request):
 
 
 @api_func_anonymous
+def disable_user(email):
+    user = model_manager.get_user(email)
+    if user and user.status != -1:
+        user.status = -1
+        model_manager.save_ignore(user, fields=['status'])
+
+
+@api_func_anonymous
 def update_user_info(request, name, app_id, qq_id, wx_id, i_role, phone, i_notify):
     email = api_helper.get_session_user(request)
     user = model_manager.get_user(email)
@@ -50,8 +58,21 @@ def delegated(request):
 
 
 @api_func_anonymous
-def all_users():
-    return [api_helper.user_to_json(x) for x in User.objects.filter(role__lt=3)]
+def all_users(request):
+    query = User.objects.filter(status__in=(0, 1))
+    email = api_helper.get_session_user(request)
+    user = model_manager.get_user(email)
+    if not user or user.role == 2:
+        query = query.filter(role__lt=3)
+    return [api_helper.user_to_json(x) for x in query]
+
+
+@api_func_anonymous
+def update_user_status(email, i_status):
+    user = model_manager.get_user(email)
+    if user and user.status != i_status:
+        user.status = i_status
+        user.save()
 
 
 @api_func_anonymous

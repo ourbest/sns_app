@@ -99,6 +99,8 @@ urlpatterns = [
     url(r'^image$', apis.file_content),
     url(r'^user/info$', users.user_info),
     url(r'^user/update$', users.update_user_info),
+    url(r'^user/disable$', users.disable_user),
+    url(r'^user/update/status$', users.update_user_status),
     url(r'^user/pwd$', users.change_password),
     url(r'^user/all$', users.all_users),
     url(r'^user/delegates$', users.delegates),

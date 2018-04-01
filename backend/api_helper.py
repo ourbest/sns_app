@@ -128,7 +128,7 @@ def user_to_json(x):
 
     ret = {
         'id': x.id, 'email': x.email, 'name': x.name, 'notify': 0 if not x.notify else x.notify,
-        'role': x.role, 'phone': x.phone, 'app_users': app_users
+        'role': x.role, 'phone': x.phone, 'app_users': app_users, 'status': x.status,
     }
     for u in app_users:
         if u['type'] == 0:
