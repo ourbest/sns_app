@@ -1,6 +1,6 @@
 from django.conf.urls import url
 
-from backend import apis, users, zhiyue, tasks, daemons, bot_apis, stats, exts
+from backend import apis, users, zhiyue, tasks, daemons, bot_apis, stats, exts, kpi
 
 app_name = 'backend'
 urlpatterns = [
@@ -171,5 +171,8 @@ urlpatterns = [
     # stat
     url(r'stat/city$', stats.item_user_loc),
     url(r'stat/category$', stats.team_category),
-    url(r'stat/remain$', stats.article_remain)
+    url(r'stat/remain$', stats.article_remain),
+
+    # kpi
+    url(r'kpi/detail$', kpi.api_kpi),
 ]

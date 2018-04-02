@@ -724,6 +724,6 @@ class KPIPeriod(models.Model):
             'to_date': self.to_date,
             'pv': self.pv,
             'users': self.users,
-            'remains': self.remains,
+            'remain': self.remains,
             'editors': self.editors,
         }
