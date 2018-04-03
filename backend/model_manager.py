@@ -121,7 +121,7 @@ def sync_wx_groups_imports(device, groups):
             v.member_count = vn[1]
             v.save()
         elif not v:
-            DeviceWeixinGroup(device=device, name=x, member_count=vn[1]).save()
+            DeviceWeixinGroup(device=device, name=x[0:100], member_count=vn[1]).save()
 
 
 def mark_task_cancel(device_task, notify=True):
