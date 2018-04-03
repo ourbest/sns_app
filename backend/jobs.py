@@ -652,12 +652,12 @@ def do_gen_daily_report():
         if yesterday_stat and (yesterday_stat.qq_remain == 0 or True):
             zhiyue.sync_report_online_remain(yesterday_stat)
 
-        sum_yesterday.append({
-            'app': app.app_name,
-            'weizhan': yesterday_stat.qq_pv + yesterday_stat.wx_pv,
-            'users': yesterday_stat.qq_install + yesterday_stat.wx_install,
-            'remain': yesterday_stat.qq_remain + yesterday_stat.wx_remain
-        })
+            sum_yesterday.append({
+                'app': app.app_name,
+                'weizhan': yesterday_stat.qq_pv + yesterday_stat.wx_pv,
+                'users': yesterday_stat.qq_install + yesterday_stat.wx_install,
+                'remain': yesterday_stat.qq_remain + yesterday_stat.wx_remain
+            })
 
     html = render_to_string('daily_report.html', {'stats': app_stats, 'sum': summary, 'sum_yesterday': sum_yesterday})
     api_helper.send_html_mail('%s线上推广日报' % date, settings.DAILY_REPORT_EMAIL, html)
