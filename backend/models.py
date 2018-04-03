@@ -713,17 +713,23 @@ class KPIPeriod(models.Model):
     users = models.IntegerField(default=0)
     remains = models.IntegerField(default=0)
     editors = models.CharField(max_length=255)
+    status = models.IntegerField(default=0)
 
     def __str__(self):
         return "{} - {}".format(self.from_date, self.to_date)
 
     @property
     def json(self):
+        editors = []
+        if self.editors:
+            editors = [x.name for x in User.objects.filter(pk__in=self.editors.split(','))]
         return {
+            'id': self.id,
+            'label': str(self),
             'from_date': self.from_date,
             'to_date': self.to_date,
             'pv': self.pv,
             'users': self.users,
             'remain': self.remains,
-            'editors': self.editors,
+            'editors': '/'.join(editors),
         }

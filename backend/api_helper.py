@@ -23,7 +23,7 @@ def get_session_user(request):
 
 
 def get_session_app(request):
-    app = request.GET.get('app')
+    app = request.GET.get('app') or request.POST.get('app')
     if app:
         return app
 

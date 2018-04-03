@@ -1,6 +1,6 @@
 from dj.utils import api_func_anonymous
 
-from backend import api_helper
+from backend import api_helper, model_manager
 from backend.models import KPIPeriod, UserDailyStat, AppDailyStat
 
 
@@ -10,12 +10,48 @@ def api_kpi(request, i_period):
     return get_kpi(app, i_period)
 
 
+@api_func_anonymous
+def api_kpi_config(request):
+    app = api_helper.get_session_app(request)
+    return [x.json for x in KPIPeriod.objects.filter(app_id=app, status=0).order_by("-pk")[0:10]]
+
+
+@api_func_anonymous
+def api_kpi_remove(request, i_id):
+    db = KPIPeriod.objects.filter(id=i_id).first()
+    if db:
+        db.status = -1
+        model_manager.save_ignore(db)
+
+
+@api_func_anonymous
+def api_kpi_save(request, from_date, to_date, i_pv, i_users, i_remain, i_id):
+    app = api_helper.get_session_app(request)
+    user = model_manager.get_user(api_helper.get_session_user(request))
+    if i_id:
+        db = KPIPeriod.objects.filter(id=i_id).first()
+        if not db:
+            return
+    else:
+        db = KPIPeriod(app_id=app)
+    db.from_date = from_date
+    db.to_date = to_date
+    db.pv = i_pv
+    db.users = i_users
+    db.remains = i_remain
+    editors = db.editors.split(',') if db.editors else []
+    if str(user.id) not in editors:
+        editors.append(str(user.id))
+        db.editors = ','.join(editors)
+    model_manager.save_ignore(db)
+
+
 def get_kpi_periods(app):
-    return [x.json for x in KPIPeriod.objects.filter(app=app).order_by("-pk")]
+    return [x.json for x in KPIPeriod.objects.filter(app=app, status=0).order_by("-pk")]
 
 
 def get_kpi(app_id, period=None):
-    query = KPIPeriod.objects.filter(app_id=app_id).order_by("-pk")
+    query = KPIPeriod.objects.filter(app_id=app_id, status=0).order_by("-pk")
     if period:
         query = query.filter(id=period)
 

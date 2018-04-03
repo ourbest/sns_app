@@ -175,4 +175,7 @@ urlpatterns = [
 
     # kpi
     url(r'kpi/detail$', kpi.api_kpi),
+    url(r'kpi/config$', kpi.api_kpi_config),
+    url(r'kpi/config/save$', kpi.api_kpi_save),
+    url(r'kpi/config/remove$', kpi.api_kpi_remove),
 ]
