@@ -286,7 +286,7 @@ def import_wx_qun(device_task, lines):
             if i:
                 groups.append([name, i])
 
-    model_manager.sync_wx_groups_imports(device_task, groups)
+    model_manager.sync_wx_groups_imports(device_task.device, groups)
 
 
 def import_dist_result(device_task, lines):
