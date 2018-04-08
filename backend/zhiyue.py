@@ -635,7 +635,7 @@ def sync_recent_user():
                                                              useDate__gt=timezone.now() - timedelta(minutes=30))
             for coupon in coupons:
                 model_manager.save_ignore(OfflineUser(user_id=coupon.userId, app_id=coupon.partnerId,
-                                                      created_at=coupon.useDate))
+                                                      owner=coupon.shopOwner, created_at=coupon.useDate))
 
     sync_online_remain()
 
@@ -687,7 +687,7 @@ def sync_device_user():
             if cnt != coupons.count():
                 for coupon in coupons:
                     model_manager.save_ignore(OfflineUser(user_id=coupon.userId, app_id=coupon.partnerId,
-                                                          created_at=coupon.useDate))
+                                                          owner=coupon.shopOwner, created_at=coupon.useDate))
 
     sync_remain()
 

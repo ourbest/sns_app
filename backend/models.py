@@ -702,6 +702,7 @@ class OfflineUser(models.Model):
     user_id = models.BigIntegerField(primary_key=True)
     app = models.ForeignKey(App, on_delete=CASCADE)
     created_at = models.DateTimeField()
+    owner = models.BigIntegerField('扫描人', default=0)
     remain = models.IntegerField(default=0)
 
 

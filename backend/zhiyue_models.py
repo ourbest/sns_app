@@ -228,6 +228,7 @@ class CouponInst(models.Model):
     userId = models.BigIntegerField()
     useDate = models.DateTimeField()
     status = models.IntegerField()
+    shopOwner = models.BigIntegerField()
 
     @staticmethod
     def db_name():
