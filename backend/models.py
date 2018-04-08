@@ -36,6 +36,11 @@ class User(models.Model):
     phone = models.CharField(max_length=20, help_text='手机号', null=True, blank=True)
     notify = models.IntegerField(default=0, null=True, help_text="是否接受钉钉通知")
 
+    @property
+    def json(self):
+        x = self
+        return {'id': x.id, 'email': x.email, 'name': x.name, 'role': x.role}
+
     def __str__(self):
         return self.name
 

@@ -12,7 +12,7 @@ def split_qun(app):
     #
     # def _split_qun(app):
     logger.info('Split qun of %s' % app)
-    users = [x for x in User.objects.filter(app_id=app, status=0) if x.phonedevice_set.filter(status=0).count() > 0]
+    users = get_split_to(app)
 
     if len(users) == 0:
         return 'ok'
@@ -66,6 +66,11 @@ def split_qun(app):
             model_manager.save_ignore(x)
     for u in users:
         split_qun_device(u.email)
+
+
+def get_split_to(app):
+    users = [x for x in User.objects.filter(app_id=app, status=0) if x.phonedevice_set.filter(status=0).count() > 0]
+    return users
 
 
 def split_qun_device(email):

@@ -249,3 +249,11 @@ def sync_user():
         db = model_manager.query(CouponInst).filter(userId=x.user_id).first()
         x.owner = db.shopOwner
         x.save(update_fields=['owner'])
+
+
+def clear_app_splitter(app_id):
+    SnsGroupSplit.objects.filter(group__app_id=app_id, status=0).delete()
+
+
+def delete_user_splitter(app_id, user_id):
+    SnsGroupSplit.objects.filter(group__app_id=app_id, user_id=user_id, status=0).delete()

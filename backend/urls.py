@@ -66,6 +66,7 @@ urlpatterns = [
 
     url(r'^split/qq/all$', apis.split_qq_all),
     url(r'^split/qq$', apis.split_qq),
+    url(r'^split/qq/users$', apis.split_qq_users),
     url(r'^users$', apis.users),
     url(r'^devices$', apis.devices),
     url(r'^accounts$', apis.accounts),

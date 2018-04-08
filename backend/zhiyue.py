@@ -601,6 +601,12 @@ def sync_recent_user():
     :return:
     """
     logger.info('同步最新数据')
+    minutes = 30
+    sync_user_in_minutes(minutes)
+    sync_online_remain()
+
+
+def sync_user_in_minutes(minutes):
     for app in App.objects.filter(stage__in=('分发期', '留守期')):
         majias = {x.cutt_user_id: x for x in AppUser.objects.filter(type__in=(0, 1), user__app=app, user__status=0)}
         qq_user_ids = []
@@ -609,7 +615,7 @@ def sync_recent_user():
             ids_map = defaultdict(dict)
             for device_user in model_manager.query(DeviceUser).filter(sourceUserId__in=majias.keys(),
                                                                       createTime__gt=timezone.now() - timedelta(
-                                                                          minutes=30)):
+                                                                          minutes=minutes)):
                 majia = majias.get(device_user.sourceUserId)
                 owner = majia.user
                 model_manager.save_ignore(ItemDeviceUser(app=app, owner=owner,
@@ -632,12 +638,10 @@ def sync_recent_user():
         if app.offline:
 
             coupons = model_manager.query(CouponInst).filter(partnerId=app.pk, status=1,
-                                                             useDate__gt=timezone.now() - timedelta(minutes=30))
+                                                             useDate__gt=timezone.now() - timedelta(minutes=minutes))
             for coupon in coupons:
                 model_manager.save_ignore(OfflineUser(user_id=coupon.userId, app_id=coupon.partnerId,
                                                       owner=coupon.shopOwner, created_at=coupon.useDate))
-
-    sync_online_remain()
 
 
 @job
