@@ -9,8 +9,8 @@ from logzero import logger
 import backend.stat_utils
 from backend import model_manager, api_helper, stats, zhiyue_models, zhiyue
 from backend.models import SnsGroupSplit, SnsGroup, SnsUser, SnsUserGroup, SnsTask, DistArticle, DistArticleStat, \
-    ItemDeviceUser, App, AppDailyStat, User, UserDailyStat
-from backend.zhiyue_models import DeviceUser
+    ItemDeviceUser, App, AppDailyStat, User, UserDailyStat, OfflineUser
+from backend.zhiyue_models import DeviceUser, CouponInst
 
 
 def clean_finished():
@@ -242,3 +242,10 @@ def sync_remain_days():
         date = (today - timedelta(days=days)).strftime('%Y-%m-%d')
         print(date)
         zhiyue.sync_remain_at(date)
+
+
+def sync_user():
+    for x in OfflineUser.objects.filter(owner=0):
+        db = model_manager.query(CouponInst).filter(userId=x.user_id).first()
+        x.owner = db.shopOwner
+        x.save(update_fields=['owner'])

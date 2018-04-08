@@ -65,7 +65,7 @@ def get_kpi(app_id, period=None):
     rows = []
     users = dict()
     for x in UserDailyStat.objects.filter(report_date__range=(period.from_date, period.to_date),
-                                          app_id=app_id).order_by('report_date'):
+                                          app_id=app_id, user__status=0).order_by('report_date'):
         if len(rows) == 0 or rows[-1]['date'] != x.report_date:
             rows.append({
                 'date': x.report_date
