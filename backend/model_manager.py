@@ -448,3 +448,8 @@ def get_date(date=None):
 
 def get_user_by_id(user_id):
     return User.objects.filter(pk=user_id).first()
+
+
+def increase_apply_count(qun):
+    qun.apply_count += 1
+    save_ignore(qun, fields=['apply_count'])

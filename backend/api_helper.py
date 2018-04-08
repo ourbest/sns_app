@@ -187,8 +187,8 @@ def to_share_url(user, url, share_type=0, label=None):
         u = '%s/%s' % (u, cutt_id)
         u = u.replace('http://tz.', 'https://tz.')
         if label:
-            suffix = label if len(label) != 11 else '%s___%s' % (label[0:4], label[-4:])
-            u += '?l=' + suffix
+            suffix = label if len(label) != 11 else '%s' % (label[-4:])
+            u += '/' + suffix + '?ts=%s' % int(timezone.now().timestamp() * 1000 % 1000000)
 
     return u if u else url
 
@@ -484,6 +484,7 @@ def deal_result_line(device_task, line):
             qun = model_manager.get_qun(qun_id)
             qq = model_manager.get_qq(qq_id)
             if status in ADD_STATUS:
+                model_manager.increase_apply_count(qun)
                 deal_add_result(device_task, qq, qun, status)
             else:
                 deal_dist_result(device_task, qq, qun, status)

@@ -143,6 +143,7 @@ class SnsGroup(models.Model):
     quiz = models.CharField(verbose_name='问题答案', max_length=50, null=True, blank=True)
     from_user = models.ForeignKey(User, verbose_name='爬群用户', null=True, blank=True, on_delete=CASCADE)
     kick_times = models.IntegerField(default=0, verbose_name='被踢的次数')
+    apply_count = models.IntegerField(default=0, verbose_name='申请次数')
 
     def __str__(self):
         return '%s (%s)' % (self.group_name, self.group_id)
