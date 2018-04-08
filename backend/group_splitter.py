@@ -76,17 +76,21 @@ def get_split_to(app):
 def split_qun_device(email):
     phones = [x for x in PhoneDevice.objects.filter(owner__email=email, status=0) if
               x.snsuser_set.filter(friend=1).count() > 0]
+    total_phones = len(phones)
+    if total_phones == 0:
+        return
+
     idx = 0
     forward = True
     for x in SnsGroupSplit.objects.filter(user__email=email, phone__isnull=True):
         phone = phones[idx]
         idx += 1 if forward else -1
 
-        if idx == -1:
+        if idx <= -1:
             idx = 0
             forward = not forward
-        elif idx == len(phones):
-            idx = idx - 1
+        elif idx >= total_phones:
+            idx = total_phones - 1
             forward = not forward
 
         try:
