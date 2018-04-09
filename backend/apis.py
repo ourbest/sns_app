@@ -1049,9 +1049,12 @@ def send_qq():
 
 
 @api_func_anonymous
-def apps(request, i_dist, email):
+def apps(request, i_dist, email, i_offline):
     if i_dist:
         return [x.json for x in App.objects.filter(stage__in=['分发期', '留守期'])]
+
+    if i_offline:
+        return [x.json for x in App.objects.filter(offline=1)]
 
     user = model_manager.get_user(email if email else get_session_user(request))
     ret = []
