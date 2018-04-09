@@ -266,6 +266,8 @@ def add_dist_qun(device_task):
             user_lines.append(line)
         elif line.find('apply_qun=') == 0:
             qun = int(line[line.find('=') + 1:])
+        elif '=' in line:
+            user_lines.append(line)
 
     for user in sns_users:
         user_groups = user.snsusergroup_set.filter(status=0, active=1)
@@ -341,7 +343,7 @@ def add_add_qun(device_task):
     #     # data = data.strip() + '\n'
     # data = 'COUNT=%s\n' % cnt
     # # data += '\n'.join(ids)
-    for line in data.strip().split('\n'):
+    for line in device_task.data.strip().split('\n'):
         if '=' in line:
             data += '%s\n' % line
         else:
