@@ -18,7 +18,7 @@
         <th>微信群（排重）</th>
     </tr>
     {% for app_item in stats %}
-        <tr>
+        {% if app_item.stat %}<tr>
             <td>{{ app_item.name }}</td>
             <td>{{ app_item.stat.qq_pv|add:app_item.stat.wx_pv }}</td>
             <td>{{ app_item.stat.qq_user|add:app_item.stat.wx_user }}</td>
@@ -33,7 +33,7 @@
             <td>{{ app_item.stat.qq_group_total }}</td>
             <td>{{ app_item.stat.wx_group_cnt }}</td>
             <td>{{ app_item.stat.wx_uniq_group_cnt }}</td>
-        </tr>
+        </tr>{% endif %}
     {% endfor %}
 </table>
 

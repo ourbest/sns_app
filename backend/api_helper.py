@@ -333,21 +333,32 @@ def add_add_qun(device_task):
     data = device_task.data
 
     cnt = 5
-    if data:
-        try:
-            cnt = int(data.strip())
-        except:
-            pass
-        # data = data.strip() + '\n'
-    data = 'COUNT=%s\n' % cnt
-    # data += '\n'.join(ids)
+    # if data:
+    #     try:
+    #         cnt = int(data.strip())
+    #     except:
+    #         pass
+    #     # data = data.strip() + '\n'
+    # data = 'COUNT=%s\n' % cnt
+    # # data += '\n'.join(ids)
 
     groups = get_add_groups(cnt, device_task)
 
-    if 'client=qq' in device_task.data:
-        data += 'client=qq\n'
-    elif 'client=tim' in device_task.data:
-        data += 'client=tim\n'
+    for line in data.strip().split('\n'):
+        if '=' in line:
+            data += '%s\n' % line
+        else:
+            try:
+                cnt = int(data.strip())
+            except:
+                pass
+
+    data += 'COUNT=%s\n' % cnt
+
+    # if 'client=qq' in device_task.data:
+    #     data += 'client=qq\n'
+    # elif 'client=tim' in device_task.data:
+    #     data += 'client=tim\n'
 
     idx = 0
     user_lines = []

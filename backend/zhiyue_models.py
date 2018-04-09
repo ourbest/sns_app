@@ -370,3 +370,21 @@ class WeizhanItemView(models.Model):
     class Meta:
         db_table = 'datasystem_WeizhanItemView'
         managed = False
+
+
+class CouponLog(models.Model):
+    appId = models.IntegerField()
+    couponId = models.IntegerField()
+    num = models.CharField(max_length=10)
+    actionTime = models.DateTimeField(primary_key=True)
+    userId = models.BigIntegerField()
+    action = models.IntegerField()
+    lbs = models.CharField(max_length=50)
+
+    @staticmethod
+    def db_name():
+        return 'zhiyue'
+
+    class Meta:
+        db_table = 'partner_CouponLog'
+        managed = False

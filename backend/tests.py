@@ -10,7 +10,7 @@ import backend.stat_utils
 from backend import model_manager, api_helper, stats, zhiyue_models, zhiyue
 from backend.models import SnsGroupSplit, SnsGroup, SnsUser, SnsUserGroup, SnsTask, DistArticle, DistArticleStat, \
     ItemDeviceUser, App, AppDailyStat, User, UserDailyStat, OfflineUser
-from backend.zhiyue_models import DeviceUser, CouponInst
+from backend.zhiyue_models import DeviceUser, CouponInst, CouponLog
 
 
 def clean_finished():
@@ -212,12 +212,26 @@ def run():
     test_job.delay()
 
 
-def sync_ip():
-    for u in ItemDeviceUser.objects.filter(ip=''):
+def sync_location():
+    for u in ItemDeviceUser.objects.filter(location=''):
         du = model_manager.query(DeviceUser).filter(deviceUserId=u.user_id).first()
-        u.ip = du.ip
-        u.city = du.city
-        u.save()
+        if du.location:
+            u.location = du.location
+            u.save()
+
+
+def sync_offline_location():
+    for u in OfflineUser.objects.filter(location=''):
+        du = model_manager.query(CouponInst).filter(userId=u.user_id).first()
+        if du:
+            log = model_manager.query(CouponLog).filter(appId=du.partnerId, couponId=du.couponId,
+                                                        num=du.couponNum, lbs__isnull=False).first()
+            if log:
+                u.location = log.lbs
+                u.save()
+
+        # if du and du.location:
+        #     pass
 
 
 def test_remain():

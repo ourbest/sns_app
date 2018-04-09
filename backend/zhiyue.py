@@ -618,13 +618,7 @@ def sync_user_in_minutes(minutes):
                                                                           minutes=minutes)):
                 majia = majias.get(device_user.sourceUserId)
                 owner = majia.user
-                model_manager.save_ignore(ItemDeviceUser(app=app, owner=owner,
-                                                         created_at=device_user.createTime,
-                                                         user_id=device_user.deviceUserId,
-                                                         item_id=device_user.sourceItemId,
-                                                         type=majia.type,
-                                                         ip=device_user.ip,
-                                                         city=device_user.city))
+                model_manager.save_ignore(sync_to_item_dev_user(app, owner, device_user, majia))
                 (wx_user_ids if majia.type else qq_user_ids).append(device_user.deviceUserId)
 
                 ids_map_owner = ids_map[owner]
@@ -660,13 +654,7 @@ def sync_device_user():
                                                                       createTime__range=date_range):
                 majia = majias.get(device_user.sourceUserId)
                 owner = majia.user
-                model_manager.save_ignore(ItemDeviceUser(app=app, owner=owner,
-                                                         created_at=device_user.createTime,
-                                                         user_id=device_user.deviceUserId,
-                                                         item_id=device_user.sourceItemId,
-                                                         type=majia.type,
-                                                         ip=device_user.ip,
-                                                         city=device_user.city))
+                model_manager.save_ignore(sync_to_item_dev_user(app, owner, device_user, majia))
                 (wx_user_ids if majia.type else qq_user_ids).append(device_user.deviceUserId)
 
                 ids_map_owner = ids_map[owner]
@@ -694,6 +682,17 @@ def sync_device_user():
                                                           owner=coupon.shopOwner, created_at=coupon.useDate))
 
     sync_remain()
+
+
+def sync_to_item_dev_user(app, owner, device_user, majia):
+    return ItemDeviceUser(app=app, owner=owner,
+                          created_at=device_user.createTime,
+                          user_id=device_user.deviceUserId,
+                          item_id=device_user.sourceItemId,
+                          type=majia.type,
+                          ip=device_user.ip,
+                          city=device_user.city,
+                          location=device_user.location)
 
 
 def sync_remain():

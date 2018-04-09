@@ -494,6 +494,7 @@ class ItemDeviceUser(models.Model):
     remain = models.IntegerField(default=0)
     ip = models.CharField(max_length=20, default='')
     city = models.CharField(max_length=50, default='')
+    location = models.CharField(max_length=100, default='', null=True)
 
     def __str__(self):
         return "(User-%s)" % self.user_id
@@ -709,6 +710,7 @@ class OfflineUser(models.Model):
     created_at = models.DateTimeField()
     owner = models.BigIntegerField('扫描人', default=0)
     remain = models.IntegerField(default=0)
+    location = models.CharField(max_length=100, default='', null=True)
 
 
 class KPIPeriod(models.Model):
