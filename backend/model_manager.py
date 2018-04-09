@@ -453,3 +453,7 @@ def get_user_by_id(user_id):
 def increase_apply_count(qun):
     qun.apply_count += 1
     save_ignore(qun, fields=['apply_count'])
+
+
+def today():
+    return get_date()

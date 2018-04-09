@@ -1,22 +1,30 @@
+from datetime import timedelta
+
 from dj.utils import api_func_anonymous
 from django.db import connection
 from django.db.models import Count, Sum
 
-from backend import api_helper
+from backend import api_helper, model_manager
 from backend.models import OfflineUser
 
 
 @api_func_anonymous
 def api_owners(request):
     app = api_helper.get_session_app(request)
-    return [x for x in OfflineUser.objects.filter(app_id=app).values('owner').annotate(total=Count('user_id'),
-                                                                                       remain=Sum('remain')) if
+    today = model_manager.today()
+    return [x for x in
+            OfflineUser.objects.filter(app_id=app,
+                                       created_at__lt=today - timedelta(days=1)).values('owner').annotate(
+                total=Count('user_id'),
+                remain=Sum('remain')) if
             x['total'] >= 30]
 
 
 @api_func_anonymous
 def api_owner_remain(owner):
-    return OfflineUser.objects.filter(owner=owner).values('owner').annotate(
+    today = model_manager.today()
+    return OfflineUser.objects.filter(owner=owner,
+                                      created_at__lt=today - timedelta(days=1)).values('owner').annotate(
         total=Count('user_id'),
         remain=Sum('remain'))[0] if owner else []
 
