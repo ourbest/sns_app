@@ -1061,7 +1061,7 @@ def apps(request, i_dist, email):
         apps = user.userauthapp_set.all()
         if user.app_id:
             ret += [user.app.json]
-        ret += [x.json for x in apps if x.app_id != user.app_id]
+        ret += [x.app.json for x in apps if x.app_id != user.app_id]
     else:
         ret = [x.json for x in App.objects.all()]
 

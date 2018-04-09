@@ -17,11 +17,14 @@ def api_owners(request):
 def api_owner_remain(owner):
     return OfflineUser.objects.filter(owner=owner).values('owner').annotate(
         total=Count('user_id'),
-        remain=Sum('remain'))[0]
+        remain=Sum('remain'))[0] if owner else []
 
 
 @api_func_anonymous
 def api_owner_detail(owner, date):
+    if not owner:
+        return []
+
     query = OfflineUser.objects.filter(owner=owner)
     if date:
         query = query.extra(where=['date(created_at) =\'%s\'' % date])
@@ -31,6 +34,9 @@ def api_owner_detail(owner, date):
 
 @api_func_anonymous
 def api_owner_date(owner):
+    if not owner:
+        return []
+
     sql = 'select owner, date(created_at), count(*), sum(remain) from backend_offlineuser ' \
           'where owner = %s group by owner, date(created_at)' % owner
 
