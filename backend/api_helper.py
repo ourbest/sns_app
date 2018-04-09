@@ -341,7 +341,7 @@ def add_add_qun(device_task):
     #     # data = data.strip() + '\n'
     # data = 'COUNT=%s\n' % cnt
     # # data += '\n'.join(ids)
-    for line in data.strip().split('\n'):
+    for line in device_task.data.strip().split('\n'):
         if '=' in line:
             data += '%s\n' % line
         else:
