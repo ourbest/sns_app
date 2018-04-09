@@ -9,7 +9,8 @@ from backend.models import OfflineUser
 @api_func_anonymous
 def api_owners(request):
     app = api_helper.get_session_app(request)
-    return [x for x in OfflineUser.objects.filter(app_id=app).values('owner').annotate(total=Count('user_id')) if
+    return [x for x in OfflineUser.objects.filter(app_id=app).values('owner').annotate(total=Count('user_id'),
+                                                                                       remain=Sum('remain')) if
             x['total'] >= 30]
 
 
