@@ -18,7 +18,8 @@ from backend.api_helper import get_session_app
 from backend.models import AppUser, AppDailyStat, UserDailyStat, App, DailyActive, ItemDeviceUser, UserDailyDeviceUser, \
     User, OfflineUser
 from backend.zhiyue_models import ShareArticleLog, ClipItem, WeizhanCount, AdminPartnerUser, CouponInst, ItemMore, \
-    ZhiyueUser, UserRewardHistory, AppConstants, CouponPmSentInfo, CouponDailyStatInfo, OfflineDailyStat, DeviceUser
+    ZhiyueUser, UserRewardHistory, AppConstants, CouponPmSentInfo, CouponDailyStatInfo, OfflineDailyStat, DeviceUser, \
+    CouponLog
 
 
 @api_func_anonymous
@@ -630,12 +631,16 @@ def sync_user_in_minutes(minutes):
                     ids_map_owner[majia.type].append(device_user.deviceUserId)
 
         if app.offline:
-
             coupons = model_manager.query(CouponInst).filter(partnerId=app.pk, status=1,
                                                              useDate__gt=timezone.now() - timedelta(minutes=minutes))
             for coupon in coupons:
-                model_manager.save_ignore(OfflineUser(user_id=coupon.userId, app_id=coupon.partnerId,
-                                                      owner=coupon.shopOwner, created_at=coupon.useDate))
+                log = model_manager.query(CouponLog).filter(appId=coupon.partnerId, couponId=coupon.couponId,
+                                                            num=coupon.couponNum, lbs__isnull=False).first()
+                offline_user = OfflineUser(user_id=coupon.userId, app_id=coupon.partnerId, owner=coupon.shopOwner,
+                                           created_at=coupon.useDate)
+                if log:
+                    offline_user.location = log.lbs
+                model_manager.save_ignore(offline_user)
 
 
 @job
@@ -678,8 +683,13 @@ def sync_device_user():
 
             if cnt != coupons.count():
                 for coupon in coupons:
-                    model_manager.save_ignore(OfflineUser(user_id=coupon.userId, app_id=coupon.partnerId,
-                                                          owner=coupon.shopOwner, created_at=coupon.useDate))
+                    log = model_manager.query(CouponLog).filter(appId=coupon.partnerId, couponId=coupon.couponId,
+                                                                num=coupon.couponNum, lbs__isnull=False).first()
+                    offline_user = OfflineUser(user_id=coupon.userId, app_id=coupon.partnerId, owner=coupon.shopOwner,
+                                               created_at=coupon.useDate)
+                    if log:
+                        offline_user.location = log.lbs
+                    model_manager.save_ignore(offline_user)
 
     sync_remain()
 
