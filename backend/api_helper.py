@@ -330,7 +330,7 @@ def remove_dup_split(user):
 
 
 def add_add_qun(device_task):
-    data = device_task.data
+    data = ''  # device_task.data
 
     cnt = 5
     # if data:
@@ -341,19 +341,18 @@ def add_add_qun(device_task):
     #     # data = data.strip() + '\n'
     # data = 'COUNT=%s\n' % cnt
     # # data += '\n'.join(ids)
-
-    groups = get_add_groups(cnt, device_task)
-
     for line in data.strip().split('\n'):
         if '=' in line:
             data += '%s\n' % line
         else:
             try:
-                cnt = int(data.strip())
+                cnt = int(line.strip())
             except:
                 pass
 
     data += 'COUNT=%s\n' % cnt
+
+    groups = get_add_groups(cnt, device_task)
 
     # if 'client=qq' in device_task.data:
     #     data += 'client=qq\n'
