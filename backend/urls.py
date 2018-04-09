@@ -1,6 +1,6 @@
 from django.conf.urls import url
 
-from backend import apis, users, zhiyue, tasks, daemons, bot_apis, stats, exts, kpi
+from backend import apis, users, zhiyue, tasks, daemons, bot_apis, stats, exts, kpi, offline
 
 app_name = 'backend'
 urlpatterns = [
@@ -179,4 +179,10 @@ urlpatterns = [
     url(r'kpi/config$', kpi.api_kpi_config),
     url(r'kpi/config/save$', kpi.api_kpi_save),
     url(r'kpi/config/remove$', kpi.api_kpi_remove),
+
+    # offline
+    url(r'offline/owners$', offline.api_owners),
+    url(r'offline/owner/remain$', offline.api_owner_remain),
+    url(r'offline/owner/detail$', offline.api_owner_detail),
+    url(r'offline/owner/date$', offline.api_owner_date),
 ]

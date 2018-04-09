@@ -1051,8 +1051,7 @@ def send_qq():
 @api_func_anonymous
 def apps(request, i_dist, email):
     if i_dist:
-        return [{'id': x.app_id, 'name': x.app_name} for x in
-                App.objects.filter(stage__in=['分发期', '留守期'])]
+        return [x.json for x in App.objects.filter(stage__in=['分发期', '留守期'])]
 
     user = model_manager.get_user(email if email else get_session_user(request))
     ret = []
@@ -1061,10 +1060,10 @@ def apps(request, i_dist, email):
     if user.role <= 2 or user.role > 10:
         apps = user.userauthapp_set.all()
         if user.app_id:
-            ret += [{'id': user.app.app_id, 'name': user.app.app_name}]
-        ret += [{'id': x.app.app_id, 'name': x.app.app_name} for x in apps if x.app_id != user.app_id]
+            ret += [user.app.json]
+        ret += [x.json for x in apps if x.app_id != user.app_id]
     else:
-        ret = [{'id': x.app_id, 'name': x.app_name} for x in App.objects.all()]
+        ret = [x.json for x in App.objects.all()]
 
     return ret  # [{'id': x.app_id, 'name': x.app_name} for x in App.objects.all()]
 

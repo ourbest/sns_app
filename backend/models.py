@@ -13,6 +13,11 @@ class App(models.Model):
     price = models.FloatField('推广单价', default=0)
     cost = models.IntegerField('推广消耗', default=0)
     offline = models.IntegerField('是否在地推', default=0)
+    center = models.CharField('城市中心坐标', max_length=100, null=True)
+
+    @property
+    def json(self):
+        return {'id': self.app_id, 'name': self.app_name, 'center': self.center, 'stage': self.stage}
 
     def __str__(self):
         return '%s (%s)' % (self.app_name, self.app_id)
@@ -711,6 +716,15 @@ class OfflineUser(models.Model):
     owner = models.BigIntegerField('扫描人', default=0)
     remain = models.IntegerField(default=0)
     location = models.CharField(max_length=100, default='', null=True)
+
+    @property
+    def json(self):
+        return {
+            'user_id': self.user_id,
+            'remain': self.remain,
+            'location': self.location,
+            'created_at': self.created_at.strftime('%Y-%m-%d %H:%M')
+        }
 
 
 class KPIPeriod(models.Model):
