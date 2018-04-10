@@ -702,6 +702,7 @@ def sync_to_item_dev_user(app, owner, device_user, majia):
                           type=majia.type,
                           ip=device_user.ip,
                           city=device_user.city,
+                          cutt_user_id=majia.cutt_user_id,
                           location=device_user.location)
 
 

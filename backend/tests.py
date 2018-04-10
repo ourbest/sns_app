@@ -271,3 +271,19 @@ def clear_app_splitter(app_id):
 
 def delete_user_splitter(app_id, user_id):
     SnsGroupSplit.objects.filter(group__app_id=app_id, user_id=user_id, status=0).delete()
+
+
+def make_daily_remain(app_id, date):
+    for user in User.objects.filter(status=0, app_id=app_id):
+        # user.appuser_set.filter(type__in=(0, 1))
+        for du in ItemDeviceUser.objects.filter(cutt_user_id=0):
+            ct = DeviceUser.objects.filter(deviceUserId=du.user_id).filter()
+            du.cutt_user_id = ct.sourceUserId
+            model_manager.save_ignore(du)
+
+
+def sync_majia_user_id():
+    for du in ItemDeviceUser.objects.filter(cutt_user_id=0):
+        ct = model_manager.query(DeviceUser).filter(deviceUserId=du.user_id).first()
+        du.cutt_user_id = ct.sourceUserId
+        model_manager.save_ignore(du)

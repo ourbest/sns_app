@@ -500,6 +500,7 @@ class ItemDeviceUser(models.Model):
     ip = models.CharField(max_length=20, default='')
     city = models.CharField(max_length=50, default='')
     location = models.CharField(max_length=100, default='', null=True)
+    cutt_user_id = models.BigIntegerField(default=0, null=True)
 
     def __str__(self):
         return "(User-%s)" % self.user_id
