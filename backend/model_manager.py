@@ -441,9 +441,15 @@ def get_dist_apps():
 
 
 def get_date(date=None):
-    return times.localtime(
-        datetime.now().replace(hour=0, second=0,
-                               minute=0, microsecond=0) if not date else datetime.strptime(date[0:10], '%Y-%m-%d'))
+    if date and isinstance(date, str):
+        return times.localtime(datetime.strptime(date[0:10], '%Y-%m-%d'))
+
+    if not date:
+        return times.localtime(datetime.now().replace(hour=0, second=0,
+                                                      minute=0, microsecond=0))
+
+    else:
+        return times.localtime(date).replace(hour=0, second=0, minute=0, microsecond=0)
 
 
 def get_user_by_id(user_id):
@@ -457,3 +463,8 @@ def increase_apply_count(qun):
 
 def today():
     return get_date()
+
+
+def delta(date_str, days):
+    dt = datetime.strptime(date_str, '%Y-%m-%d') + timedelta(days=days)
+    return dt.strftime('%Y-%m-%d')

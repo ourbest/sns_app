@@ -880,13 +880,15 @@ def sync_online_from_hive(the_date):
     try:
         for app in App.objects.filter(stage__in=('分发期', '留守期')):
             ids = [x.user_id for x in ItemDeviceUser.objects.filter(app=app, created_at__range=create_range, remain=0)]
-            query = """
-            select DISTINCT deviceuserid from userstartup where partnerid=%s and dt = '%s' and deviceuserid in (%s)
-            """ % (str(app.app_id), next_day, ','.join([str(x) for x in ids]))
-            cursor.execute(query)
-            rows = cursor.fetchall()
-            ItemDeviceUser.objects.filter(app=app, created_at__range=create_range, remain=0,
-                                          user_id__in=[x[0] for x in rows]).update(remain=1)
+            if ids:
+                query = """
+                select DISTINCT deviceuserid from userstartup where partnerid=%s and dt = '%s' and deviceuserid in (%s)
+                """ % (str(app.app_id), next_day, ','.join([str(x) for x in ids]))
+                cursor.execute(query)
+                rows = cursor.fetchall()
+                ItemDeviceUser.objects.filter(app=app, created_at__range=create_range, remain=0,
+                                              user_id__in=[x[0] for x in rows]).update(remain=1)
+
     finally:
         cursor.close()
 

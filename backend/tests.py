@@ -1,7 +1,9 @@
 # Create your tests here.
+from collections import defaultdict
 from datetime import datetime, timedelta
 from time import sleep
 
+from django.db.models import Count, Sum
 from django.utils import timezone
 from django_rq import job
 from logzero import logger
@@ -9,7 +11,8 @@ from logzero import logger
 import backend.stat_utils
 from backend import model_manager, api_helper, stats, zhiyue_models, zhiyue
 from backend.models import SnsGroupSplit, SnsGroup, SnsUser, SnsUserGroup, SnsTask, DistArticle, DistArticleStat, \
-    ItemDeviceUser, App, AppDailyStat, User, UserDailyStat, OfflineUser
+    ItemDeviceUser, App, AppDailyStat, User, UserDailyStat, OfflineUser, AppUser, UserDailyDeviceUser
+from backend.zhiyue import sync_to_item_dev_user
 from backend.zhiyue_models import DeviceUser, CouponInst, CouponLog
 
 
@@ -274,12 +277,21 @@ def delete_user_splitter(app_id, user_id):
 
 
 def make_daily_remain(app_id, date):
-    for user in User.objects.filter(status=0, app_id=app_id):
-        # user.appuser_set.filter(type__in=(0, 1))
-        for du in ItemDeviceUser.objects.filter(cutt_user_id=0):
-            ct = DeviceUser.objects.filter(deviceUserId=du.user_id).filter()
-            du.cutt_user_id = ct.sourceUserId
-            model_manager.save_ignore(du)
+    # to_date = model_manager.delta(days=1)
+    the_date = model_manager.get_date(date)
+    for user in ItemDeviceUser.objects.filter(app_id=app_id,
+                                              created_at__range=[the_date,
+                                                                 the_date + timedelta(days=1)]).values(
+        'owner_id',
+        'type'
+    ).annotate(total=Count('user_id'), remain=Sum('remain')):
+        if user['type'] == 0:
+            UserDailyStat.objects.filter(report_date=date, user_id=user['owner_id']).update(qq_remain=user['remain'])
+        elif user['type'] == 1:
+            UserDailyStat.objects.filter(report_date=date, user_id=user['owner_id']).update(wx_remain=user['remain'])
+    # for user in User.objects.filter(status=0, app_id=app_id):
+    #     user.appuser_set.filter(type__in=(0, 1))
+    # ItemDeviceUser.objects.filter(owner=user).values('')
 
 
 def sync_majia_user_id():
@@ -287,3 +299,21 @@ def sync_majia_user_id():
         ct = model_manager.query(DeviceUser).filter(deviceUserId=du.user_id).first()
         du.cutt_user_id = ct.sourceUserId
         model_manager.save_ignore(du)
+
+
+def sync_device_user():
+    logger.info('同步用户数据')
+    stat_date = timezone.now() - timedelta(days=6)
+    for x in range(0, 4):
+        stat_date = stat_date + timedelta(days=1)
+        from_date = model_manager.get_date(stat_date)
+        for app in App.objects.filter(stage__in=('分发期', '留守期')):
+            majias = {x.cutt_user_id: x for x in AppUser.objects.filter(type__in=(0, 1), user__app=app, user__status=0)}
+            if majias:
+                for device_user in model_manager.query(DeviceUser).filter(sourceUserId__in=majias.keys(),
+                                                                          createTime__range=(
+                                                                                  from_date,
+                                                                                  from_date + timedelta(days=1))):
+                    majia = majias.get(device_user.sourceUserId)
+                    owner = majia.user
+                    model_manager.save_ignore(sync_to_item_dev_user(app, owner, device_user, majia))
