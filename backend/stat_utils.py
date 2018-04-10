@@ -353,9 +353,9 @@ def sync_article_stat():
                                                                                        remain=Sum('remain')):
         update = DistArticleStat.objects.filter(article__item_id=x['item_id'])
         if x['type'] == 1:
-            update.update(wx_users=x['users'], wx_remain=x['remain'])
+            update.update(wx_user=x['users'], wx_remain=x['remain'])
         else:
-            update.update(qq_users=x['users'], qq_remain=x['remain'])
+            update.update(qq_user=x['users'], qq_remain=x['remain'])
 
 
 def classify_data_app(app):
