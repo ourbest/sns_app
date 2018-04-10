@@ -2,7 +2,7 @@ from datetime import timedelta, datetime
 
 from dj import times
 from django.db import connections
-from django.db.models import Sum, Count
+from django.db.models import Sum, Count, Subquery
 from django.utils import timezone
 from django_rq import job
 
@@ -34,6 +34,8 @@ def to_stat_json(x, item):
         'qq_devices': item.dist_qq_phone_count if item else 0,
         'qq_groups': item.dist_qun_count if item else 0,
         'qq_users': item.dist_qun_user if item else 0,
+        'qq_remain': item.qq_remain if item else 0,
+        'wx_remain': item.wx_remain if item else 0,
     }
 
 
@@ -319,11 +321,12 @@ def sync_item_stat():
 
 
 def sync_article_stat():
+    item_ids = ArticleDailyInfo.objects.filter(stat_date=datetime.now().strftime('%Y-%m-%d'))
     stats = ArticleDailyInfo.objects \
-        .filter(stat_date=datetime.now().strftime('%Y-%m-%d')
-                ).values('item_id', 'majia_type').annotate(pv=Sum('pv'),
-                                                           reshare=Sum('reshare'),
-                                                           down=Sum('down'))
+        .filter(item_id__in=Subquery(item_ids.values('item_id'))) \
+        .values('item_id', 'majia_type').annotate(pv=Sum('pv'),
+                                                  reshare=Sum('reshare'),
+                                                  down=Sum('down'))
 
     ids = [x['item_id'] for x in stats]
 
@@ -350,7 +353,7 @@ def sync_article_stat():
             exists.add(x['item_id'])
 
     for x in ItemDeviceUser.objects.filter(item_id__in=ids).values('item_id', 'type').annotate(users=Count('user_id'),
-                                                                                       remain=Sum('remain')):
+                                                                                               remain=Sum('remain')):
         update = DistArticleStat.objects.filter(article__item_id=x['item_id'])
         if x['type'] == 1:
             update.update(wx_user=x['users'], wx_remain=x['remain'])
