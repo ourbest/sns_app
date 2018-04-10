@@ -13,7 +13,7 @@ from django_rq import job
 from logzero import logger
 
 import backend.stat_utils
-from backend import api_helper, model_manager, group_splitter, zhiyue
+from backend import api_helper, model_manager, group_splitter, zhiyue, stat_utils
 from backend.api_helper import ADD_STATUS, deal_add_result, deal_dist_result
 from backend.model_manager import save_ignore
 from backend.models import DeviceFile, SnsUser, SnsGroup, SnsUserGroup, SnsApplyTaskLog, SnsGroupSplit, WxDistLog, \
@@ -499,44 +499,47 @@ def make_resource_stat():
 
 @job("default", timeout=3600)
 def do_get_item_stat_values(app):
-    item_apps = dict()
-    article_dict = dict()
-    from_time = timezone.now() - timedelta(days=7)
-    query = DistArticle.objects.filter(started_at__gte=from_time)
+    stat_utils.sync_article_stat()
 
-    if app:
-        query = query.filter(app_id=app)
-    for item in query:
-        if item.app_id not in item_apps:
-            item_apps[item.app_id] = list()
+    # item_apps = dict()
+    # article_dict = dict()
 
-        items = item_apps[item.app_id]
-        items.append(item.item_id)
-        article_dict[item.item_id] = item
+    # from_time = timezone.now() - timedelta(days=7)
+    # query = DistArticle.objects.filter(started_at__gte=from_time)
+    #
+    # if app:
+    #     query = query.filter(app_id=app)
+    # for item in query:
+    #     if item.app_id not in item_apps:
+    #         item_apps[item.app_id] = list()
+    #
+    #     items = item_apps[item.app_id]
+    #     items.append(item.item_id)
+    #     article_dict[item.item_id] = item
 
-    for app_id, items in item_apps.items():
-        qq_stats = batch_item_stat(app_id, items, from_time)
-        wx_stats = {x['item_id']: x for x in batch_item_stat(app_id, items, from_time, user_type=1)}
-
-        for qq_stat in qq_stats:
-            article = article_dict.get(qq_stat['item_id'])
-            db = DistArticleStat.objects.filter(article=article).first()
-            if not db:
-                db = DistArticleStat(article=article)
-
-            db.qq_pv = qq_stat.get('weizhan')
-            db.qq_down = qq_stat.get('download')
-            db.qq_user = qq_stat.get('users')
-            wx_stat = wx_stats.get(article.item_id)
-            if wx_stat:
-                db.wx_pv = wx_stat.get('weizhan')
-                db.wx_down = wx_stat.get('download')
-                db.wx_user = wx_stat.get('users')
-
-            user_ids = {x.creator_id for x in article.snstask_set.all()}
-            db.dist_user_count = len(user_ids)
-
-            db.save()
+    # for app_id, items in item_apps.items():
+    #     qq_stats = batch_item_stat(app_id, items, from_time)
+    #     wx_stats = {x['item_id']: x for x in batch_item_stat(app_id, items, from_time, user_type=1)}
+    #
+    #     for qq_stat in qq_stats:
+    #         article = article_dict.get(qq_stat['item_id'])
+    #         db = DistArticleStat.objects.filter(article=article).first()
+    #         if not db:
+    #             db = DistArticleStat(article=article)
+    #
+    #         db.qq_pv = qq_stat.get('weizhan')
+    #         db.qq_down = qq_stat.get('download')
+    #         db.qq_user = qq_stat.get('users')
+    #         wx_stat = wx_stats.get(article.item_id)
+    #         if wx_stat:
+    #             db.wx_pv = wx_stat.get('weizhan')
+    #             db.wx_down = wx_stat.get('download')
+    #             db.wx_user = wx_stat.get('users')
+    #
+    #         user_ids = {x.creator_id for x in article.snstask_set.all()}
+    #         db.dist_user_count = len(user_ids)
+    #
+    #         db.save()
 
     with connection.cursor() as cursor:
         tbl_name = 'tmp_stat_tbl_%s' % int(timezone.now().timestamp())

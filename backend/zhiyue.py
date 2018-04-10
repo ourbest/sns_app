@@ -24,6 +24,12 @@ from backend.zhiyue_models import ShareArticleLog, ClipItem, WeizhanCount, Admin
 
 @api_func_anonymous
 def user_share(i_uid, request):
+    """
+    获取用户分享的文章记录
+    :param i_uid:
+    :param request:
+    :return:
+    """
     data = ShareArticleLog.objects.using('zhiyue').select_related('user', 'article', 'article__item').filter(
         user_id=i_uid, article__partnerId=get_session_app(request)).order_by("-time")[0:50]
 
@@ -58,6 +64,11 @@ def get_user_share_items(app_id, uids):
 
 
 def find_url(x):
+    """
+    还原文章的链接
+    :param x:
+    :return:
+    """
     # url = re.findall('https?://.+/weizhan/article/\d+/\d+/\d+', text)
     # return url[0] if url else ''
     return 'http://www.cutt.com/weizhan/article/%s/%s/%s' % (
@@ -66,6 +77,11 @@ def find_url(x):
 
 @api_func_anonymous
 def get_url_title(url):
+    """
+    获取文章标题/分享文案
+    :param url:
+    :return:
+    """
     u = re.findall('https?://.+/weizhan/article/\d+/(\d+)/(\d+)', url)
     if u:
         (article_id, app_id) = u[0]
@@ -88,34 +104,25 @@ def count_weizhan(email, request):
 @api_func_anonymous
 def count_user_sum(email, date, request):
     """
-    name = models.CharField(max_length=255)
-    userId = models.IntegerField(primary_key=True)
-    deviceUserId = models.IntegerField()
-    partnerId = models.IntegerField()
-    shareNum = models.IntegerField()
-    weizhanNum = models.IntegerField()
-    downPageNum = models.IntegerField()
-    appUserNum = models.IntegerField()
-    commentNum = models.IntegerField()
-    agreeNum = models.IntegerField()
-    viewNum = models.IntegerField()
-    secondShareNum = models.IntegerField()
-    userType = models.IntegerField(help_text='userType=1 内容产生用户 ，userType=2 内容传播用户')
-    time = models.DateTimeField()
+    用户数据
     :param email:
     :param date:
     :param request:
     :return:
     """
-    date = times.localtime(
-        datetime.now().replace(hour=0, second=0,
-                               minute=0, microsecond=0) if not date else datetime.strptime(date[0:10], '%Y-%m-%d'))
+    date = model_manager.get_date(date)
     the_user = api_helper.get_login_user(request, email)
     return backend.stat_utils.get_user_stat(date, the_user)
 
 
 @api_func_anonymous
 def get_user_majia(email, request):
+    """
+    获取用户的马甲列表
+    :param email:
+    :param request:
+    :return:
+    """
     user = api_helper.get_login_user(request, email)
     if not user:
         return []
@@ -142,10 +149,15 @@ def get_user_majia(email, request):
 
 @api_func_anonymous
 def sum_team_dist(date, request, include_sum):
+    """
+    小组分发情况
+    :param date:
+    :param request:
+    :param include_sum:
+    :return:
+    """
     app = get_session_app(request)
-    date = times.localtime(
-        datetime.now().replace(hour=0, second=0,
-                               minute=0, microsecond=0) if not date else datetime.strptime(date[0:10], '%Y-%m-%d'))
+    date = model_manager.get_date(date)
     return backend.stat_utils.app_daily_stat(app, date, include_sum)
 
 
@@ -176,8 +188,7 @@ def app_report(from_date, to_date, i_app):
         'wx_pv': x.wx_pv,
         'wx_down': x.wx_down,
         'wx_install': x.wx_install,
-    } for x in AppDailyStat.objects.filter(report_date__range=(from_date, to_date),
-                                           app_id=i_app).order_by("-pk")]
+    } for x in AppDailyStat.objects.filter(report_date__range=(from_date, to_date), app_id=i_app).order_by("-pk")]
 
 
 @api_func_anonymous
@@ -195,8 +206,8 @@ def app_report_user(from_date, to_date):
         'wx_pv': x.wx_pv,
         'wx_down': x.wx_down,
         'wx_install': x.wx_install,
-    } for x in UserDailyStat.objects.filter(report_date__range=(from_date, to_date))
-        .select_related('app', 'user').order_by("-pk")]
+    } for x in UserDailyStat.objects.filter(report_date__range=(from_date,
+                                                                to_date)).select_related('app', 'user').order_by("-pk")]
 
 
 @api_func_anonymous
@@ -209,7 +220,7 @@ def get_stat_before_days(i_days):
     if not i_days:
         i_days = 1
 
-    cnt = App.objects.filter(stage__in=('分发期', '留守期')).count()
+    cnt = model_manager.get_dist_apps().count()
 
     return sorted([{
         'app_id': x.app.app_id,
@@ -655,11 +666,11 @@ def sync_device_user():
     from_date = stat_date - timedelta(days=1)
     date_range = (from_date.strftime('%Y-%m-%d'), stat_date.strftime('%Y-%m-%d'))
     for app in model_manager.get_dist_apps():
-        saved = {x.user_id for x in ItemDeviceUser.objects.filter(app=app, created_at__range=date_range)}
         majias = {x.cutt_user_id: x for x in AppUser.objects.filter(type__in=(0, 1), user__app=app, user__status=0)}
         qq_user_ids = []
         wx_user_ids = []
         if majias:
+            saved = {x.user_id for x in ItemDeviceUser.objects.filter(app=app, created_at__range=date_range)}
             ids_map = defaultdict(dict)
             for device_user in model_manager.query(DeviceUser).filter(sourceUserId__in=majias.keys(),
                                                                       createTime__range=date_range):
@@ -686,10 +697,9 @@ def sync_device_user():
         if app.offline:
             coupons = model_manager.query(CouponInst).filter(partnerId=app.pk, status=1, useDate__range=date_range)
 
-            cnt = OfflineUser.objects.filter(app_id=app.app_id, created_at__range=date_range).count()
+            saved = {x.user_id for x in OfflineUser.objects.filter(app=app, created_at__range=date_range)}
 
-            if cnt != coupons.count():
-                saved = {x.user_id for x in OfflineUser.objects.filter(app=app, created_at__range=date_range)}
+            if len(saved) != coupons.count():
 
                 for coupon in coupons:
                     if coupon.userId not in saved:
@@ -762,13 +772,12 @@ def calc_save_remain():
     to_time = datetime.now()
     from_time_str = (to_time - timedelta(days=1)).strftime('%Y-%m-%d')
     create_range = ((to_time - timedelta(days=2)).strftime('%Y-%m-%d'), from_time_str)
-    for app in App.objects.filter(stage__in=('分发期', '留守期')):
+    for app in model_manager.get_dist_apps():
         qq_cnt = ItemDeviceUser.objects.filter(type=0, app=app, created_at__range=create_range, remain=1).count()
         wx_cnt = ItemDeviceUser.objects.filter(type=1, app=app, created_at__range=create_range, remain=1).count()
 
         report_date = (to_time - timedelta(days=1)).strftime('%Y-%m-%d')  # 留存记录是针对前一天的
-        AppDailyStat.objects.filter(report_date=report_date, app=app).update(
-            qq_remain=qq_cnt, wx_remain=wx_cnt)
+        AppDailyStat.objects.filter(report_date=report_date, app=app).update(qq_remain=qq_cnt, wx_remain=wx_cnt)
 
         for user in User.objects.filter(app=app, status=0):
             qq_cnt = ItemDeviceUser.objects.filter(type=0, owner=user, created_at__range=create_range).count()
@@ -845,7 +854,7 @@ def sync_online_remain():
     to_time_str = to_time.strftime('%Y-%m-%d')
     from_time_str = (to_time - timedelta(days=1)).strftime('%Y-%m-%d')
     date_range = (from_time_str, to_time_str)
-    for app in App.objects.filter(stage__in=('分发期', '留守期')):
+    for app in model_manager.get_dist_apps():
         ids = [x.user_id for x in ItemDeviceUser.objects.filter(app=app, created_at__range=date_range, remain=0)]
         remains = [x.userId for x in
                    model_manager.query(ZhiyueUser).filter(userId__in=ids, lastActiveTime__gt=to_time_str)]
@@ -918,7 +927,7 @@ def sync_offline_from_hive(the_date):
 
     cursor = hive.connect('10.19.9.13').cursor()
     try:
-        for app in App.objects.filter(stage__in=('分发期', '留守期')):
+        for app in model_manager.get_dist_apps():
             ids = [x.user_id for x in OfflineUser.objects.filter(app=app, created_at__range=create_range, remain=0)]
             query = """
             select DISTINCT userid from userstartup where partnerid=%s and dt = '%s' and userid in (%s)

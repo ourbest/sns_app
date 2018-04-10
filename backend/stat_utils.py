@@ -7,7 +7,8 @@ from django.utils import timezone
 from django_rq import job
 
 from backend import api_helper, model_manager
-from backend.models import AppUser, SnsTask, User, RuntimeData, ArticleDailyInfo, DistArticleStat, ItemDeviceUser
+from backend.models import AppUser, SnsTask, User, RuntimeData, ArticleDailyInfo, DistArticleStat, ItemDeviceUser, \
+    DistArticle
 from backend.zhiyue_models import ClipItem, HighValueUser, WeizhanItemView
 
 
@@ -262,6 +263,10 @@ def get_user_stat(date, the_user):
 
 @job
 def sync_item_stat():
+    """
+    统计PV数据
+    :return:
+    """
     ids = model_manager.get_dist_articles(10)
     first_id = 0
     last_id = 260099943
@@ -274,8 +279,7 @@ def sync_item_stat():
     # 用户
     from_time = timezone.now()
     stat_date = datetime.now().strftime('%Y-%m-%d')
-    data = {'%s_%s' % (x.item_id, x.majia_id): x for x in
-            ArticleDailyInfo.objects.filter(stat_date=stat_date)}
+    data = {'%s_%s' % (x.item_id, x.majia_id): x for x in ArticleDailyInfo.objects.filter(stat_date=stat_date)}
     majia_dict = {x.cutt_user_id: x for x in AppUser.objects.all()}
 
     for item in model_manager.query(WeizhanItemView).filter(
@@ -312,6 +316,46 @@ def sync_item_stat():
 
     rd.value = str(first_id)
     model_manager.save_ignore(rd)
+
+
+def sync_article_stat():
+    stats = ArticleDailyInfo.objects \
+        .filter(stat_date=datetime.now().strftime('%Y-%m-%d')
+                ).values('item_id', 'majia_type').annotate(pv=Sum('pv'),
+                                                           reshare=Sum('reshare'),
+                                                           down=Sum('down'))
+
+    ids = [x['item_id'] for x in stats]
+
+    exists = {x.article.item_id for x in
+              DistArticleStat.objects.select_related('article').filter(article__item_id__in=ids)}
+
+    for x in stats:
+        if x['item_id'] in exists:
+            update = DistArticleStat.objects.filter(article__item_id=x['item_id'])
+            if x['majia_type'] == 1:
+                update.update(wx_pv=x['pv'], wx_down=x['down'])
+            else:
+                update.update(qq_pv=x['pv'], qq_down=x['down'])
+        else:
+            ar = DistArticle.objects.filter(item_id=x['item_id']).first()
+            stat = DistArticleStat(article=ar)
+            if x['majia_type'] == 1:
+                stat.wx_pv = x['pv']
+                stat.wx_down = x['down']
+            else:
+                stat.qq_pv = x['pv']
+                stat.qq_down = x['down']
+            model_manager.save_ignore(stat)
+            exists.add(x['item_id'])
+
+    for x in ItemDeviceUser.objects.filter(item_id__in=ids).values('item_id', 'type').annotate(users=Count('user_id'),
+                                                                                       remain=Sum('remain')):
+        update = DistArticleStat.objects.filter(article__item_id=x['item_id'])
+        if x['type'] == 1:
+            update.update(wx_users=x['users'], wx_remain=x['remain'])
+        else:
+            update.update(qq_users=x['users'], qq_remain=x['remain'])
 
 
 def classify_data_app(app):

@@ -571,12 +571,12 @@ class DistArticleStat(models.Model):
     分发的文章对应的统计数据
     """
     article = models.ForeignKey(DistArticle, on_delete=CASCADE)
-    qq_pv = models.IntegerField('PV')
-    wx_pv = models.IntegerField()
-    qq_down = models.IntegerField('下载页')
-    wx_down = models.IntegerField()
-    qq_user = models.IntegerField('关联安装')
-    wx_user = models.IntegerField()
+    qq_pv = models.IntegerField('PV', default=0)
+    wx_pv = models.IntegerField(default=0)
+    qq_down = models.IntegerField('下载页', default=0)
+    wx_down = models.IntegerField(default=0)
+    qq_user = models.IntegerField('关联安装', default=0)
+    wx_user = models.IntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     dist_qq_user_count = models.IntegerField('分发的QQ数', default=0)
@@ -585,6 +585,8 @@ class DistArticleStat(models.Model):
     dist_wx_phone_count = models.IntegerField('分发的微信手机数', default=0)
     dist_qun_count = models.IntegerField('群数', default=0)
     dist_qun_user = models.IntegerField('群用户数', default=0)
+    qq_remain = models.IntegerField(default=0)
+    wx_remain = models.IntegerField(default=0)
 
 
 class DeviceWeixinGroup(models.Model):
