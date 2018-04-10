@@ -418,7 +418,7 @@ def do_daily_stat(date):
         datetime.now().replace(hour=0, second=0,
                                minute=0, microsecond=0) if not date else datetime.strptime(date, '%Y-%m-%d'))
 
-    for app in App.objects.filter(stage__in=('留守期', '分发期')):
+    for app in model_manager.get_dist_apps():
         stat = backend.stat_utils.app_daily_stat(app.app_id, date, include_sum=True)
         qq_stat = stat['qq']
         wx_stat = stat['wx']
@@ -628,7 +628,7 @@ def do_gen_daily_report():
 
     sum_yesterday = []
 
-    for app in App.objects.filter(stage__in=('分发期', '留守期')):
+    for app in model_manager.get_dist_apps():
         item_stats = []
         stat = app_daily_stat(app, date, True)
         app_stats.append({

@@ -608,18 +608,23 @@ def sync_recent_user():
 
 
 def sync_user_in_minutes(minutes):
-    for app in App.objects.filter(stage__in=('分发期', '留守期')):
+    for app in model_manager.get_dist_apps():
         majias = {x.cutt_user_id: x for x in AppUser.objects.filter(type__in=(0, 1), user__app=app, user__status=0)}
         qq_user_ids = []
         wx_user_ids = []
         if majias:
+            saved = {x.user_id for x in
+                     ItemDeviceUser.objects.filter(app=app, created_at__gt=timezone.now() - timedelta(
+                         minutes=minutes))}
+
             ids_map = defaultdict(dict)
             for device_user in model_manager.query(DeviceUser).filter(sourceUserId__in=majias.keys(),
                                                                       createTime__gt=timezone.now() - timedelta(
                                                                           minutes=minutes)):
                 majia = majias.get(device_user.sourceUserId)
                 owner = majia.user
-                model_manager.save_ignore(sync_to_item_dev_user(app, owner, device_user, majia))
+                if device_user.deviceUserId not in saved:
+                    model_manager.save_ignore(sync_to_item_dev_user(app, owner, device_user, majia))
                 (wx_user_ids if majia.type else qq_user_ids).append(device_user.deviceUserId)
 
                 ids_map_owner = ids_map[owner]
@@ -649,7 +654,8 @@ def sync_device_user():
     stat_date = datetime.now()
     from_date = stat_date - timedelta(days=1)
     date_range = (from_date.strftime('%Y-%m-%d'), stat_date.strftime('%Y-%m-%d'))
-    for app in App.objects.filter(stage__in=('分发期', '留守期')):
+    for app in model_manager.get_dist_apps():
+        saved = {x.user_id for x in ItemDeviceUser.objects.filter(app=app, created_at__range=date_range)}
         majias = {x.cutt_user_id: x for x in AppUser.objects.filter(type__in=(0, 1), user__app=app, user__status=0)}
         qq_user_ids = []
         wx_user_ids = []
@@ -659,7 +665,8 @@ def sync_device_user():
                                                                       createTime__range=date_range):
                 majia = majias.get(device_user.sourceUserId)
                 owner = majia.user
-                model_manager.save_ignore(sync_to_item_dev_user(app, owner, device_user, majia))
+                if device_user.deviceUserId not in saved:
+                    model_manager.save_ignore(sync_to_item_dev_user(app, owner, device_user, majia))
                 (wx_user_ids if majia.type else qq_user_ids).append(device_user.deviceUserId)
 
                 ids_map_owner = ids_map[owner]
@@ -682,14 +689,18 @@ def sync_device_user():
             cnt = OfflineUser.objects.filter(app_id=app.app_id, created_at__range=date_range).count()
 
             if cnt != coupons.count():
+                saved = {x.user_id for x in OfflineUser.objects.filter(app=app, created_at__range=date_range)}
+
                 for coupon in coupons:
-                    log = model_manager.query(CouponLog).filter(appId=coupon.partnerId, couponId=coupon.couponId,
-                                                                num=coupon.couponNum, lbs__isnull=False).first()
-                    offline_user = OfflineUser(user_id=coupon.userId, app_id=coupon.partnerId, owner=coupon.shopOwner,
-                                               created_at=coupon.useDate)
-                    if log:
-                        offline_user.location = log.lbs
-                    model_manager.save_ignore(offline_user)
+                    if coupon.userId not in saved:
+                        log = model_manager.query(CouponLog).filter(appId=coupon.partnerId, couponId=coupon.couponId,
+                                                                    num=coupon.couponNum, lbs__isnull=False).first()
+                        offline_user = OfflineUser(user_id=coupon.userId, app_id=coupon.partnerId,
+                                                   owner=coupon.shopOwner,
+                                                   created_at=coupon.useDate)
+                        if log:
+                            offline_user.location = log.lbs
+                        model_manager.save_ignore(offline_user)
 
     sync_remain()
 
@@ -714,17 +725,18 @@ def sync_remain():
     date_range = (from_time_str, to_time_str)
     create_range = ((to_time - timedelta(days=2)).strftime('%Y-%m-%d'), from_time_str)
     report_date = (to_time - timedelta(days=2)).strftime('%Y-%m-%d')  # 留存记录是针对前一天的
-    for app in App.objects.filter(stage__in=('分发期', '留守期')):
-        ids = [x.user_id for x in ItemDeviceUser.objects.filter(app=app, created_at__range=create_range)]
-        remains = [x.userId for x in
-                   model_manager.query(ZhiyueUser).filter(userId__in=ids, lastActiveTime__range=date_range)]
-        ItemDeviceUser.objects.filter(user_id__in=remains).update(remain=1)
+    for app in model_manager.get_dist_apps():
+        ids = [x.user_id for x in ItemDeviceUser.objects.filter(app=app, created_at__range=create_range, remain=0)]
+        if ids:
+            remains = [x.userId for x in
+                       model_manager.query(ZhiyueUser).filter(userId__in=ids, lastActiveTime__range=date_range)]
+            if remains:
+                ItemDeviceUser.objects.filter(user_id__in=remains).update(remain=1)
 
         qq_cnt = ItemDeviceUser.objects.filter(type=0, app=app, created_at__range=create_range, remain=1).count()
         wx_cnt = ItemDeviceUser.objects.filter(type=1, app=app, created_at__range=create_range, remain=1).count()
 
-        AppDailyStat.objects.filter(report_date=report_date, app=app).update(
-            qq_remain=qq_cnt, wx_remain=wx_cnt)
+        AppDailyStat.objects.filter(report_date=report_date, app=app).update(qq_remain=qq_cnt, wx_remain=wx_cnt)
 
         for user in User.objects.filter(app=app, status=0):
             qq_cnt = ItemDeviceUser.objects.filter(type=0, owner=user, created_at__range=create_range).count()
@@ -733,14 +745,16 @@ def sync_remain():
                 qq_remain=qq_cnt, wx_remain=wx_cnt)
 
         if app.offline:
-            offline_users = OfflineUser.objects.filter(app=app, created_at__range=create_range)
+            offline_users = OfflineUser.objects.filter(app=app, created_at__range=create_range, remain=0)
             user_ids = [x.user_id for x in offline_users]
             remain_ids = {x.userId for x in
                           model_manager.query(ZhiyueUser).filter(userId__in=user_ids, lastActiveTime__range=date_range)}
-            for u in offline_users:
-                if u.user_id in remain_ids:
-                    u.remain = 1
-                    model_manager.save_ignore(u, fields=['remain'])
+            if remain_ids:
+                OfflineUser.objects.filter(user_id__in=remain_ids).update(remain=1)
+            # for u in offline_users:
+            #     if u.user_id in remain_ids:
+            #         u.remain = 1
+            #         model_manager.save_ignore(u, fields=['remain'])
 
 
 def calc_save_remain():
@@ -852,7 +866,7 @@ def sync_report_online_remain(report):
 
 def sync_remain_at(report_date):
     date_range = (report_date, '%s 23:59:59' % report_date)
-    for app in App.objects.filter(stage__in=('分发期', '留守期')):
+    for app in model_manager.get_dist_apps():
         for user in User.objects.filter(app=app, status=0):
             qq_cnt = ItemDeviceUser.objects.filter(app=app, owner=user, created_at__range=date_range, remain=1,
                                                    type=0).count()
@@ -881,11 +895,13 @@ def sync_online_from_hive(the_date):
         for app in App.objects.filter(stage__in=('分发期', '留守期')):
             ids = [x.user_id for x in ItemDeviceUser.objects.filter(app=app, created_at__range=create_range, remain=0)]
             if ids:
+                print('%s total %s' % (app.app_id, len(ids)))
                 query = """
                 select DISTINCT deviceuserid from userstartup where partnerid=%s and dt = '%s' and deviceuserid in (%s)
                 """ % (str(app.app_id), next_day, ','.join([str(x) for x in ids]))
                 cursor.execute(query)
                 rows = cursor.fetchall()
+                print('remain %s' % len(rows))
                 ItemDeviceUser.objects.filter(app=app, created_at__range=create_range, remain=0,
                                               user_id__in=[x[0] for x in rows]).update(remain=1)
 
