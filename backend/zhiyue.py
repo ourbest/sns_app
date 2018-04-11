@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 from dj import times
 from dj.utils import api_func_anonymous
 from django.db import connections
-from django.db.models import Count
+from django.db.models import Count, Sum
 from django.http import HttpResponse
 from django.utils import timezone
 from django_rq import job
@@ -743,16 +743,7 @@ def sync_remain():
             if remains:
                 ItemDeviceUser.objects.filter(user_id__in=remains).update(remain=1)
 
-        qq_cnt = ItemDeviceUser.objects.filter(type=0, app=app, created_at__range=create_range, remain=1).count()
-        wx_cnt = ItemDeviceUser.objects.filter(type=1, app=app, created_at__range=create_range, remain=1).count()
-
-        AppDailyStat.objects.filter(report_date=report_date, app=app).update(qq_remain=qq_cnt, wx_remain=wx_cnt)
-
-        for user in User.objects.filter(app=app, status=0):
-            qq_cnt = ItemDeviceUser.objects.filter(type=0, owner=user, created_at__range=create_range).count()
-            wx_cnt = ItemDeviceUser.objects.filter(type=1, owner=user, created_at__range=create_range).count()
-            UserDailyStat.objects.filter(report_date=report_date, user=user).update(
-                qq_remain=qq_cnt, wx_remain=wx_cnt)
+            make_daily_remain(app.app_id, report_date)
 
         if app.offline:
             offline_users = OfflineUser.objects.filter(app=app, created_at__range=create_range, remain=0)
@@ -761,10 +752,27 @@ def sync_remain():
                           model_manager.query(ZhiyueUser).filter(userId__in=user_ids, lastActiveTime__range=date_range)}
             if remain_ids:
                 OfflineUser.objects.filter(user_id__in=remain_ids).update(remain=1)
-            # for u in offline_users:
-            #     if u.user_id in remain_ids:
-            #         u.remain = 1
-            #         model_manager.save_ignore(u, fields=['remain'])
+
+
+def make_daily_remain(app_id, date):
+    the_date = model_manager.get_date(date)
+    qq_remain_total = 0
+    wx_remain_total = 0
+    for user in ItemDeviceUser.objects.filter(app_id=app_id,
+                                              created_at__range=[the_date,
+                                                                 the_date + timedelta(days=1)]).values(
+        'owner_id',
+        'type'
+    ).annotate(total=Count('user_id'), remain=Sum('remain')):
+        if user['type'] == 0:
+            UserDailyStat.objects.filter(report_date=date, user_id=user['owner_id']).update(qq_remain=user['remain'])
+            qq_remain_total += user['remain']
+        elif user['type'] == 1:
+            UserDailyStat.objects.filter(report_date=date, user_id=user['owner_id']).update(wx_remain=user['remain'])
+            wx_remain_total += user['remain']
+
+    AppDailyStat.objects.filter(report_date=date, app_id=app_id).update(wx_remain=wx_remain_total,
+                                                                        qq_remain=qq_remain_total)
 
 
 def calc_save_remain():
