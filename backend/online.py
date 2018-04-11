@@ -5,7 +5,7 @@ from django.db import connection
 from django.db.models import Count, Sum
 
 from backend import api_helper, model_manager, zhiyue
-from backend.models import OfflineUser
+from backend.models import OfflineUser, ItemDeviceUser
 
 
 @api_func_anonymous
@@ -13,27 +13,30 @@ def api_owners(request):
     app = api_helper.get_session_app(request)
     today = model_manager.today()
     ret = [x for x in
-           OfflineUser.objects.filter(app_id=app, created_at__lt=today - timedelta(days=1)).values('owner').annotate(
-               total=Count('user_id'), remain=Sum('remain')) if x['total'] >= 30]
-    ids = [x['owner'] for x in ret]
-    users = {x.userId: x.name for x in zhiyue.get_users(ids)}
+           ItemDeviceUser.objects.filter(app_id=app, created_at__lt=today - timedelta(days=1)).values('owner_id',
+                                                                                                      'type').annotate(
+               total=Count('user_id'), remain=Sum('remain')) if x['total']]
+    ids = [x['owner_id'] for x in ret]
+    users = {x.pk: x.name for x in model_manager.get_users(ids)}
     for x in ret:
-        x['name'] = users.get(x['owner'], x['owner'])
+        x['name'] = users.get(x['owner_id'], x['owner_id'])
+        x['owner'] = '%s_%s' % (x['owner_id'], x['type'])
     return ret
 
 
 @api_func_anonymous
 def api_owner_remain(owner):
+    [owner_id, type_id] = owner.split('_')
     today = model_manager.today()
-    return OfflineUser.objects.filter(owner=owner,
-                                      created_at__lt=today - timedelta(days=1)).values('owner').annotate(
+    return ItemDeviceUser.objects.filter(owner_id=owner_id, type=type_id,
+                                         created_at__lt=today - timedelta(days=1)).values('owner_id', 'type').annotate(
         total=Count('user_id'),
         remain=Sum('remain'))[0] if owner else []
 
 
 @api_func_anonymous
 def api_daily_remain(request):
-    sql = 'select date(created_at), count(*), sum(remain) from backend_offlineuser ' \
+    sql = 'select date(created_at), count(*), sum(remain) from backend_itemdeviceuser ' \
           'where app_id = %s group by date(created_at) order by date(created_at) desc' \
           % api_helper.get_session_app(request)
 
@@ -52,7 +55,9 @@ def api_owner_detail(owner, date):
     if not owner:
         return []
 
-    query = OfflineUser.objects.filter(owner=owner)
+    [owner_id, type_id] = owner.split('_')
+
+    query = ItemDeviceUser.objects.filter(owner_id=owner_id, type=type_id).exclude(location='')
     if date:
         query = query.extra(where=['date(created_at) =\'%s\'' % date])
 
@@ -66,7 +71,7 @@ def api_app_detail(request, date):
     if not date:
         date = datetime.now().strftime('%Y-%m-%s')
 
-    query = OfflineUser.objects.filter(app_id=app)
+    query = ItemDeviceUser.objects.filter(app_id=app).exclude(location='')
 
     if date:
         query = query.extra(where=['date(created_at) =\'%s\'' % date])
@@ -78,16 +83,19 @@ def api_app_detail(request, date):
 def api_owner_date(owner):
     if not owner:
         return []
+    [owner_id, type_id] = owner.split('_')
 
-    sql = 'select owner, date(created_at), count(*), sum(remain) from backend_offlineuser ' \
-          'where owner = %s group by owner, date(created_at) order by date(created_at) desc' % owner
+    sql = 'select type, date(created_at), count(*), sum(remain) from backend_itemdeviceuser ' \
+          'where owner_id = %s and type = %s group by type, date(created_at) ' \
+          'order by date(created_at) desc' % (owner_id, type_id)
 
     with connection.cursor() as cursor:
         cursor.execute(sql)
         rows = cursor.fetchall()
         return [{
-            'owner': owner,
+            'type': owner_type,
+            'owner': '%s_%s' % (owner_id, owner_type),
             'date': date,
             'total': total,
             'remain': remain
-        } for owner, date, total, remain in rows]
+        } for owner_type, date, total, remain in rows]

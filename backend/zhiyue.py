@@ -938,3 +938,7 @@ def sync_offline_from_hive(the_date):
                                        user_id__in=[x[0] for x in rows]).update(remain=1)
     finally:
         cursor.close()
+
+
+def get_users(ids):
+    return model_manager.query(ZhiyueUser).filter(userId__in=ids)

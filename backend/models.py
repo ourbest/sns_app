@@ -502,6 +502,17 @@ class ItemDeviceUser(models.Model):
     location = models.CharField(max_length=100, default='', null=True)
     cutt_user_id = models.BigIntegerField(default=0, null=True)
 
+    @property
+    def json(self):
+        return {
+            'owner_id': self.owner_id,
+            'type': self.type,
+            'owner': '%s_%s' % (self.owner_id, self.type),
+            'location': self.location,
+            'city': self.city,
+            'remain': self.remain,
+        }
+
     def __str__(self):
         return "(User-%s)" % self.user_id
 
