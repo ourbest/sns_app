@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import timedelta, datetime
 
 from dj.utils import api_func_anonymous
 from django.db import connection
@@ -30,6 +30,22 @@ def api_owner_remain(owner):
 
 
 @api_func_anonymous
+def api_daily_remain(request):
+    sql = 'select date(created_at), count(*), sum(remain) from backend_offlineuser ' \
+          'where app_id = %s group by date(created_at) order by date(created_at) desc' \
+          % api_helper.get_session_app(request)
+
+    with connection.cursor() as cursor:
+        cursor.execute(sql)
+        rows = cursor.fetchall()
+        return [{
+            'date': date,
+            'total': total,
+            'remain': remain
+        } for date, total, remain in rows]
+
+
+@api_func_anonymous
 def api_owner_detail(owner, date):
     if not owner:
         return []
@@ -42,12 +58,27 @@ def api_owner_detail(owner, date):
 
 
 @api_func_anonymous
+def api_app_detail(request, date):
+    app = api_helper.get_session_app(request)
+
+    if not date:
+        date = datetime.now().strftime('%Y-%m-%s')
+
+    query = OfflineUser.objects.filter(app_id=app)
+
+    if date:
+        query = query.extra(where=['date(created_at) =\'%s\'' % date])
+
+    return [x.json for x in query]
+
+
+@api_func_anonymous
 def api_owner_date(owner):
     if not owner:
         return []
 
     sql = 'select owner, date(created_at), count(*), sum(remain) from backend_offlineuser ' \
-          'where owner = %s group by owner, date(created_at)' % owner
+          'where owner = %s group by owner, date(created_at) order by date(created_at) desc' % owner
 
     with connection.cursor() as cursor:
         cursor.execute(sql)
