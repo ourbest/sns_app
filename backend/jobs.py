@@ -439,7 +439,7 @@ def make_heat_data():
     today = model_manager.today().timestamp()
 
     keys = ['loc-%s' % x.decode() for x in caches.redis_client.zrangebyscore('shq-ol', today, today + 3600 * 24)]
-    loc = merge_loc([to_loc(x) for x in caches.redis_client.mget(keys) if x])
+    loc = merge_loc([to_loc(x.decode()) for x in caches.redis_client.mget(keys) if x])
     js = 'heatData = %s;' % (json.dumps(loc))
     with open('/tmp/heat.js', 'w') as f:
         f.write(js)
