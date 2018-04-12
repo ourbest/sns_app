@@ -215,6 +215,7 @@ def run():
     test_job.delay()
 
 
+@job
 def sync_location():
     for u in ItemDeviceUser.objects.filter(location=''):
         du = model_manager.query(DeviceUser).filter(deviceUserId=u.user_id).first()

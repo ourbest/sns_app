@@ -1322,8 +1322,9 @@ def create_task(type, params, phone, request, date):
 
         schedulers.run_at(task.schedule_at.timestamp() + 5, reload_phone_task, task.id)
 
-        # if '分发' in task_type.name:
-        #     pass
+        if '分发' in task_type.name and task.app.stage == '准备期':
+            task.app.stage = '分发期'
+            task.app.save()
 
         for device in devices:
             SnsTaskDevice(task=task, device=device, schedule_at=scheduler_date, data=task.data).save()

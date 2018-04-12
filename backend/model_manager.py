@@ -34,6 +34,10 @@ def get_user(email):
     return User.objects.filter(email=email).first()
 
 
+def get_users(ids):
+    return User.objects.filter(pk__in=ids)
+
+
 def get_online(email):
     return ActiveDevice.objects.filter(device__owner__email=email).filter(
         active_at__gt=(timezone.now() - timedelta(seconds=600)))

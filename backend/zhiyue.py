@@ -250,7 +250,7 @@ def get_active_detail(app_id, i_today):
 
 
 def do_get_app_stat():
-    apps = {str(x.app_id): x.app_name for x in App.objects.filter(stage__in=('分发期', '留守期'))}
+    apps = {str(x.app_id): x.app_name for x in model_manager.get_dist_apps()}
     query = '''
         select appId,platform,count(*) from pojo_ZhiyueUser where platform in (%s)
          and appId in (%s)
@@ -280,7 +280,7 @@ def do_get_app_stat():
 
 @api_func_anonymous
 def get_new_device():
-    apps = {str(x.app_id): x.app_name for x in App.objects.filter(stage__in=('分发期', '留守期'))}
+    apps = {str(x.app_id): x.app_name for x in model_manager.get_dist_apps()}
     query = '''
         select appId,platform,count(*) from pojo_ZhiyueUser where platform in (%s)
          and appId in (%s)
@@ -946,3 +946,7 @@ def sync_offline_from_hive(the_date):
                                        user_id__in=[x[0] for x in rows]).update(remain=1)
     finally:
         cursor.close()
+
+
+def get_users(ids):
+    return model_manager.query(ZhiyueUser).filter(userId__in=ids)

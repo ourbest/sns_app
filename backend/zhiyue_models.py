@@ -6,6 +6,7 @@ class ZhiyueUser(models.Model):
     appId = models.CharField(max_length=30)
     name = models.CharField(max_length=50)
     userId = models.IntegerField(primary_key=True)
+    platform = models.CharField(max_length=50)
     lastActiveTime = models.DateTimeField()
 
     @staticmethod

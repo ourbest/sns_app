@@ -1,6 +1,6 @@
 from django.conf.urls import url
 
-from backend import apis, users, zhiyue, tasks, daemons, bot_apis, stats, exts, kpi, offline
+from backend import apis, users, zhiyue, tasks, daemons, bot_apis, stats, exts, kpi, offline, online
 
 app_name = 'backend'
 urlpatterns = [
@@ -182,7 +182,22 @@ urlpatterns = [
 
     # offline
     url(r'offline/owners$', offline.api_owners),
+    url(r'offline/dates$', offline.api_daily_remain),
+    url(r'offline/detail$', offline.api_app_detail),
     url(r'offline/owner/remain$', offline.api_owner_remain),
     url(r'offline/owner/detail$', offline.api_owner_detail),
     url(r'offline/owner/date$', offline.api_owner_date),
+
+    # online
+    url(r'online/owners$', online.api_owners),
+    url(r'online/dates$', online.api_daily_remain),
+    url(r'online/detail$', online.api_app_detail),
+    url(r'online/owner/remain$', online.api_owner_remain),
+    url(r'online/owner/detail$', online.api_owner_detail),
+    url(r'online/owner/date$', online.api_owner_date),
+    url(r'online/heat$', online.api_heat),
+    url(r'online/html$', online.html_heat),
+
+    # active
+    url(r'active/users$', online.api_active_users),
 ]
