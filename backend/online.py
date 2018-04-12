@@ -6,7 +6,7 @@ from django.db import connection
 from django.db.models import Count, Sum
 from django.shortcuts import render
 
-from backend import api_helper, model_manager
+from backend import api_helper, model_manager, caches
 from backend.models import ItemDeviceUser
 from backend.zhiyue_models import ZhiyueUser, DeviceUser
 
@@ -126,13 +126,39 @@ def api_active_users(request):
     ids = [x.userId for x in model_manager.query(ZhiyueUser).filter(appId=str(api_helper.get_session_app(request)),
                                                                     platform__in=['iphone', 'android'],
                                                                     lastActiveTime__gt=model_manager.get_date())]
+
     return [{
         'remain': 0,
         'location': x.location,
     } for x in model_manager.query(DeviceUser).filter(deviceUserId__in=ids) if x.location]
 
 
+@api_func_anonymous
+def api_all_active_users(request):
+    today = model_manager.today().timestamp()
+
+    # todo merge at server side
+    return [get_device_loc(x.decode()) for x in
+            caches.redis_client.zrangebyscore('shq-ol', today, today + 3600 * 24)]
+
+
 @lru_cache(maxsize=100000)
 def get_device_loc(user_id):
-    x = model_manager.query(DeviceUser).filter(deviceUserId=user_id).first()
-    return x.location if x else None
+    cached = caches.redis_client.get('loc-' + user_id)
+    if not cached:
+        x = model_manager.query(DeviceUser).filter(deviceUserId=user_id).first()
+        cached = x.location if x else None
+    else:
+        cached = cached.decode()
+
+    if cached:
+        caches.redis_client.set('loc-' + user_id, cached, 3600 * 24)
+
+        split = cached.split(',')
+        cached = {
+            'lng': split[0],
+            'lat': split[1],
+            'count': 1
+        }
+
+    return cached

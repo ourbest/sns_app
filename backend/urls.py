@@ -195,7 +195,7 @@ urlpatterns = [
     url(r'online/owner/remain$', online.api_owner_remain),
     url(r'online/owner/detail$', online.api_owner_detail),
     url(r'online/owner/date$', online.api_owner_date),
-    url(r'online/heat$', online.api_heat),
+    url(r'online/heat$', online.api_all_active_users),
     url(r'online/html$', online.html_heat),
 
     # active

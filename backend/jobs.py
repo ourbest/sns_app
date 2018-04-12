@@ -21,7 +21,7 @@ from backend.models import DeviceFile, SnsUser, SnsGroup, SnsUserGroup, SnsApply
     DeviceWeixinGroupLost, SnsTask, UserDailyResourceStat, AppDailyResourceStat, DistArticle, DistArticleStat, AppUser, \
     AppWeeklyStat, User, SnsTaskDevice
 from backend.stat_utils import get_count, get_user_share_stat, app_daily_stat, classify_data_app
-from backend.zhiyue_models import ZhiyueUser
+from backend.zhiyue_models import ZhiyueUser, DeviceUser
 
 
 @job("default", timeout=3600)
@@ -418,11 +418,17 @@ def do_save_daily_active():
 @job
 def do_save_active_id():
     ids = [str(x.pk) for x in model_manager.get_dist_apps()]
-    for x in model_manager.query(ZhiyueUser).filter(appId__in=ids, platform__in=['iphone', 'android'],
-                                                    lastActiveTime__gt=timezone.now() - timedelta(minutes=15)):
+    zhiyue_users = model_manager.query(ZhiyueUser).filter(appId__in=ids, platform__in=['iphone', 'android'],
+                                                          lastActiveTime__gt=timezone.now() - timedelta(minutes=15))
+    for x in zhiyue_users:
         caches.redis_client.zadd('shq-ol', x.lastActiveTime.timestamp(), x.userId)
 
     caches.redis_client.zremrangebyscore('shq-ol', 0, (timezone.now() - timedelta(days=1)).timestamp())
+
+    for x in model_manager.query(DeviceUser).filter(deviceUserId__in=[x.userId for x in zhiyue_users]).exclude(
+            location=''):
+        if x.location:
+            caches.redis_client.set('loc-%s' % x.deviceUserId, x.location, 3600 * 24)
 
 
 @job
