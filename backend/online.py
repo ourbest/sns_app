@@ -1,11 +1,13 @@
 from datetime import timedelta, datetime
+from functools import lru_cache
 
 from dj.utils import api_func_anonymous
 from django.db import connection
 from django.db.models import Count, Sum
+from django.shortcuts import render
 
-from backend import api_helper, model_manager, zhiyue
-from backend.models import OfflineUser, ItemDeviceUser
+from backend import api_helper, model_manager
+from backend.models import ItemDeviceUser
 from backend.zhiyue_models import ZhiyueUser, DeviceUser
 
 
@@ -80,6 +82,23 @@ def api_app_detail(request, date):
     return [x.json for x in query]
 
 
+def html_heat(request):
+    return render(request, 'online.html')
+
+
+@api_func_anonymous
+def api_heat():
+    return [{
+        "lng": 116.191031,
+        "lat": 39.988585,
+        "count": 10
+    }, {
+        "lng": 116.389275,
+        "lat": 39.925818,
+        "count": 11
+    }]
+
+
 @api_func_anonymous
 def api_owner_date(owner):
     if not owner:
@@ -111,3 +130,9 @@ def api_active_users(request):
         'remain': 0,
         'location': x.location,
     } for x in model_manager.query(DeviceUser).filter(deviceUserId__in=ids) if x.location]
+
+
+@lru_cache(maxsize=100000)
+def get_device_loc(user_id):
+    x = model_manager.query(DeviceUser).filter(deviceUserId=user_id).first()
+    return x.location if x else None

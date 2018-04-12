@@ -13,7 +13,7 @@ from django_rq import job
 from logzero import logger
 
 import backend.stat_utils
-from backend import api_helper, model_manager, group_splitter, zhiyue, stat_utils
+from backend import api_helper, model_manager, group_splitter, zhiyue, stat_utils, caches
 from backend.api_helper import ADD_STATUS, deal_add_result, deal_dist_result
 from backend.model_manager import save_ignore
 from backend.models import DeviceFile, SnsUser, SnsGroup, SnsUserGroup, SnsApplyTaskLog, SnsGroupSplit, WxDistLog, \
@@ -21,6 +21,7 @@ from backend.models import DeviceFile, SnsUser, SnsGroup, SnsUserGroup, SnsApply
     DeviceWeixinGroupLost, SnsTask, UserDailyResourceStat, AppDailyResourceStat, DistArticle, DistArticleStat, AppUser, \
     AppWeeklyStat, User, SnsTaskDevice
 from backend.stat_utils import get_count, get_user_share_stat, app_daily_stat, classify_data_app
+from backend.zhiyue_models import ZhiyueUser
 
 
 @job("default", timeout=3600)
@@ -410,6 +411,18 @@ def do_save_daily_active():
         android = int(daily_stat.get('android', 0))
         DailyActive(app_id=daily_stat['app_id'], iphone=iphone,
                     android=android, total=iphone + android).save()
+
+    do_save_active_id()
+
+
+@job
+def do_save_active_id():
+    ids = [str(x.pk) for x in model_manager.get_dist_apps()]
+    for x in model_manager.query(ZhiyueUser).filter(appId__in=ids, platform__in=['iphone', 'android'],
+                                                    lastActiveTime__gt=timezone.now() - timedelta(minutes=15)):
+        caches.redis_client.zadd('shq-ol', x.lastActiveTime.timestamp(), x.userId)
+
+    caches.redis_client.zremrangebyscore('shq-ol', 0, (timezone.now() - timedelta(days=1)).timestamp())
 
 
 @job

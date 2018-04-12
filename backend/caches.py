@@ -1,6 +1,10 @@
+from django.conf import settings
 from django.core.cache import cache
+from redis import StrictRedis
 
 from backend.models import Tag
+
+redis_client = StrictRedis(host=settings.REDIS_SERVER)
 
 
 def reload_cache(clz, key=None):
