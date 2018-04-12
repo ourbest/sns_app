@@ -139,8 +139,8 @@ def api_all_active_users(request):
     today = model_manager.today().timestamp()
 
     # todo merge at server side
-    return merge_loc([get_device_loc(x.decode()) for x in
-                      caches.redis_client.zrangebyscore('shq-ol', today, today + 3600 * 24)])
+    return merge_loc([x for x in [get_device_loc(x.decode()) for x in
+                                  caches.redis_client.zrangebyscore('shq-ol', today, today + 3600 * 24)] if x])
 
 
 @lru_cache(maxsize=100000)
