@@ -1,7 +1,9 @@
+import json
 import os
 import re
 from collections import defaultdict
 from datetime import timedelta, datetime
+from math import radians, sin, atan2, cos, sqrt
 
 from dj import times
 from django.conf import settings
@@ -11,6 +13,7 @@ from django.template.loader import render_to_string
 from django.utils import timezone
 from django_rq import job
 from logzero import logger
+from qiniu import Auth, put_file
 
 import backend.stat_utils
 from backend import api_helper, model_manager, group_splitter, zhiyue, stat_utils, caches
@@ -432,6 +435,32 @@ def do_save_active_id():
 
 
 @job
+def make_heat_data():
+    today = model_manager.today().timestamp()
+
+    keys = ['loc-%s' % x.decode() for x in caches.redis_client.zrangebyscore('shq-ol', today, today + 3600 * 24)]
+    loc = merge_loc([to_loc(x) for x in caches.redis_client.mget(keys) if x])
+    js = 'heatData = %s;' % (json.dumps(loc))
+    with open('/tmp/heat.js', 'w') as f:
+        f.write(js)
+
+    now = datetime.now()
+    min = now.minute
+    ts = int(now.replace(second=0, minute=int(min / 10) * 10).timestamp())
+    key = 'heat/%s%s.js' % (now.strftime('%Y%m%d%H'), ts)
+    upload_to_qn('/tmp/heat.js', key)
+
+
+def to_loc(x):
+    split = x.split(',')
+    return {
+        'lng': float(split[0]),
+        'lat': float(split[1]),
+        'count': 1
+    }
+
+
+@job
 def do_daily_stat(date):
     date = times.localtime(
         datetime.now().replace(hour=0, second=0,
@@ -808,3 +837,41 @@ def reload_phone_task(task_id):
     for device_task in SnsTaskDevice.objects.filter(task_id=task_id).select_related('device'):
         from backend import task_manager
         task_manager.reload_next_task(device_task.device.label)
+
+
+R = 6373.0
+
+
+def merge_loc(arr, src=list()):
+    for loc1 in arr:
+        done = False
+        for x in src:
+            if distance(loc1, x) < 5:
+                x['count'] += 1
+                done = True
+
+        if not done:
+            src.append(loc1)
+
+    return src
+
+
+def distance(loc1, loc2):
+    lat1 = radians(float(loc1['lat']))
+    lon1 = radians(float(loc1['lng']))
+    lat2 = radians(float(loc2['lat']))
+    lon2 = radians(float(loc2['lng']))
+
+    dlon = lon2 - lon1
+    dlat = lat2 - lat1
+
+    a = sin(dlat / 2) ** 2 + cos(lat1) * cos(lat2) * sin(dlon / 2) ** 2
+    c = 2 * atan2(sqrt(a), sqrt(1 - a))
+
+    return R * c
+
+
+def upload_to_qn(file, key):
+    q = Auth(settings.QINIU_AK, settings.QINIU_SK)
+    token = q.upload_token(settings.QINIU_BUCKET, key)
+    put_file(token, key, file)
