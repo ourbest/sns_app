@@ -6,6 +6,7 @@ from django.db.models import Count, Sum
 
 from backend import api_helper, model_manager, zhiyue
 from backend.models import OfflineUser, ItemDeviceUser
+from backend.zhiyue_models import ZhiyueUser, DeviceUser
 
 
 @api_func_anonymous
@@ -99,3 +100,14 @@ def api_owner_date(owner):
             'total': total,
             'remain': remain
         } for owner_type, date, total, remain in rows]
+
+
+@api_func_anonymous
+def api_active_users(request):
+    ids = [x.userId for x in model_manager.query(ZhiyueUser).filter(appId=str(api_helper.get_session_app(request)),
+                                                                    platform__in=['iphone', 'android'],
+                                                                    lastActiveTime__gt=model_manager.get_date())]
+    return [{
+        'remain': 0,
+        'location': x.location,
+    } for x in model_manager.query(DeviceUser).filter(deviceUserId__in=ids) if x.location]

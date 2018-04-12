@@ -215,6 +215,7 @@ def run():
     test_job.delay()
 
 
+@job
 def sync_location():
     for u in ItemDeviceUser.objects.filter(location=''):
         du = model_manager.query(DeviceUser).filter(deviceUserId=u.user_id).first()
@@ -310,9 +311,9 @@ def sync_majia_user_id():
         model_manager.save_ignore(du)
 
 
-def sync_all_remain():
+def sync_all_remain(date=None):
     # for x in range(8, 8):
-    date = '2018-04-08'
+    date = '2018-04-08' if not date else date
     for app in model_manager.get_dist_apps():
         make_daily_remain(app.app_id, date)
 

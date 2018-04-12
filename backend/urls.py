@@ -195,4 +195,7 @@ urlpatterns = [
     url(r'online/owner/remain$', online.api_owner_remain),
     url(r'online/owner/detail$', online.api_owner_detail),
     url(r'online/owner/date$', online.api_owner_date),
+
+    # active
+    url(r'active/users$', online.api_active_users),
 ]
