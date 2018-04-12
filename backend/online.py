@@ -5,6 +5,7 @@ from dj.utils import api_func_anonymous
 from django.db import connection
 from django.db.models import Count, Sum
 from django.shortcuts import render
+from math import radians, sin, atan2, sqrt, cos
 
 from backend import api_helper, model_manager, caches
 from backend.models import ItemDeviceUser
@@ -138,27 +139,59 @@ def api_all_active_users(request):
     today = model_manager.today().timestamp()
 
     # todo merge at server side
-    return [get_device_loc(x.decode()) for x in
-            caches.redis_client.zrangebyscore('shq-ol', today, today + 3600 * 24)]
+    return merge_loc([get_device_loc(x.decode()) for x in
+                      caches.redis_client.zrangebyscore('shq-ol', today, today + 3600 * 24)])
 
 
 @lru_cache(maxsize=100000)
 def get_device_loc(user_id):
-    cached = caches.redis_client.get('loc-' + user_id)
+    cached = caches.redis_client.get('loc-%s' % user_id)
     if not cached:
         x = model_manager.query(DeviceUser).filter(deviceUserId=user_id).first()
         cached = x.location if x else None
+        if cached:
+            caches.redis_client.set('loc-%s' % user_id, cached, 3600 * 24)
     else:
         cached = cached.decode()
 
     if cached:
-        caches.redis_client.set('loc-' + user_id, cached, 3600 * 24)
-
         split = cached.split(',')
         cached = {
-            'lng': split[0],
-            'lat': split[1],
+            'lng': float(split[0]),
+            'lat': float(split[1]),
             'count': 1
         }
 
     return cached
+
+
+R = 6373.0
+
+
+def merge_loc(arr, src=list()):
+    for loc1 in arr:
+        done = False
+        for x in src:
+            if distance(loc1, x) < 5:
+                x['count'] += 1
+                done = True
+
+        if not done:
+            src.append(loc1)
+
+    return src
+
+
+def distance(loc1, loc2):
+    lat1 = radians(float(loc1['lat']))
+    lon1 = radians(float(loc1['lng']))
+    lat2 = radians(float(loc2['lat']))
+    lon2 = radians(float(loc2['lng']))
+
+    dlon = lon2 - lon1
+    dlat = lat2 - lat1
+
+    a = sin(dlat / 2) ** 2 + cos(lat1) * cos(lat2) * sin(dlon / 2) ** 2
+    c = 2 * atan2(sqrt(a), sqrt(1 - a))
+
+    return R * c
