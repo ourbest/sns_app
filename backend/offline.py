@@ -3,9 +3,10 @@ from datetime import timedelta, datetime
 from dj.utils import api_func_anonymous
 from django.db import connection
 from django.db.models import Count, Sum
+from django.template.loader import render_to_string
 
 from backend import api_helper, model_manager, zhiyue
-from backend.models import OfflineUser
+from backend.models import OfflineUser, App
 
 
 @api_func_anonymous
@@ -91,3 +92,26 @@ def api_owner_date(owner):
             'total': total,
             'remain': remain
         } for owner, date, total, remain in rows]
+
+
+@api_func_anonymous
+def daily_report():
+    yesterday = model_manager.yesterday()
+
+    apps = {x.app_id: x.app_name for x in App.objects.filter(offline=1)}
+
+    sum = OfflineUser.objects.filter(created_at__range=(yesterday, model_manager.today())).values('app_id').annotate(
+        total=Count('user_id'), view=Sum('bonus_view'), picked=Sum('bonus_pick'))
+
+    for x in sum:
+        x['app'] = apps[x['app_id']]
+
+    sum_yesterday = OfflineUser.objects.filter(created_at__range=(yesterday - timedelta(days=1),
+                                                                  yesterday)).values('app_id').annotate(
+        total=Count('user_id'), remain=Sum('remain'), picked=Sum('bonus_pick'))
+
+    for x in sum_yesterday:
+        x['app'] = apps[x['app_id']]
+
+    html = render_to_string('offline_daily.html', {'sum': sum, 'sum_yesterday': sum_yesterday})
+    api_helper.send_html_mail('%s线上推广日报' % yesterday.strftime('%Y-%m-%d'), 'yonghui.chen@cutt.com', html)

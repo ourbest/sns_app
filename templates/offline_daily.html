@@ -1,0 +1,37 @@
+{% load calc %}
+
+<h2>汇总情况</h2>
+<h3>今日</h3>
+<table width="100%" border="1" style="border-collapse: collapse; text-align: center" cellpadding="5">
+    <tr>
+        <th>生活圈</th>
+        <th>总数</th>
+        <th>红包查看</th>
+        <th>红包打开</th>
+        <th>打开率</th>
+    </tr>
+    {% for item in sum %}
+        <tr>
+            <td>{{ item.app }}</td>
+            <td>{{ item.total }}</td>
+            <td>{{ item.view }}</td>
+            <td>{{ item.picked }}</td>
+            <td>{% rate item.picked item.total 100 2 %}</td>
+        </tr>
+    {% endfor %}
+</table>
+<h3>前一日</h3>
+<table width="100%" border="1" style="border-collapse: collapse; text-align: center" cellpadding="5">
+    <tr>
+        <th>生活圈</th>
+        <th>总数</th>
+        <th>留存率</th>
+    </tr>
+    {% for item in sum_yesterday %}
+        <tr>
+            <td>{{ item.app }}</td>
+            <td>{{ item.total }}</td>
+            <td>{% rate item.remain item.total 100 2 %}</td>
+        </tr>
+    {% endfor %}
+</table>
