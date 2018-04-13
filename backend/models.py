@@ -746,10 +746,13 @@ class OfflineUser(models.Model):
             'remain': self.remain,
             'location': self.location,
             'created_at': self.created_at.strftime('%Y-%m-%d %H:%M'),
+            'withdraw_time': self.withdraw_time.strftime('%Y-%m-%d %H:%M'),
             'bonus_pick': self.bonus_pick,
+            'bonus_view': self.bonus_view,
             'bonus_step': self.bonus_step,
             'bonus_amount': self.bonus_amount,
             'bonus_withdraw': self.bonus_withdraw,
+            'bonus_got': self.bonus_got,
         }
 
 

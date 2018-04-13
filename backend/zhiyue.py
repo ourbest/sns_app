@@ -719,7 +719,7 @@ def save_bonus_info(until=model_manager.yesterday()):
                                                                                  type=-1)]
 
     if ids:
-        OfflineUser.objects.filter(user_id__in=ids).update(bonus_view=1)
+        OfflineUser.objects.filter(user_id__in=ids, bonus_view=0).update(bonus_view=1)
 
     # 红包步骤
     for x in model_manager.query(UserRewardGroundHistory).filter(createTime__gt=until,

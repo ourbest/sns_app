@@ -436,19 +436,20 @@ def do_save_active_id():
 
 @job
 def make_heat_data():
-    today = model_manager.today().timestamp()
-
-    keys = ['loc-%s' % x.decode() for x in caches.redis_client.zrangebyscore('shq-ol', today, today + 3600 * 24)]
-    loc = merge_loc([to_loc(x.decode()) for x in caches.redis_client.mget(keys) if x])
-    js = 'heatData = %s;' % (json.dumps(loc))
-    with open('/tmp/heat.js', 'w') as f:
-        f.write(js)
-
-    now = datetime.now()
-    min = now.minute
-    ts = int(now.replace(second=0, minute=int(min / 10) * 10).timestamp())
-    key = 'heat/%s%s.js' % (now.strftime('%Y%m%d%H'), ts)
-    upload_to_qn('/tmp/heat.js', key)
+    # today = model_manager.today().timestamp()
+    #
+    # keys = ['loc-%s' % x.decode() for x in caches.redis_client.zrangebyscore('shq-ol', today, today + 3600 * 24)]
+    # loc = merge_loc([to_loc(x.decode()) for x in caches.redis_client.mget(keys) if x])
+    # js = 'heatData = %s;' % (json.dumps(loc))
+    # with open('/tmp/heat.js', 'w') as f:
+    #     f.write(js)
+    #
+    # now = datetime.now()
+    # min = now.minute
+    # ts = int(now.replace(second=0, minute=int(min / 10) * 10).timestamp())
+    # key = 'heat/%s%s.js' % (now.strftime('%Y%m%d%H'), ts)
+    # upload_to_qn('/tmp/heat.js', key)
+    pass
 
 
 def to_loc(x):
