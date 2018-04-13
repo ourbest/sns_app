@@ -709,7 +709,7 @@ def sync_device_user():
                 save_coupon_user(coupons, saved)
 
             # 获取领红包信息
-    save_bonus_info()
+    save_bonus_info(model_manager.today())
 
     sync_remain()
 
