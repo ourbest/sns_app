@@ -468,6 +468,10 @@ def today():
     return get_date()
 
 
+def yesterday():
+    return today() - timedelta(days=1)
+
+
 def delta(date_str, days):
     dt = datetime.strptime(date_str, '%Y-%m-%d') + timedelta(days=days)
     return dt.strftime('%Y-%m-%d')

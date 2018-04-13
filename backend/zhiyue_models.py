@@ -280,6 +280,7 @@ class UserRewardHistory(models.Model):
     createTime = models.DateTimeField()
     source = models.CharField(max_length=20)
     type = models.IntegerField()
+    amount = models.IntegerField()
 
     @staticmethod
     def db_name():
@@ -288,6 +289,21 @@ class UserRewardHistory(models.Model):
     class Meta:
         db_table = 'partner_UserRewardHistory'
         managed = False
+
+
+class WithdrawApply(models.Model):
+    partnerId = models.IntegerField()
+    userId = models.IntegerField(primary_key=True)
+    amount = models.CharField(max_length=50)
+    finishTime = models.DateTimeField()
+
+    @staticmethod
+    def db_name():
+        return 'zhiyue'
+
+    class Meta:
+        db_table = 'shop_WithdrawApply'
+        managed = True
 
 
 class CouponDailyStatInfo(models.Model):
@@ -388,4 +404,20 @@ class CouponLog(models.Model):
 
     class Meta:
         db_table = 'partner_CouponLog'
+        managed = False
+
+
+class UserRewardGroundHistory(models.Model):
+    userId = models.BigIntegerField()
+    type = models.IntegerField()
+    createTime = models.DateTimeField(primary_key=True)
+    partnerId = models.IntegerField()
+    amount = models.IntegerField()
+
+    @staticmethod
+    def db_name():
+        return 'zhiyue'
+
+    class Meta:
+        db_table = 'partner_UserRewardGroundHistory'
         managed = False

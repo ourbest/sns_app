@@ -730,6 +730,14 @@ class OfflineUser(models.Model):
     owner = models.BigIntegerField('扫描人', default=0)
     remain = models.IntegerField(default=0)
     location = models.CharField(max_length=100, default='', null=True)
+    bonus_view = models.IntegerField(default=0)
+    bonus_pick = models.IntegerField(default=0)
+    bonus_step = models.IntegerField(default=0)
+    bonus_amount = models.IntegerField(default=0)
+    bonus_got = models.IntegerField(default=0)
+    bonus_withdraw = models.IntegerField(default=0)
+    bonus_time = models.DateTimeField(null=True)
+    withdraw_time = models.DateTimeField(null=True)
 
     @property
     def json(self):
@@ -737,7 +745,11 @@ class OfflineUser(models.Model):
             'user_id': self.user_id,
             'remain': self.remain,
             'location': self.location,
-            'created_at': self.created_at.strftime('%Y-%m-%d %H:%M')
+            'created_at': self.created_at.strftime('%Y-%m-%d %H:%M'),
+            'bonus_pick': self.bonus_pick,
+            'bonus_step': self.bonus_step,
+            'bonus_amount': self.bonus_amount,
+            'bonus_withdraw': self.bonus_withdraw,
         }
 
 

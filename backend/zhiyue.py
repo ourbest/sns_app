@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 from dj import times
 from dj.utils import api_func_anonymous
 from django.db import connections
-from django.db.models import Count, Sum
+from django.db.models import Count, Sum, Max
 from django.http import HttpResponse
 from django.utils import timezone
 from django_rq import job
@@ -19,7 +19,7 @@ from backend.models import AppUser, AppDailyStat, UserDailyStat, App, DailyActiv
     User, OfflineUser
 from backend.zhiyue_models import ShareArticleLog, ClipItem, WeizhanCount, AdminPartnerUser, CouponInst, ItemMore, \
     ZhiyueUser, UserRewardHistory, AppConstants, CouponPmSentInfo, CouponDailyStatInfo, OfflineDailyStat, DeviceUser, \
-    CouponLog
+    CouponLog, UserRewardGroundHistory, WithdrawApply
 
 
 @api_func_anonymous
@@ -89,7 +89,7 @@ def get_url_title(url):
         if more and more.title:
             return more.title
         item = model_manager.query(ClipItem).filter(itemId=article_id).first()
-        return item.title if item.title else '(无标题)'
+        return item.title if item and item.title else '(无标题)'
     return None
 
 
@@ -615,6 +615,7 @@ def sync_recent_user():
     logger.info('同步最新数据')
     minutes = 30
     sync_user_in_minutes(minutes)
+    save_bonus_info()
     sync_online_remain()
 
 
@@ -649,14 +650,19 @@ def sync_user_in_minutes(minutes):
         if app.offline:
             coupons = model_manager.query(CouponInst).filter(partnerId=app.pk, status=1,
                                                              useDate__gt=timezone.now() - timedelta(minutes=minutes))
-            for coupon in coupons:
-                log = model_manager.query(CouponLog).filter(appId=coupon.partnerId, couponId=coupon.couponId,
-                                                            num=coupon.couponNum, lbs__isnull=False).first()
-                offline_user = OfflineUser(user_id=coupon.userId, app_id=coupon.partnerId, owner=coupon.shopOwner,
-                                           created_at=coupon.useDate)
-                if log:
-                    offline_user.location = log.lbs
-                model_manager.save_ignore(offline_user)
+            save_coupon_user(coupons)
+
+
+def save_coupon_user(coupons, saved=None):
+    for coupon in coupons:
+        if saved is None or coupon.userId not in saved:
+            log = model_manager.query(CouponLog).filter(appId=coupon.partnerId, couponId=coupon.couponId,
+                                                        num=coupon.couponNum, lbs__isnull=False).first()
+            offline_user = OfflineUser(user_id=coupon.userId, app_id=coupon.partnerId, owner=coupon.shopOwner,
+                                       created_at=coupon.useDate)
+            if log:
+                offline_user.location = log.lbs
+            model_manager.save_ignore(offline_user)
 
 
 @job
@@ -696,23 +702,45 @@ def sync_device_user():
 
         if app.offline:
             coupons = model_manager.query(CouponInst).filter(partnerId=app.pk, status=1, useDate__range=date_range)
-
-            saved = {x.user_id for x in OfflineUser.objects.filter(app=app, created_at__range=date_range)}
+            today_saved = OfflineUser.objects.filter(app=app, created_at__range=date_range)
+            saved = {x.user_id for x in today_saved}
 
             if len(saved) != coupons.count():
+                save_coupon_user(coupons, saved)
 
-                for coupon in coupons:
-                    if coupon.userId not in saved:
-                        log = model_manager.query(CouponLog).filter(appId=coupon.partnerId, couponId=coupon.couponId,
-                                                                    num=coupon.couponNum, lbs__isnull=False).first()
-                        offline_user = OfflineUser(user_id=coupon.userId, app_id=coupon.partnerId,
-                                                   owner=coupon.shopOwner,
-                                                   created_at=coupon.useDate)
-                        if log:
-                            offline_user.location = log.lbs
-                        model_manager.save_ignore(offline_user)
+            # 获取领红包信息
+    save_bonus_info()
 
     sync_remain()
+
+
+def save_bonus_info(until=model_manager.yesterday()):
+    ids = [x.userId for x in model_manager.query(UserRewardGroundHistory).filter(createTime__gt=until,
+                                                                                 type=-1)]
+
+    if ids:
+        OfflineUser.objects.filter(user_id__in=ids).update(bonus_view=1)
+
+    # 红包步骤
+    for x in model_manager.query(UserRewardGroundHistory).filter(createTime__gt=until,
+                                                                 type__gte=0) \
+            .values('userId').annotate(amount=Sum('amount'), current=Max('type')):
+        if x['amount'] > 0:
+            OfflineUser.objects.filter(user_id=x['userId']).update(bonus_step=x['current'],
+                                                                   bonus_pick=1,
+                                                                   bonus_amount=x['amount'])
+
+    # 获得红包信息
+    for x in model_manager.query(UserRewardHistory).filter(createTime__gt=until,
+                                                           source='groundPush'):
+        OfflineUser.objects.filter(user_id=x.userId).update(bonus_got=1,
+                                                            bonus_pick=1,
+                                                            bonus_amount=x.amount,
+                                                            bonus_time=x.createTime)
+    # 提款信息
+    for x in model_manager.query(WithdrawApply).filter(finishTime__gt=until):
+        OfflineUser.objects.filter(user_id=x.userId).update(bonus_withdraw=float(x.amount) * 100,
+                                                            withdraw_time=x.finishTime)
 
 
 def sync_to_item_dev_user(app, owner, device_user, majia):

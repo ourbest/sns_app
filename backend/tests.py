@@ -277,7 +277,6 @@ def delete_user_splitter(app_id, user_id):
     SnsGroupSplit.objects.filter(group__app_id=app_id, user_id=user_id, status=0).delete()
 
 
-
 def sync_majia_user_id():
     for du in ItemDeviceUser.objects.filter(cutt_user_id=0):
         ct = model_manager.query(DeviceUser).filter(deviceUserId=du.user_id).first()
@@ -308,3 +307,10 @@ def sync_device_user():
                     majia = majias.get(device_user.sourceUserId)
                     owner = majia.user
                     model_manager.save_ignore(sync_to_item_dev_user(app, owner, device_user, majia))
+
+
+def sync_bonus_test():
+    date = model_manager.today() - timedelta(days=5)
+    for app in App.objects.filter(offline=1):
+        users = OfflineUser.objects.filter(app=app, created_at__gt=date)
+        zhiyue.save_bonus_info(app, users, until=date)

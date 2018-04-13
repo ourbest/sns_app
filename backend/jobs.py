@@ -21,7 +21,7 @@ from backend.api_helper import ADD_STATUS, deal_add_result, deal_dist_result
 from backend.model_manager import save_ignore
 from backend.models import DeviceFile, SnsUser, SnsGroup, SnsUserGroup, SnsApplyTaskLog, SnsGroupSplit, WxDistLog, \
     SnsUserKickLog, DeviceTaskData, DailyActive, App, UserDailyStat, AppDailyStat, DeviceWeixinGroup, SnsGroupLost, \
-    DeviceWeixinGroupLost, SnsTask, UserDailyResourceStat, AppDailyResourceStat, DistArticle, DistArticleStat, AppUser, \
+    DeviceWeixinGroupLost, SnsTask, UserDailyResourceStat, AppDailyResourceStat, AppUser, \
     AppWeeklyStat, User, SnsTaskDevice
 from backend.stat_utils import get_count, get_user_share_stat, app_daily_stat, classify_data_app
 from backend.zhiyue_models import ZhiyueUser, DeviceUser
@@ -875,3 +875,8 @@ def upload_to_qn(file, key):
     q = Auth(settings.QINIU_AK, settings.QINIU_SK)
     token = q.upload_token(settings.QINIU_BUCKET, key)
     put_file(token, key, file)
+
+
+def send_report():
+    for app in App.objects.filter(offline=1):
+        pass

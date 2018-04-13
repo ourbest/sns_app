@@ -64,7 +64,7 @@ def api_app_detail(request, date):
     app = api_helper.get_session_app(request)
 
     if not date:
-        date = datetime.now().strftime('%Y-%m-%s')
+        date = datetime.now().strftime('%Y-%m-%d')
 
     query = OfflineUser.objects.filter(app_id=app)
 
