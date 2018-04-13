@@ -114,4 +114,4 @@ def daily_report():
         x['app'] = apps[x['app_id']]
 
     html = render_to_string('offline_daily.html', {'sum': sum, 'sum_yesterday': sum_yesterday})
-    api_helper.send_html_mail('%s线上推广日报' % yesterday.strftime('%Y-%m-%d'), 'yonghui.chen@cutt.com', html)
+    api_helper.send_html_mail('%s地推日报' % yesterday.strftime('%Y-%m-%d'), 'yonghui.chen@cutt.com', html)
