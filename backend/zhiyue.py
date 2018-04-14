@@ -846,7 +846,8 @@ def sync_online_remain():
                ItemDeviceUser.objects.filter(app=app, created_at__range=(yesterday, today), remain=0)]
         remains = [x.userId for x in
                    model_manager.query(ZhiyueUser).filter(userId__in=ids, lastActiveTime__gt=today)]
-        ItemDeviceUser.objects.filter(user_id__in=remains, app=app, remain=0).update(remain=1)
+        if remains:
+            ItemDeviceUser.objects.filter(user_id__in=remains, app=app, remain=0).update(remain=1)
 
 
 def sync_offline_remain():
@@ -857,7 +858,8 @@ def sync_offline_remain():
                OfflineUser.objects.filter(app=app, created_at__range=(yesterday, today), remain=0)]
         remains = [x.userId for x in
                    model_manager.query(ZhiyueUser).filter(userId__in=ids, lastActiveTime__gt=today)]
-        OfflineUser.objects.filter(user_id__in=remains, app=app, remain=0).update(remain=1)
+        if remains:
+            OfflineUser.objects.filter(user_id__in=remains, app=app, remain=0).update(remain=1)
 
 
 def sync_report_online_remain(report):
