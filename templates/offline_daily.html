@@ -8,15 +8,13 @@
         <th>总数</th>
         <th>红包查看</th>
         <th>红包打开</th>
-        <th>打开率</th>
     </tr>
     {% for item in sum %}
         <tr>
             <td>{{ item.app }}</td>
             <td>{{ item.total }}</td>
-            <td>{{ item.view }}</td>
-            <td>{{ item.picked }}</td>
-            <td>{% rate item.picked item.total 100 2 %}</td>
+            <td>{{ item.view }}{% rate item.view item.total 100 2 %}</td>
+            <td>{{ item.picked }}({% rate item.picked item.total 100 2 %})</td>
         </tr>
     {% endfor %}
 </table>

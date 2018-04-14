@@ -353,39 +353,19 @@ def get_coupon_details(save):
     yesterday = date - timedelta(days=1)
     apps = {x.app_id: x.app_name for x in App.objects.filter(offline=1)}
 
-    query = model_manager.query(CouponInst).filter(partnerId__in=apps.keys(), status=1,
-                                                   useDate__range=(date, date + timedelta(days=1))).values(
-        'partnerId').annotate(total=Count('userId')).order_by('-total')
-
-    ids = [x['partnerId'] for x in query]
-
     remains = dict()
 
-    viewed = {x['partnerId']: x['cnt'] for x in
-              model_manager.query(UserRewardGroundHistory).filter(type=-1,
-                                                                  createTime__gt=date).values(
-                  'partnerId').annotate(cnt=Count('userId'))}
-    picked = {x['partnerId']: x['cnt'] for x in
-              model_manager.query(UserRewardGroundHistory).filter(type=0, amount__gt=0,
-                                                                  createTime__gt=date).values(
-                  'partnerId').annotate(cnt=Count('userId'))}
+    query = OfflineUser.objects.filter(created_at__gt=date).values('app_id').annotate(
+        total=Count('user_id'), viewed=Sum('bonus_view'), picked=Sum('bonus_pick'))
 
-    for app_id in ids:
-        user_ids = {x.userId for x in model_manager.query(CouponInst).filter(partnerId=app_id,
-                                                                             status=1,
-                                                                             useDate__range=(
-                                                                                 yesterday,
-                                                                                 yesterday + timedelta(days=1)))}
+    for u in OfflineUser.objects.filter(created_at__range=(yesterday, date)).values(
+            'app_id').annotate(total=Count('user_id'), remain=Sum('remain')):
+        remains[u['app_id']] = int(u['remain'] / u['total'] * 100)
 
-        remain = model_manager.query(ZhiyueUser).filter(userId__in=user_ids,
-                                                        lastActiveTime__gt=date).count()
-
-        remains[app_id] = int(remain / len(user_ids) * 100)
-
-    ret = [{'app_id': x['partnerId'], 'app_name': apps[x['partnerId']], 'today': x['total'],
-            'remain': '%s%%' % remains[x['partnerId']],
-            'open': viewed.get(x['partnerId'], 0),
-            'picked': picked.get(x['partnerId'], 0)} for x in query]
+    ret = [{'app_id': x['app_id'], 'app_name': apps[x['app_id']], 'today': x['total'],
+            'remain': '%s%%' % remains[x['app_id']],
+            'open': x['viewed'],
+            'picked': x['picked']} for x in query]
     if save:
         for x in ret:
             info = CouponDailyStatInfo(partnerId=x['app_id'], statDate=date,
@@ -589,6 +569,7 @@ def sync_recent_user():
     sync_user_in_minutes(minutes)
     save_bonus_info()
     sync_online_remain()
+    sync_offline_remain()
 
 
 def sync_user_in_minutes(minutes):
@@ -858,16 +839,25 @@ def _re_calc(the_date):
 
 
 def sync_online_remain():
-    to_time = datetime.now()
-    to_time_str = to_time.strftime('%Y-%m-%d')
-    from_time_str = (to_time - timedelta(days=1)).strftime('%Y-%m-%d')
-    date_range = (from_time_str, to_time_str)
+    today = model_manager.today()
+    yesterday = model_manager.yesterday()
     for app in model_manager.get_dist_apps():
-        ids = [x.user_id for x in ItemDeviceUser.objects.filter(app=app, created_at__range=date_range, remain=0)]
+        ids = [x.user_id for x in
+               ItemDeviceUser.objects.filter(app=app, created_at__range=(yesterday, today), remain=0)]
         remains = [x.userId for x in
-                   model_manager.query(ZhiyueUser).filter(userId__in=ids, lastActiveTime__gt=to_time_str)]
-        ItemDeviceUser.objects.filter(user_id__in=remains, app=app,
-                                      created_at__range=date_range, remain=0).update(remain=1)
+                   model_manager.query(ZhiyueUser).filter(userId__in=ids, lastActiveTime__gt=today)]
+        ItemDeviceUser.objects.filter(user_id__in=remains, app=app, remain=0).update(remain=1)
+
+
+def sync_offline_remain():
+    today = model_manager.today()
+    yesterday = model_manager.yesterday()
+    for app in model_manager.get_dist_apps():
+        ids = [x.user_id for x in
+               OfflineUser.objects.filter(app=app, created_at__range=(yesterday, today), remain=0)]
+        remains = [x.userId for x in
+                   model_manager.query(ZhiyueUser).filter(userId__in=ids, lastActiveTime__gt=today)]
+        OfflineUser.objects.filter(user_id__in=remains, app=app, remain=0).update(remain=1)
 
 
 def sync_report_online_remain(report):
