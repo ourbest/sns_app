@@ -1,3 +1,4 @@
+import re
 from datetime import timedelta, datetime
 from functools import lru_cache
 
@@ -7,9 +8,11 @@ from django.db.models import Count, Sum
 from django.shortcuts import render
 from math import radians, sin, atan2, sqrt, cos
 
+from logzero import logger
+
 from backend import api_helper, model_manager, caches, jobs
 from backend.models import ItemDeviceUser
-from backend.zhiyue_models import ZhiyueUser, DeviceUser
+from backend.zhiyue_models import ZhiyueUser, DeviceUser, WeizhanItemView
 
 
 @api_func_anonymous
@@ -144,3 +147,30 @@ def api_active_users(request):
 @api_func_anonymous
 def api_all_active_users(request):
     jobs.make_heat_data.delay()
+
+
+def remap_user(date, all_flag=False):
+    query = model_manager.query(DeviceUser).filter(createTime__range=(date, date + timedelta(days=1)), source='')
+    if not all_flag:
+        query = query.filter(extStr='')
+
+    for x in query:
+        if not x.extStr:
+            if 'Android' in x.deviceType:
+                ua = re.findall(r'\((.+,)?(.+); (.+); Dn/.+\)', x.deviceType)
+                if ua:
+                    x.extStr = ua[0][2] + ';' + ua[0][1]
+            elif 'iPhone' in x.deviceType:
+                pass
+
+        if not x.extStr:
+            logger.warning('cannot extract extStr of ' + x.deviceType)
+            continue
+
+        view = model_manager.query(WeizhanItemView).filter(
+            time__range=(x.createTime + timedelta(minutes=30), x.createTime),
+            ua=x.extStr).order_by("-time").first()
+
+        if view:
+            print(view.itemType, view.itemId, view.shareUserId)
+            return

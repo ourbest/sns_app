@@ -3,6 +3,7 @@ from collections import defaultdict
 from datetime import datetime, timedelta
 from time import sleep
 
+from dj import times
 from django.db.models import Count, Sum
 from django.utils import timezone
 from django_rq import job
@@ -246,7 +247,7 @@ def test_remain():
     date_range = (from_time_str, to_time_str)
     create_range = ((to_time - timedelta(days=2)).strftime('%Y-%m-%d'), from_time_str)
     report_date = (to_time - timedelta(days=2)).strftime('%Y-%m-%d')  # 留存记录是针对前一天的
-    for app in App.objects.filter(stage__in=('分发期', '留守期')):
+    for app in model_manager.get_dist_apps():
         for user in User.objects.filter(app=app, status=0):
             qq_cnt = ItemDeviceUser.objects.filter(type=0, owner=user, created_at__range=create_range).count()
             wx_cnt = ItemDeviceUser.objects.filter(type=1, owner=user, created_at__range=create_range).count()
@@ -291,22 +292,26 @@ def sync_all_remain(date=None):
         zhiyue.make_daily_remain(app.app_id, date)
 
 
-def sync_device_user():
+def sync_device_user(date):
     logger.info('同步用户数据')
-    stat_date = timezone.now() - timedelta(days=6)
-    for x in range(0, 4):
-        stat_date = stat_date + timedelta(days=1)
-        from_date = model_manager.get_date(stat_date)
-        for app in App.objects.filter(stage__in=('分发期', '留守期')):
-            majias = {x.cutt_user_id: x for x in AppUser.objects.filter(type__in=(0, 1), user__app=app, user__status=0)}
-            if majias:
-                for device_user in model_manager.query(DeviceUser).filter(sourceUserId__in=majias.keys(),
-                                                                          createTime__range=(
-                                                                                  from_date,
-                                                                                  from_date + timedelta(days=1))):
+    from_date = model_manager.get_date(date)
+    create_range = (from_date, from_date + timedelta(days=1))
+    found = False
+    for app in model_manager.get_dist_apps():
+        majias = {x.cutt_user_id: x for x in AppUser.objects.filter(type__in=(0, 1), user__app=app, user__status=0)}
+        if majias:
+            saved = {x.user_id for x in ItemDeviceUser.objects.filter(app=app, created_at__range=create_range)}
+            for device_user in model_manager.query(DeviceUser).filter(sourceUserId__in=majias.keys(),
+                                                                      createTime__range=create_range):
+                if device_user.deviceUserId not in saved:
                     majia = majias.get(device_user.sourceUserId)
                     owner = majia.user
                     model_manager.save_ignore(sync_to_item_dev_user(app, owner, device_user, majia))
+                    found = True
+                    print('Find %s' % device_user.deviceUserId)
+
+    if found:
+        zhiyue.sync_online_from_hive(date)
 
 
 def sync_bonus_test():
@@ -314,3 +319,61 @@ def sync_bonus_test():
     for app in App.objects.filter(offline=1):
         users = OfflineUser.objects.filter(app=app, created_at__gt=date)
         zhiyue.save_bonus_info(app, users, until=date)
+
+
+def sync_user_stat(date):
+    from_date = model_manager.get_date(date)
+
+    reports = {x.user_id: x for x in UserDailyStat.objects.filter(report_date=from_date.strftime('%Y-%m-%d'))}
+    changed = set()
+
+    for x in ItemDeviceUser.objects.filter(created_at__range=(from_date, from_date + timedelta(days=1))).values(
+            'owner_id', 'type').annotate(total=Count('user_id'), remain=Sum('remain')):
+        report = reports[x['owner_id']]
+        the_type = x['type']
+        if the_type == 0:
+            if x['total'] > report.qq_install:
+                report.qq_install = x['total']
+                changed.add(report)
+
+            if x['remain'] > report.qq_remain:
+                report.qq_remain = x['remain']
+                changed.add(report)
+        elif the_type == 1:
+            if x['total'] > report.wx_install:
+                report.wx_install = x['total']
+                changed.add(report)
+
+            if x['remain'] > report.wx_remain:
+                report.wx_remain = x['remain']
+                changed.add(report)
+
+    for x in changed:
+        print('Save %s %s' % (x.app_id, x.user_id))
+        x.save()
+
+
+def sync_app_data(date):
+    reports = {x.app_id: x for x in AppDailyStat.objects.filter(report_date=date)}
+    changed = set()
+
+    for x in UserDailyStat.objects.filter(report_date=date).values(
+            'app_id').annotate(qq_install=Sum('qq_install'), qq_remain=Sum('qq_remain'),
+                               wx_install=Sum('wx_install'), wx_remain=Sum('wx_remain')):
+        report = reports[x['app_id']]
+        if report.qq_remain < x['qq_remain']:
+            report.qq_remain = x['qq_remain']
+            changed.add(report)
+        if report.wx_remain < x['wx_remain']:
+            report.wx_remain = x['wx_remain']
+            changed.add(report)
+        if report.qq_install < x['qq_install']:
+            report.qq_install = x['qq_install']
+            changed.add(report)
+        if report.wx_install < x['wx_install']:
+            report.wx_install = x['wx_install']
+            changed.add(report)
+
+    for x in changed:
+        print('Save %s' % x.app_id)
+        x.save()

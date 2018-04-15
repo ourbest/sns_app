@@ -268,7 +268,7 @@ def do_get_app_stat():
             if not sum:
                 sum = {
                     'app_id': row[0],
-                    'app_name': apps[row[0]],
+                    'app_name': apps[row[0]][:-3],
                 }
                 values[row[0]] = sum
                 data.append(sum)
@@ -290,6 +290,13 @@ def get_new_device():
     data = []
 
     values = dict()
+    online = {x['app_id']: x['total'] for x in
+              ItemDeviceUser.objects.filter(created_at__gt=model_manager.today()).values(
+                  'app_id').annotate(total=Count('user_id'))}
+
+    offline = {x['app_id']: x['total'] for x in OfflineUser.objects.filter(created_at__gt=model_manager.today()).values(
+        'app_id').annotate(total=Count('user_id'))}
+
     with connections['zhiyue'].cursor() as cursor:
         cursor.execute(query)
         rows = cursor.fetchall()
@@ -298,7 +305,9 @@ def get_new_device():
             if not sum:
                 sum = {
                     'app_id': row[0],
-                    'app_name': apps[row[0]],
+                    'app_name': apps[row[0]][:-3],
+                    'online': online.get(int(row[0]), 0),
+                    'offline': offline.get(int(row[0]), 0),
                 }
                 values[row[0]] = sum
                 data.append(sum)
@@ -362,7 +371,7 @@ def get_coupon_details(save):
             'app_id').annotate(total=Count('user_id'), remain=Sum('remain')):
         remains[u['app_id']] = int(u['remain'] / u['total'] * 100)
 
-    ret = [{'app_id': x['app_id'], 'app_name': apps[x['app_id']], 'today': x['total'],
+    ret = [{'app_id': x['app_id'], 'app_name': apps[x['app_id']][:-3], 'today': x['total'],
             'remain': '%s%%' % remains[x['app_id']],
             'open': x['viewed'],
             'picked': x['picked']} for x in query]
