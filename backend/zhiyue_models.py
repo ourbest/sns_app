@@ -247,6 +247,7 @@ class ShopCouponStatSum(models.Model):
     useDate = models.CharField(max_length=10)
     ownerId = models.IntegerField(primary_key=True)
     useNum = models.IntegerField()
+    naNum = models.IntegerField()
 
     @staticmethod
     def db_name():
@@ -303,7 +304,7 @@ class WithdrawApply(models.Model):
 
     class Meta:
         db_table = 'shop_WithdrawApply'
-        managed = True
+        managed = False
 
 
 class CouponDailyStatInfo(models.Model):
