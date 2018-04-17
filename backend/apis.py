@@ -328,10 +328,14 @@ def team_qun(request, i_page, i_size, keyword, owner, qq, phone):
 
 @api_func_anonymous
 def team_weixin(request, i_page, i_size, keyword, owner, phone):
-    query = DeviceWeixinGroup.objects.filter(device__owner__app_id=get_session_app(request)).select_related('device',
-                                                                                                            'device__owner')
+    query = DeviceWeixinGroup.objects.filter(
+        device__owner__app_id=get_session_app(request)).select_related('device', 'device__owner')
     if owner:
-        query = query.filter(device__owner__name=owner)
+        if owner == 'me':
+            email = get_session_user(request)
+            query = query.filter(device__owner__email=email)
+        else:
+            query = query.filter(device__owner__name=owner)
     if i_page != 0:
         if i_size == 0:
             i_size = 50
@@ -1240,7 +1244,7 @@ def update_account_attr(sns_id, name, value):
 
         # app-robot
         if name == 'friend' and sns_user.device.in_trusteeship:
-                Robot(user=sns_user.owner).update_scheduled_tasks(device=sns_user.device)
+            Robot(user=sns_user.owner).update_scheduled_tasks(device=sns_user.device)
 
     return sns_user_to_json(sns_user)
 
@@ -1620,8 +1624,8 @@ def user_majia(request, filter):
             'name': x.name,
             'type': '微信' if x.type == 1 else 'QQ'
         } for x in (AppUser.objects.filter(user__email=get_session_user(request), type__in=(0, 1))
-        if not filter else AppUser.objects.filter(type=filter,
-                                                  user__email=get_session_user(request)))]
+                    if not filter else AppUser.objects.filter(type=filter,
+                                                              user__email=get_session_user(request)))]
     }
 
 

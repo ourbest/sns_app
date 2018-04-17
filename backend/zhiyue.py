@@ -582,6 +582,7 @@ def sync_recent_user():
     sync_offline_remain()
 
 
+@job
 def sync_user_in_minutes(minutes):
     for app in model_manager.get_dist_apps():
         majias = {x.cutt_user_id: x for x in AppUser.objects.filter(type__in=(0, 1), user__app=app, user__status=0)}
