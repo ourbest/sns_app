@@ -5,6 +5,8 @@ from robot.robot import Robot
 from . import models_manager
 from django.utils import timezone
 import re
+from backend.api_helper import send_msg
+import threading
 
 
 def get_task_api(request):
@@ -114,7 +116,7 @@ def task_result_api(request):
     post = request.POST
     task_id = post.get('task_id')
     try:
-        task = TaskLog.objects.get(id=task_id)
+        task = TaskLog.objects.select_related('device__owner', 'device').get(id=task_id)
     except TaskLog.DoesNotExist:
         pass
     else:
@@ -140,6 +142,12 @@ def task_result_api(request):
             if result:
                 task.result = result
             task.save()
+
+            if result and re.search('帐号被封', result):
+                msg = '托管任务(QQ%s)：%s' % (task.sns_user.login_name if task.sns_user else '', result)
+                user = task.device.owner
+                thread = threading.Thread(target=send_msg, args=(msg, user))
+                thread.start()
 
         if task_type == 1:
             search_result(request, task)
