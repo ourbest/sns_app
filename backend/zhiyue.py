@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 
 from dj import times
 from dj.utils import api_func_anonymous
+from django.conf import settings
 from django.db import connections
 from django.db.models import Count, Sum, Max
 from django.http import HttpResponse
@@ -908,7 +909,7 @@ def sync_online_from_hive(the_date):
     create_range = (to_time, next_day)
     from pyhive import hive
 
-    cursor = hive.connect('10.19.9.13').cursor()
+    cursor = hive.connect(settings.HIVE_SERVER).cursor()
     try:
         for app in App.objects.filter(stage__in=('分发期', '留守期')):
             ids = [x.user_id for x in ItemDeviceUser.objects.filter(app=app, created_at__range=create_range, remain=0)]
@@ -934,17 +935,18 @@ def sync_offline_from_hive(the_date):
     create_range = (to_time, next_day)
     from pyhive import hive
 
-    cursor = hive.connect('10.19.9.13').cursor()
+    cursor = hive.connect(settings.HIVE_SERVER).cursor()
     try:
         for app in model_manager.get_dist_apps():
             ids = [x.user_id for x in OfflineUser.objects.filter(app=app, created_at__range=create_range, remain=0)]
-            query = """
-            select DISTINCT userid from userstartup where partnerid=%s and dt = '%s' and userid in (%s)
-            """ % (str(app.app_id), next_day, ','.join([str(x) for x in ids]))
-            cursor.execute(query)
-            rows = cursor.fetchall()
-            OfflineUser.objects.filter(app=app, created_at__range=create_range, remain=0,
-                                       user_id__in=[x[0] for x in rows]).update(remain=1)
+            if ids:
+                query = """
+                select DISTINCT userid from userstartup where partnerid=%s and dt = '%s' and userid in (%s)
+                """ % (str(app.app_id), next_day, ','.join([str(x) for x in ids]))
+                cursor.execute(query)
+                rows = cursor.fetchall()
+                OfflineUser.objects.filter(app=app, created_at__range=create_range, remain=0,
+                                           user_id__in=[x[0] for x in rows]).update(remain=1)
     finally:
         cursor.close()
 

@@ -1,0 +1,73 @@
+{% load calc %}
+
+<html>
+<body>
+
+<h3>昨日扫码情况</h3>
+<table width="100%">
+    <tr>
+        <th>扫码量</th>
+        <td>{{ yesterday.total }}</td>
+    </tr>
+    <tr>
+        <th>质量评分</th>
+        <td>{{ yesterday.na }}</td>
+    </tr>
+    <tr>
+        <th>红包查看数</th>
+        <td>{{ yesterday.view }} {% rate yesterday.view yesterday.total 100 2 %}</td>
+    </tr>
+    <tr>
+        <th>红包领取数</th>
+        <td>{{ yesterday.pick }} {% rate yesterday.pick yesterday.total 100 2 %}</td>
+    </tr>
+</table>
+
+<h3>昨日扫码初步评价</h3>
+<table width="100%">
+    <tr>
+        <th>扫码人</th>
+        <th>个数</th>
+        <th>红包领取数</th>
+        <th>评分</th>
+    </tr>
+    {% for item in yesterday_details %}
+        <tr>
+            <th>{{ item.name }}</th>
+            <td>{{ item.total }}</td>
+            <td>{{ item.pick }}</td>
+            <td>{{ item.rate }}</td>
+        </tr>
+    {% endfor %}
+    <tr>
+        <th>合计</th>
+        <td>{{ yesterday.total }}</td>
+        <td>{{ yesterday.pick }}</td>
+        <td>{{ yesterday.na }}</td>
+    </tr>
+</table>
+<h3>前日扫码留存情况</h3>
+<table width="100%">
+    <tr>
+        <th>扫码人</th>
+        <th>个数</th>
+        <th>红包领取数</th>
+        <th>次日使用APP数</th>
+    </tr>
+    {% for item in yesterday_remains %}
+        <tr>
+            <th>{{ item.name }}</th>
+            <td>{{ item.total }}</td>
+            <td>{{ item.pick }} ({% rate item.pick yesterday.total 100 2 %})</td>
+            <td>{{ item.remain }} ({% rate item.remain yesterday.total 100 2 %})</td>
+        </tr>
+    {% endfor %}
+    <tr>
+        <th>合计</th>
+        <td>{{ yesterday_remain.total }}</td>
+        <td>{{ yesterday_remain.pick }} ({% rate yesterday_remain.pick yesterday_remain.total 100 2 %})</td>
+        <td>{{ yesterday_remain.remain }} ({% rate yesterday_remain.pick yesterday_remain.total 100 2 %})</td>
+    </tr>
+</table>
+</body>
+</html>

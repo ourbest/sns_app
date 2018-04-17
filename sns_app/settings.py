@@ -177,11 +177,12 @@ ADMINS = [('陈永辉', 'yonghui.chen@cutt.com')]
 
 DAILY_REPORT_EMAIL = ['yonghui.chen@cutt.com']
 
+HIVE_SERVER = '10.19.186.236'
+
 try:
     from .local_settings import *
 except ImportError:
     pass
-
 
 CACHES = {
     'default': {

@@ -13,8 +13,8 @@
         <tr>
             <td>{{ item.app }}</td>
             <td>{{ item.total }}</td>
-            <td>{{ item.view }}{% rate item.view item.total 100 2 %}</td>
-            <td>{{ item.picked }}({% rate item.picked item.total 100 2 %})</td>
+            <td>{{ item.view }} ({% rate item.view item.total 100 2 %})</td>
+            <td>{{ item.picked }} ({% rate item.picked item.total 100 2 %})</td>
         </tr>
     {% endfor %}
 </table>

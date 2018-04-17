@@ -4,6 +4,7 @@ from datetime import datetime, timedelta
 from time import sleep
 
 from dj import times
+from django.db import connections
 from django.db.models import Count, Sum
 from django.utils import timezone
 from django_rq import job
@@ -329,24 +330,25 @@ def sync_user_stat(date):
 
     for x in ItemDeviceUser.objects.filter(created_at__range=(from_date, from_date + timedelta(days=1))).values(
             'owner_id', 'type').annotate(total=Count('user_id'), remain=Sum('remain')):
-        report = reports[x['owner_id']]
-        the_type = x['type']
-        if the_type == 0:
-            if x['total'] > report.qq_install:
-                report.qq_install = x['total']
-                changed.add(report)
+        if x['owner_id'] in reports:
+            report = reports[x['owner_id']]
+            the_type = x['type']
+            if the_type == 0:
+                if x['total'] > report.qq_install:
+                    report.qq_install = x['total']
+                    changed.add(report)
 
-            if x['remain'] > report.qq_remain:
-                report.qq_remain = x['remain']
-                changed.add(report)
-        elif the_type == 1:
-            if x['total'] > report.wx_install:
-                report.wx_install = x['total']
-                changed.add(report)
+                if x['remain'] > report.qq_remain:
+                    report.qq_remain = x['remain']
+                    changed.add(report)
+            elif the_type == 1:
+                if x['total'] > report.wx_install:
+                    report.wx_install = x['total']
+                    changed.add(report)
 
-            if x['remain'] > report.wx_remain:
-                report.wx_remain = x['remain']
-                changed.add(report)
+                if x['remain'] > report.wx_remain:
+                    report.wx_remain = x['remain']
+                    changed.add(report)
 
     for x in changed:
         print('Save %s %s' % (x.app_id, x.user_id))
@@ -377,3 +379,16 @@ def sync_app_data(date):
     for x in changed:
         print('Save %s' % x.app_id)
         x.save()
+
+
+def sync_high_value_user():
+    with connections['partner_rw'].cursor() as cursor:
+        for val in DeviceUser.objects.using('zhiyue_rw').filter(createTime__gt=model_manager.today(),
+                                                          sourceUserId__gt=0).values(
+                'sourceUserId', 'partnerId').annotate(total=Count('deviceUserId')):
+            query = 'update datasystem_HighValueUser set appUserNum=%s where userId=%s and partnerId=%s ' \
+                    'and time=\'%s\' and userType=2' % \
+                    (val['total'], val['sourceUserId'], val['partnerId'], '2018-04-17')
+
+            print(query)
+            cursor.execute(query)
