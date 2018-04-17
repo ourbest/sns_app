@@ -28,6 +28,8 @@ from backend.task_manager import set_device_active
 from backend.zhiyue_models import ZhiyueUser, ClipItem
 from . import schedulers
 
+from robot.robot import Robot
+
 
 @api_func_anonymous
 def get_menu(request):
@@ -1231,10 +1233,14 @@ def update_account_attr(sns_id, name, value):
     if value.isdigit():
         value = int(value)
 
-    sns_user = SnsUser.objects.filter(id=sns_id).first()
+    sns_user = SnsUser.objects.select_related('device', 'owner').filter(id=sns_id).first()
     if sns_user:
         setattr(sns_user, name, value)
         sns_user.save()
+
+        # app-robot
+        if name == 'friend' and sns_user.device.in_trusteeship:
+                Robot(user=sns_user.owner).update_scheduled_tasks(device=sns_user.device)
 
     return sns_user_to_json(sns_user)
 
