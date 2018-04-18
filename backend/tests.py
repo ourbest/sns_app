@@ -427,7 +427,7 @@ def sync_zhongshan_offline():
         remains.remain_week_offline(app_id=app, date_range=(from_dt, model_manager.today() - timedelta(days=2)))
 
 
-@job
+@job(timeout=3600 * 5)
 def sync_all():
     sync_zhongshan_offline()
     sync_zhongshan_online()
