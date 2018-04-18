@@ -417,12 +417,20 @@ def sync_high_value_user():
 
 def sync_zhongshan_online():
     from_dt = model_manager.today() - timedelta(days=31)
-    remains.remain_week_online(date_range=(from_dt, model_manager.today() - timedelta(days=2)))
+    for app in [1564467, 1564465, 1564471]:
+        remains.remain_week_online(app_id=app, date_range=(from_dt, model_manager.today() - timedelta(days=2)))
 
 
 def sync_zhongshan_offline():
     from_dt = model_manager.today() - timedelta(days=31)
-    remains.remain_week_offline(date_range=(from_dt, model_manager.today() - timedelta(days=2)))
+    for app in [1564462, 1564463, 1564467, 1564465, 1564471]:
+        remains.remain_week_offline(app_id=app, date_range=(from_dt, model_manager.today() - timedelta(days=2)))
+
+
+@job
+def sync_all():
+    sync_zhongshan_offline()
+    sync_zhongshan_online()
 
 
 def sync_title():
@@ -444,3 +452,18 @@ def import_test():
                     groups.append([name, i])
 
     model_manager.sync_wx_groups_imports(PhoneDevice.objects.filter(id=430).first(), groups)
+
+
+def sync_rizhao():
+    coupons = model_manager.query(CouponInst).filter(partnerId=1564395, useDate__range=('2017-11-01', '2017-11-11'))
+    zhiyue.save_coupon_user(coupons)
+
+
+def sync_rizhao_off():
+    offline_users = remains.classify_users(OfflineUser.objects.filter(app_id=1564395))
+    for k, v in offline_users.items():
+        users = {x.user_id: x for x in v}
+        remain_ids = remains.get_remain_ids(1564395, list(users.keys()), k + timedelta(days=8),
+                                            to_date=k + timedelta(days=14),
+                                            device=False)
+        OfflineUser.objects.filter(user_id__in=remain_ids).update(remain_14=1)

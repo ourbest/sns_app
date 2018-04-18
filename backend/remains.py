@@ -40,16 +40,12 @@ def remain_week_offline(app_id=1564460, date_range=(model_manager.today() - time
     for k, v in date_users.items():
         users = {x.user_id: x for x in v}
         remain_ids = get_remain_ids(app_id, list(users.keys()), k + timedelta(days=7), device=False)
-        for user_id in remain_ids:
-            users[user_id].remain_7 = 1
-            model_manager.save_ignore(users[user_id], fields=['remain_7'])
+        OfflineUser.objects.filter(user_id__in=remain_ids).update(remain_7=1)
 
         remain_ids = get_remain_ids(app_id, list(users.keys()), k + timedelta(days=8),
                                     to_date=k + timedelta(days=14),
                                     device=False)
-        for user_id in remain_ids:
-            users[user_id].remain_14 = 1
-            model_manager.save_ignore(users[user_id], fields=['remain_14'])
+        OfflineUser.objects.filter(user_id__in=remain_ids).update(remain_14=1)
 
 
 def classify_users(remains):
