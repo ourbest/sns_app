@@ -1,4 +1,5 @@
 # Create your tests here.
+import re
 from collections import defaultdict
 from datetime import datetime, timedelta
 from time import sleep
@@ -13,7 +14,7 @@ from logzero import logger
 import backend.stat_utils
 from backend import model_manager, api_helper, stats, zhiyue_models, zhiyue, remains
 from backend.models import SnsGroupSplit, SnsGroup, SnsUser, SnsUserGroup, SnsTask, DistArticle, DistArticleStat, \
-    ItemDeviceUser, App, AppDailyStat, User, UserDailyStat, OfflineUser, AppUser, UserDailyDeviceUser
+    ItemDeviceUser, App, AppDailyStat, User, UserDailyStat, OfflineUser, AppUser, UserDailyDeviceUser, PhoneDevice
 from backend.zhiyue import sync_to_item_dev_user
 from backend.zhiyue_models import DeviceUser, CouponInst, CouponLog
 
@@ -428,3 +429,18 @@ def sync_title():
     for x in DistArticle.objects.filter(title=''):
         x.title = zhiyue_models.get_article_title(x.item_id)
         model_manager.save_ignore(x, fields=['title'])
+
+
+def import_test():
+    reg = r'(.+)\t\((\d+)\)$'
+    groups = list()
+    with open('tmp/a.txt', 'r') as lines:
+        for line in lines:
+            match = re.match(reg, line)
+            if match:
+                (name, cnt) = match.groups()
+                i = int(cnt)
+                if i:
+                    groups.append([name, i])
+
+    model_manager.sync_wx_groups_imports(PhoneDevice.objects.filter(id=430).first(), groups)

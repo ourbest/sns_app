@@ -112,7 +112,7 @@ def sync_wx_groups_imports(device, groups):
     db = DeviceWeixinGroup.objects.filter(device=device)
     new_values = {x[0]: x for x in groups}
     old_values = {x.name: x for x in db}
-    logger.info('老的微信群数:%s，新的微信群数:%s' % (len(new_values), len(old_values)))
+    logger.info('老的微信群数:%s，新的微信群数:%s' % (len(old_values), len(new_values)))
     for x in db:
         if x.name not in new_values:
             x.delete()

@@ -2,7 +2,6 @@
 
 <html>
 <body>
-
 <h3>{{ yesterday.app }}昨日扫码情况</h3>
 <table width="100%" border="1" style="border-collapse: collapse; text-align: center" cellpadding="5">
     <tr>
@@ -22,6 +21,10 @@
         <td>{{ yesterday.picked }} ({% rate yesterday.picked yesterday.total 100 2 %})</td>
     </tr>
 </table>
+
+<small><b>此处评分根据用户领劵过程，以及后续对APP使用情况进行评判，仅供参考，不作为最终质量验证标准。后续人工审核后会给出最终判定。评分越高越好，
+    低于20务必督促扫码人进行改进，对领券人进行必要的讲解，提高质量</b></small>
+
 <h3>昨日扫码初步评价</h3>
 <table width="100%" border="1" style="border-collapse: collapse; text-align: center" cellpadding="5">
     <tr>
@@ -32,10 +35,10 @@
     </tr>
     {% for item in yesterday_details %}
         <tr>
-            <th>{{ item.ownerName }} {{ item.shopName }}</th>
+            <th align="left">{{ item.ownerName }} {{ item.shopName }}</th>
             <td>{{ item.useNum }}</td>
             <td>{{ item.pick }}</td>
-            <td>{{ item.rate }}</td>
+            <td{% if item.rate < 20 %} style="color: red"{% endif %}>{{ item.rate }}</td>
         </tr>
     {% endfor %}
     <tr>
@@ -55,10 +58,12 @@
     </tr>
     {% for item in yesterday_remains %}
         <tr>
-            <th>{{ item.name }}</th>
+            <th align="left">{{ item.name }}</th>
             <td>{{ item.total }}</td>
             <td>{{ item.pick }} ({% rate item.pick item.total 100 2 %})</td>
-            <td>{{ item.remain }} ({% rate item.remain item.total 100 2 %})</td>
+            <td{% if item.ratio < 0.2 %} style="color: red"{% endif %}>{{ item.remain }}
+                ({% rate item.remain item.total 100 2 %})
+            </td>
         </tr>
     {% endfor %}
 

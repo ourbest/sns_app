@@ -7,7 +7,7 @@ from django.template.loader import render_to_string
 from django_rq import job
 
 from backend import api_helper, model_manager, zhiyue
-from backend.models import OfflineUser, App
+from backend.models import OfflineUser, App, RuntimeData
 from backend.zhiyue_models import ShopCouponStatSum, UserRewardHistory, UserRewardGroundHistory
 
 
@@ -119,8 +119,12 @@ def daily_report(send_mail=True):
     if send_mail:
         api_helper.send_html_mail('%s地推日报' % yesterday.strftime('%Y-%m-%d'), 'yonghui.chen@cutt.com', html)
 
+    htmls = list()
     for idx, value in enumerate(sum):
-        send_offline_detail(value['app_id'], value, sum_yesterday[idx])
+        htmls.append(send_offline_detail(value['app_id'], value, sum_yesterday[idx]))
+
+    api_helper.send_html_mail('%s地推详情汇总' % yesterday.strftime('%Y-%m-%d'),
+                              'yonghui.chen@cutt.com', '<p>'.join(htmls))
 
 
 def send_offline_detail(app_id, app_detail, prev_detail, date=model_manager.yesterday()):
@@ -152,6 +156,7 @@ def send_offline_detail(app_id, app_detail, prev_detail, date=model_manager.yest
 
     for x in yesterday_remains:
         x['name'] = id_names.get(x['owner'], '')
+        x['ratio'] = x['remain'] / x['total']
 
     app_detail['na'] = int(100 * (1 - (total_na / app_detail['total'])))
     html = render_to_string('offline_detail.html', {
@@ -160,8 +165,12 @@ def send_offline_detail(app_id, app_detail, prev_detail, date=model_manager.yest
         'yesterday_remains': yesterday_remains,
         'yesterday_details': stats,
     })
+
+    om = RuntimeData.objects.filter(name='offline_%s' % app_id).first()
     api_helper.send_html_mail('%s%s地推日报' % (app_detail['app'], date.strftime('%Y-%m-%d')),
-                              'yonghui.chen@cutt.com', html)
+                              'yonghui.chen@cutt.com' if not om else om.value, html)
+
+    return html
 
 
 @job
