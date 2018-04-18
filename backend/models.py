@@ -738,6 +738,9 @@ class OfflineUser(models.Model):
     bonus_withdraw = models.IntegerField(default=0)
     bonus_time = models.DateTimeField(null=True)
     withdraw_time = models.DateTimeField(null=True)
+    remain_7 = models.IntegerField(default=0)
+    remain_14 = models.IntegerField(default=0)
+    remain_30 = models.IntegerField(default=0)
 
     @property
     def json(self):

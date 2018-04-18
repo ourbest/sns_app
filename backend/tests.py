@@ -11,7 +11,7 @@ from django_rq import job
 from logzero import logger
 
 import backend.stat_utils
-from backend import model_manager, api_helper, stats, zhiyue_models, zhiyue
+from backend import model_manager, api_helper, stats, zhiyue_models, zhiyue, remains
 from backend.models import SnsGroupSplit, SnsGroup, SnsUser, SnsUserGroup, SnsTask, DistArticle, DistArticleStat, \
     ItemDeviceUser, App, AppDailyStat, User, UserDailyStat, OfflineUser, AppUser, UserDailyDeviceUser
 from backend.zhiyue import sync_to_item_dev_user
@@ -384,11 +384,30 @@ def sync_app_data(date):
 def sync_high_value_user():
     with connections['partner_rw'].cursor() as cursor:
         for val in DeviceUser.objects.using('zhiyue_rw').filter(createTime__gt=model_manager.today(),
-                                                          sourceUserId__gt=0).values(
-                'sourceUserId', 'partnerId').annotate(total=Count('deviceUserId')):
+                                                                sourceUserId__gt=0).values(
+            'sourceUserId', 'partnerId').annotate(total=Count('deviceUserId')):
             query = 'update datasystem_HighValueUser set appUserNum=%s where userId=%s and partnerId=%s ' \
                     'and time=\'%s\' and userType=2' % \
                     (val['total'], val['sourceUserId'], val['partnerId'], '2018-04-17')
 
             print(query)
             cursor.execute(query)
+
+
+def sync_zhongshan():
+    from_dt = datetime.now() - timedelta(days=31)
+    for x in range(0, 100):
+        from_dt = from_dt + timedelta(days=1)
+        if from_dt > datetime.now() - timedelta(days=2):
+            break
+
+        date_range = (model_manager.get_date(from_dt), model_manager.get_date(from_dt + timedelta(days=1)))
+
+        date_users = OfflineUser.objects.filter(app_id=1564460, created_at__range=date_range, remain=0)
+        print("sync", date_range, len(date_users))
+
+        if len(date_users):
+            users = {x.user_id: x for x in date_users}
+            remain_ids = remains.get_remain_ids(1564460, list(users.keys()), from_dt + timedelta(days=1), device=False)
+            print('remain ', len(remain_ids))
+            OfflineUser.objects.filter(user_id__in=remain_ids).update(remain=1)

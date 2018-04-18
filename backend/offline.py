@@ -4,10 +4,11 @@ from dj.utils import api_func_anonymous
 from django.db import connection
 from django.db.models import Count, Sum
 from django.template.loader import render_to_string
+from django_rq import job
 
 from backend import api_helper, model_manager, zhiyue
 from backend.models import OfflineUser, App
-from backend.zhiyue_models import ShopCouponStatSum
+from backend.zhiyue_models import ShopCouponStatSum, UserRewardHistory, UserRewardGroundHistory
 
 
 @api_func_anonymous
@@ -161,3 +162,15 @@ def send_offline_detail(app_id, app_detail, prev_detail, date=model_manager.yest
     })
     api_helper.send_html_mail('%s%s地推日报' % (app_detail['app'], date.strftime('%Y-%m-%d')),
                               'yonghui.chen@cutt.com', html)
+
+
+@job
+def sync_bonus_data(date_range=(model_manager.yesterday() - timedelta(days=30), model_manager.yesterday()),
+                    app_id=1564460):
+    picked = model_manager.query(UserRewardGroundHistory).filter(createTime__range=date_range, type=1,
+                                                                 amount__gt=0, partnerId=app_id)
+    user_ids = [x.userId for x in picked]
+    OfflineUser.objects.filter(user_id__in=user_ids).update(bonus_pick=1)
+
+    for x in model_manager.query(UserRewardHistory).filter(userId__in=user_ids, source='GroundPush'):
+        OfflineUser.objects.filter(user_id=x.userId).update(bouns_amount=x.amount, bonus_got=1, bonus_time=x.createTime)

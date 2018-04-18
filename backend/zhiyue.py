@@ -909,8 +909,7 @@ def sync_online_from_hive(the_date):
     create_range = (to_time, next_day)
     from pyhive import hive
 
-    cursor = hive.connect(settings.HIVE_SERVER).cursor()
-    try:
+    with hive.connect(settings.HIVE_SERVER).cursor() as cursor:
         for app in App.objects.filter(stage__in=('分发期', '留守期')):
             ids = [x.user_id for x in ItemDeviceUser.objects.filter(app=app, created_at__range=create_range, remain=0)]
             if ids:
@@ -923,9 +922,6 @@ def sync_online_from_hive(the_date):
                 print('remain %s' % len(rows))
                 ItemDeviceUser.objects.filter(app=app, created_at__range=create_range, remain=0,
                                               user_id__in=[x[0] for x in rows]).update(remain=1)
-
-    finally:
-        cursor.close()
 
 
 @job("default", timeout=600)
