@@ -501,6 +501,8 @@ class ItemDeviceUser(models.Model):
     city = models.CharField(max_length=50, default='')
     location = models.CharField(max_length=100, default='', null=True)
     cutt_user_id = models.BigIntegerField(default=0, null=True)
+    remain_7 = models.IntegerField(default=0)
+    remain_14 = models.IntegerField(default=0)
 
     @property
     def json(self):

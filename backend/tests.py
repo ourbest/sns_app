@@ -394,20 +394,37 @@ def sync_high_value_user():
             cursor.execute(query)
 
 
-def sync_zhongshan():
-    from_dt = datetime.now() - timedelta(days=31)
-    for x in range(0, 100):
-        from_dt = from_dt + timedelta(days=1)
-        if from_dt > datetime.now() - timedelta(days=2):
-            break
+# def sync_zhongshan_offline():
+#     from_dt = model_manager.today() - timedelta(days=31)
+#     for x in range(0, 100):
+#         from_dt = from_dt + timedelta(days=1)
+#         if from_dt > model_manager.today() - timedelta(days=2):
+#             break
+#
+#         date_range = (model_manager.get_date(from_dt), model_manager.get_date(from_dt + timedelta(days=1)))
+#
+#         date_users = OfflineUser.objects.filter(app_id=1564460, created_at__range=date_range)
+#         print("sync", date_range, len(date_users))
+#
+#         if len(date_users):
+#             users = {x.user_id: x for x in date_users}
+#             remain_ids = remains.get_remain_ids(1564460, list(users.keys()),
+#                               from_dt + timedelta(days=1), device=False)
+#             print('remain ', len(remain_ids))
+#             OfflineUser.objects.filter(user_id__in=remain_ids).update(remain=1)
 
-        date_range = (model_manager.get_date(from_dt), model_manager.get_date(from_dt + timedelta(days=1)))
 
-        date_users = OfflineUser.objects.filter(app_id=1564460, created_at__range=date_range, remain=0)
-        print("sync", date_range, len(date_users))
+def sync_zhongshan_online():
+    from_dt = model_manager.today() - timedelta(days=31)
+    remains.remain_week_online(date_range=(from_dt, model_manager.today() - timedelta(days=2)))
 
-        if len(date_users):
-            users = {x.user_id: x for x in date_users}
-            remain_ids = remains.get_remain_ids(1564460, list(users.keys()), from_dt + timedelta(days=1), device=False)
-            print('remain ', len(remain_ids))
-            OfflineUser.objects.filter(user_id__in=remain_ids).update(remain=1)
+
+def sync_zhongshan_offline():
+    from_dt = model_manager.today() - timedelta(days=31)
+    remains.remain_week_offline(date_range=(from_dt, model_manager.today() - timedelta(days=2)))
+
+
+def sync_title():
+    for x in DistArticle.objects.filter(title=''):
+        x.title = zhiyue_models.get_article_title(x.item_id)
+        model_manager.save_ignore(x, fields=['title'])

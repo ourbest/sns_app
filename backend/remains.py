@@ -4,36 +4,63 @@ from datetime import timedelta
 from logzero import logger
 
 from backend import model_manager, hives, zhiyue
-from backend.models import OfflineUser
+from backend.models import OfflineUser, ItemDeviceUser
+from backend.zhiyue_models import ZhiyueUser
 
 
-def remain_week(app_id=1564460):
-    today = model_manager.today()
-
+def remain_week_online(app_id=1564460, date_range=(model_manager.today() - timedelta(days=14),
+                                                   model_manager.today() - timedelta(days=7))):
     date_users = defaultdict(list)
-    remains = OfflineUser.objects.filter(
-        created_at__range=(today - timedelta(days=14), today - timedelta(days=7)), app_id=app_id, remain=1)
+    remains = ItemDeviceUser.objects.filter(created_at__range=date_range, app_id=app_id)
+    for x in remains:
+        date_users[model_manager.get_date(x.created_at)].append(x)
+
+    for k, v in date_users.items():
+        users = {x.user_id: x for x in v}
+        remain_ids = get_remain_ids(app_id, list(users.keys()), k + timedelta(days=7))
+        for user_id in remain_ids:
+            users[user_id].remain_7 = 1
+            model_manager.save_ignore(users[user_id], fields=['remain_7'])
+
+        remain_ids = get_remain_ids(app_id, list(users.keys()), k + timedelta(days=8),
+                                    to_date=k + timedelta(days=14))
+        for user_id in remain_ids:
+            users[user_id].remain_14 = 1
+            model_manager.save_ignore(users[user_id], fields=['remain_14'])
+
+
+def remain_week_offline(app_id=1564460, date_range=(model_manager.today() - timedelta(days=14),
+                                                    model_manager.today() - timedelta(days=7))):
+    remains = OfflineUser.objects.filter(created_at__range=date_range, app_id=app_id)
     # if not remains:
     #     zhiyue.sync_offline_from_hive()
 
-    for x in remains:
-        date_users[model_manager.get_date(x.created_at)].append(x)
+    date_users = classify_users(remains)
 
     for k, v in date_users.items():
         users = {x.user_id: x for x in v}
         remain_ids = get_remain_ids(app_id, list(users.keys()), k + timedelta(days=7), device=False)
         for user_id in remain_ids:
             users[user_id].remain_7 = 1
+            model_manager.save_ignore(users[user_id], fields=['remain_7'])
 
-        remain_ids = get_remain_ids(app_id, [str(x) for x in list(users.keys())], k + timedelta(days=8),
+        remain_ids = get_remain_ids(app_id, list(users.keys()), k + timedelta(days=8),
                                     to_date=k + timedelta(days=14),
                                     device=False)
         for user_id in remain_ids:
             users[user_id].remain_14 = 1
+            model_manager.save_ignore(users[user_id], fields=['remain_14'])
+
+
+def classify_users(remains):
+    date_users = defaultdict(list)
+    for x in remains:
+        date_users[model_manager.get_date(x.created_at)].append(x)
+    return date_users
 
 
 def get_remain_ids(app_id, ids, date, to_date=None, device=True):
-    if len(ids) == 0:
+    if len(ids) == 0 or date >= model_manager.today():
         return list()
 
     ids = [str(x) for x in ids]
@@ -54,3 +81,28 @@ def get_remain_ids(app_id, ids, date, to_date=None, device=True):
         return [x[0] for x in rows]
     finally:
         cursor.close()
+
+
+def sync_remain_week_today():
+    pass
+
+
+def sync_remain_online_rt():
+    from_date = model_manager.today() - timedelta(days=8)
+    user_ids = {x.user_id for x in
+                ItemDeviceUser.objects.filter(created_at__range=(from_date, from_date + timedelta(days=1)))}
+    ItemDeviceUser.objects.filter(user_id__in=get_last_active_yesterday(user_ids)).update(remain_7=1)
+
+
+def sync_remain_offline_rt():
+    from_date = model_manager.today() - timedelta(days=8)
+    user_ids = {x.user_id for x in
+                OfflineUser.objects.filter(created_at__range=(from_date, from_date + timedelta(days=1)))}
+    OfflineUser.objects.filter(user_id__in=get_last_active_yesterday(user_ids)).update(remain_7=1)
+
+
+def get_last_active_yesterday(ids):
+    return [x['userId'] for x in model_manager.query(ZhiyueUser).filter(userId__in=ids,
+                                                                        lastActiveTime__range=(
+                                                                            model_manager.yesterday(),
+                                                                            model_manager.today())).values('userId')]
