@@ -112,7 +112,7 @@ def sync_wx_groups_imports(device, groups):
     db = DeviceWeixinGroup.objects.filter(device=device)
     new_values = {x[0]: x for x in groups}
     old_values = {x.name: x for x in db}
-    logger.info('老的微信群数:%s，新的微信群数:%s' % (len(new_values), len(old_values)))
+    logger.info('老的微信群数:%s，新的微信群数:%s' % (len(old_values), len(new_values)))
     for x in db:
         if x.name not in new_values:
             x.delete()
@@ -235,7 +235,7 @@ def return_applying_to_normal():
     """
     today = timezone.now().replace(hour=0, minute=0, second=0, microsecond=0)
     SnsGroupSplit.objects.filter(status=2, apply_count__lt=5, updated_at__range=(
-        today - timedelta(days=14), today - timedelta(days=7))).update(status=0)
+        today - timedelta(days=14), today - timedelta(days=7))).update(phone=None, status=0, updated_at=timezone.now())
 
 
 def set_qun_manual(qun):

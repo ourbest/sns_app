@@ -4,9 +4,11 @@ from dj.utils import api_func_anonymous
 from django.db import connection
 from django.db.models import Count, Sum
 from django.template.loader import render_to_string
+from django_rq import job
 
 from backend import api_helper, model_manager, zhiyue
-from backend.models import OfflineUser, App
+from backend.models import OfflineUser, App, RuntimeData
+from backend.zhiyue_models import ShopCouponStatSum, UserRewardHistory, UserRewardGroundHistory
 
 
 @api_func_anonymous
@@ -96,6 +98,11 @@ def api_owner_date(owner):
 
 @api_func_anonymous
 def daily_report():
+    do_send_daily_report.delay()
+
+
+@job
+def do_send_daily_report(send_mail=True):
     yesterday = model_manager.yesterday()
 
     apps = {x.app_id: x.app_name for x in App.objects.filter(offline=1)}
@@ -114,4 +121,71 @@ def daily_report():
         x['app'] = apps[x['app_id']]
 
     html = render_to_string('offline_daily.html', {'sum': sum, 'sum_yesterday': sum_yesterday})
-    api_helper.send_html_mail('%s地推日报' % yesterday.strftime('%Y-%m-%d'), 'yonghui.chen@cutt.com', html)
+    if send_mail:
+        api_helper.send_html_mail('%s地推日报' % yesterday.strftime('%Y-%m-%d'), 'yonghui.chen@cutt.com', html)
+
+    htmls = list()
+    for idx, value in enumerate(sum):
+        htmls.append(send_offline_detail(value['app_id'], value, sum_yesterday[idx], send_mail=send_mail))
+
+    api_helper.send_html_mail('%s地推详情汇总' % yesterday.strftime('%Y-%m-%d'),
+                              'yonghui.chen@cutt.com', '<p>'.join(htmls))
+
+
+def send_offline_detail(app_id, app_detail, prev_detail, date=model_manager.yesterday(), send_mail=True):
+    total_na = 0
+    stats = model_manager.query(ShopCouponStatSum).filter(partnerId=app_id, useDate=date.strftime('%Y-%m-%d')).order_by(
+        '-useNum')
+    picks = {x['owner']: x['pick'] for x in
+             OfflineUser.objects.filter(app_id=app_id, created_at__range=(date, date + timedelta(days=1))).values(
+                 'owner').annotate(total=Count('user_id'), pick=Sum('bonus_pick'))}
+
+    id_names = dict()
+
+    for stat in stats:
+        total_na += stat.naNum / 100 * stat.useNum
+        stat.rate = int(100 - stat.naNum)
+        stat.pick = picks[stat.ownerId]
+        id_names[stat.ownerId] = '%s %s' % (stat.ownerName, stat.shopName)
+
+    the_date_before = date - timedelta(days=1)
+
+    id_names = {x.ownerId: '%s %s' % (x.ownerName, x.shopName) for x in
+                model_manager.query(ShopCouponStatSum).filter(partnerId=app_id,
+                                                              useDate=the_date_before.strftime('%Y-%m-%d'))}
+
+    yesterday_remains = OfflineUser.objects.filter(created_at__range=(the_date_before,
+                                                                      date),
+                                                   app_id=app_id).values('owner').annotate(
+        total=Count('user_id'), remain=Sum('remain'), pick=Sum('bonus_pick')).order_by('-total')
+
+    for x in yesterday_remains:
+        x['name'] = id_names.get(x['owner'], '')
+        x['ratio'] = x['remain'] / x['total']
+
+    app_detail['na'] = int(100 * (1 - (total_na / app_detail['total'])))
+    html = render_to_string('offline_detail.html', {
+        'yesterday': app_detail,
+        'yesterday_remain': prev_detail,
+        'yesterday_remains': yesterday_remains,
+        'yesterday_details': stats,
+    })
+
+    if send_mail:
+        om = RuntimeData.objects.filter(name='offline_%s' % app_id).first()
+        api_helper.send_html_mail('%s%s地推日报' % (app_detail['app'], date.strftime('%Y-%m-%d')),
+                                  'yonghui.chen@cutt.com' if not om else om.value, html)
+
+    return html
+
+
+@job
+def sync_bonus_data(date_range=(model_manager.yesterday() - timedelta(days=30), model_manager.yesterday()),
+                    app_id=1564460):
+    picked = model_manager.query(UserRewardGroundHistory).filter(createTime__range=date_range, type=1,
+                                                                 amount__gt=0, partnerId=app_id)
+    user_ids = [x.userId for x in picked]
+    OfflineUser.objects.filter(user_id__in=user_ids).update(bonus_pick=1)
+
+    for x in model_manager.query(UserRewardHistory).filter(userId__in=user_ids, source='GroundPush'):
+        OfflineUser.objects.filter(user_id=x.userId).update(bonus_amount=x.amount, bonus_got=1, bonus_time=x.createTime)

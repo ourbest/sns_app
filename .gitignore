@@ -3,6 +3,8 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+tmp/*
+
 .idea
 db.sqlite3
 */local_settings.py

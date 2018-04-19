@@ -1,4 +1,5 @@
 # Create your tests here.
+import re
 from collections import defaultdict
 from datetime import datetime, timedelta
 from time import sleep
@@ -11,9 +12,9 @@ from django_rq import job
 from logzero import logger
 
 import backend.stat_utils
-from backend import model_manager, api_helper, stats, zhiyue_models, zhiyue
+from backend import model_manager, api_helper, stats, zhiyue_models, zhiyue, remains
 from backend.models import SnsGroupSplit, SnsGroup, SnsUser, SnsUserGroup, SnsTask, DistArticle, DistArticleStat, \
-    ItemDeviceUser, App, AppDailyStat, User, UserDailyStat, OfflineUser, AppUser, UserDailyDeviceUser
+    ItemDeviceUser, App, AppDailyStat, User, UserDailyStat, OfflineUser, AppUser, UserDailyDeviceUser, PhoneDevice
 from backend.zhiyue import sync_to_item_dev_user
 from backend.zhiyue_models import DeviceUser, CouponInst, CouponLog
 
@@ -384,11 +385,92 @@ def sync_app_data(date):
 def sync_high_value_user():
     with connections['partner_rw'].cursor() as cursor:
         for val in DeviceUser.objects.using('zhiyue_rw').filter(createTime__gt=model_manager.today(),
-                                                          sourceUserId__gt=0).values(
-                'sourceUserId', 'partnerId').annotate(total=Count('deviceUserId')):
+                                                                sourceUserId__gt=0).values(
+            'sourceUserId', 'partnerId').annotate(total=Count('deviceUserId')):
             query = 'update datasystem_HighValueUser set appUserNum=%s where userId=%s and partnerId=%s ' \
                     'and time=\'%s\' and userType=2' % \
                     (val['total'], val['sourceUserId'], val['partnerId'], '2018-04-17')
 
             print(query)
             cursor.execute(query)
+
+
+# def sync_zhongshan_offline():
+#     from_dt = model_manager.today() - timedelta(days=31)
+#     for x in range(0, 100):
+#         from_dt = from_dt + timedelta(days=1)
+#         if from_dt > model_manager.today() - timedelta(days=2):
+#             break
+#
+#         date_range = (model_manager.get_date(from_dt), model_manager.get_date(from_dt + timedelta(days=1)))
+#
+#         date_users = OfflineUser.objects.filter(app_id=1564460, created_at__range=date_range)
+#         print("sync", date_range, len(date_users))
+#
+#         if len(date_users):
+#             users = {x.user_id: x for x in date_users}
+#             remain_ids = remains.get_remain_ids(1564460, list(users.keys()),
+#                               from_dt + timedelta(days=1), device=False)
+#             print('remain ', len(remain_ids))
+#             OfflineUser.objects.filter(user_id__in=remain_ids).update(remain=1)
+
+
+def sync_zhongshan_online():
+    from_dt = model_manager.today() - timedelta(days=31)
+    for app in [1564467, 1564465, 1564471]:
+        remains.remain_week_online(app_id=app, date_range=(from_dt, model_manager.today() - timedelta(days=2)))
+
+
+def sync_zhongshan_offline():
+    from_dt = model_manager.today() - timedelta(days=31)
+    for app in [1564462, 1564463, 1564467, 1564465, 1564471]:
+        remains.remain_week_offline(app_id=app, date_range=(from_dt, model_manager.today() - timedelta(days=2)))
+
+
+@job("default", timeout=3600 * 5)
+def sync_all():
+    sync_zhongshan_offline()
+    sync_zhongshan_online()
+
+
+def sync_title():
+    for x in DistArticle.objects.filter(title=''):
+        x.title = zhiyue_models.get_article_title(x.item_id)
+        model_manager.save_ignore(x, fields=['title'])
+
+
+def import_test():
+    reg = r'(.+)\t\((\d+)\)$'
+    groups = list()
+    with open('tmp/a.txt', 'r') as lines:
+        for line in lines:
+            match = re.match(reg, line)
+            if match:
+                (name, cnt) = match.groups()
+                i = int(cnt)
+                if i:
+                    groups.append([name, i])
+
+    model_manager.sync_wx_groups_imports(PhoneDevice.objects.filter(id=430).first(), groups)
+
+
+def sync_rizhao():
+    coupons = model_manager.query(CouponInst).filter(partnerId=1564450, useDate__range=('2017-11-11', '2017-11-30'))
+    print('Total ', len(coupons))
+    zhiyue.save_coupon_user(coupons)
+
+
+def sync_rizhao_off(app_id=1564450):
+    offline_users = remains.classify_users(OfflineUser.objects.filter(app_id=app_id))
+    for k, v in offline_users.items():
+        users = {x.user_id: x for x in v}
+        remain_ids = remains.get_remain_ids(app_id, list(users.keys()), k + timedelta(days=1),
+                                            device=False)
+        OfflineUser.objects.filter(user_id__in=remain_ids).update(remain=1)
+        remain_ids = remains.get_remain_ids(app_id, list(users.keys()), k + timedelta(days=7),
+                                            device=False)
+        OfflineUser.objects.filter(user_id__in=remain_ids).update(remain_7=1)
+        remain_ids = remains.get_remain_ids(app_id, list(users.keys()), k + timedelta(days=8),
+                                            to_date=k + timedelta(days=14),
+                                            device=False)
+        OfflineUser.objects.filter(user_id__in=remain_ids).update(remain_14=1)

@@ -14,7 +14,7 @@ from django_rq import job
 from logzero import logger
 
 import backend.stat_utils
-from backend import api_helper, model_manager, stat_utils
+from backend import api_helper, model_manager, stat_utils, hives, remains
 from backend.api_helper import get_session_app
 from backend.models import AppUser, AppDailyStat, UserDailyStat, App, DailyActive, ItemDeviceUser, UserDailyDeviceUser, \
     User, OfflineUser
@@ -730,10 +730,10 @@ def sync_remain():
     for app in model_manager.get_dist_apps():
         ids = [x.user_id for x in ItemDeviceUser.objects.filter(app=app, created_at__range=create_range, remain=0)]
         if ids:
-            remains = [x.userId for x in
-                       model_manager.query(ZhiyueUser).filter(userId__in=ids, lastActiveTime__range=date_range)]
-            if remains:
-                ItemDeviceUser.objects.filter(user_id__in=remains).update(remain=1)
+            remains_users = [x.userId for x in
+                             model_manager.query(ZhiyueUser).filter(userId__in=ids, lastActiveTime__range=date_range)]
+            if remains_users:
+                ItemDeviceUser.objects.filter(user_id__in=remains_users).update(remain=1)
 
             make_daily_remain(app.app_id, report_date)
 
@@ -744,6 +744,10 @@ def sync_remain():
                           model_manager.query(ZhiyueUser).filter(userId__in=user_ids, lastActiveTime__range=date_range)}
             if remain_ids:
                 OfflineUser.objects.filter(user_id__in=remain_ids).update(remain=1)
+
+            remains.sync_remain_offline_rt()
+
+    remains.sync_remain_online_rt()
 
 
 def make_daily_remain(app_id, date):
@@ -908,9 +912,7 @@ def sync_online_from_hive(the_date):
     to_time = datetime.strptime(the_date, '%Y-%m-%d')
     next_day = (to_time + timedelta(days=1)).strftime('%Y-%m-%d')
     create_range = (to_time, next_day)
-    from pyhive import hive
-
-    cursor = hive.connect(settings.HIVE_SERVER).cursor()
+    cursor = hives.hive_cursor()
     try:
         for app in App.objects.filter(stage__in=('分发期', '留守期')):
             ids = [x.user_id for x in ItemDeviceUser.objects.filter(app=app, created_at__range=create_range, remain=0)]
@@ -924,7 +926,6 @@ def sync_online_from_hive(the_date):
                 print('remain %s' % len(rows))
                 ItemDeviceUser.objects.filter(app=app, created_at__range=create_range, remain=0,
                                               user_id__in=[x[0] for x in rows]).update(remain=1)
-
     finally:
         cursor.close()
 
@@ -934,9 +935,7 @@ def sync_offline_from_hive(the_date):
     to_time = datetime.strptime(the_date, '%Y-%m-%d')
     next_day = (to_time + timedelta(days=1)).strftime('%Y-%m-%d')
     create_range = (to_time, next_day)
-    from pyhive import hive
-
-    cursor = hive.connect(settings.HIVE_SERVER).cursor()
+    cursor = hives.hive_cursor()
     try:
         for app in model_manager.get_dist_apps():
             ids = [x.user_id for x in OfflineUser.objects.filter(app=app, created_at__range=create_range, remain=0)]
