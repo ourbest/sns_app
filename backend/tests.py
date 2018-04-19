@@ -455,15 +455,22 @@ def import_test():
 
 
 def sync_rizhao():
-    coupons = model_manager.query(CouponInst).filter(partnerId=1564395, useDate__range=('2017-11-01', '2017-11-11'))
+    coupons = model_manager.query(CouponInst).filter(partnerId=1564450, useDate__range=('2017-11-11', '2017-11-30'))
+    print('Total ', len(coupons))
     zhiyue.save_coupon_user(coupons)
 
 
-def sync_rizhao_off():
-    offline_users = remains.classify_users(OfflineUser.objects.filter(app_id=1564395))
+def sync_rizhao_off(app_id=1564450):
+    offline_users = remains.classify_users(OfflineUser.objects.filter(app_id=app_id))
     for k, v in offline_users.items():
         users = {x.user_id: x for x in v}
-        remain_ids = remains.get_remain_ids(1564395, list(users.keys()), k + timedelta(days=8),
+        remain_ids = remains.get_remain_ids(app_id, list(users.keys()), k + timedelta(days=1),
+                                            device=False)
+        OfflineUser.objects.filter(user_id__in=remain_ids).update(remain=1)
+        remain_ids = remains.get_remain_ids(app_id, list(users.keys()), k + timedelta(days=7),
+                                            device=False)
+        OfflineUser.objects.filter(user_id__in=remain_ids).update(remain_7=1)
+        remain_ids = remains.get_remain_ids(app_id, list(users.keys()), k + timedelta(days=8),
                                             to_date=k + timedelta(days=14),
                                             device=False)
         OfflineUser.objects.filter(user_id__in=remain_ids).update(remain_14=1)

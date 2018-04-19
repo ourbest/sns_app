@@ -97,7 +97,12 @@ def api_owner_date(owner):
 
 
 @api_func_anonymous
-def daily_report(send_mail=True):
+def daily_report():
+    do_send_daily_report.delay()
+
+
+@job
+def do_send_daily_report(send_mail=True):
     yesterday = model_manager.yesterday()
 
     apps = {x.app_id: x.app_name for x in App.objects.filter(offline=1)}
@@ -121,13 +126,13 @@ def daily_report(send_mail=True):
 
     htmls = list()
     for idx, value in enumerate(sum):
-        htmls.append(send_offline_detail(value['app_id'], value, sum_yesterday[idx]))
+        htmls.append(send_offline_detail(value['app_id'], value, sum_yesterday[idx], send_mail=send_mail))
 
     api_helper.send_html_mail('%s地推详情汇总' % yesterday.strftime('%Y-%m-%d'),
                               'yonghui.chen@cutt.com', '<p>'.join(htmls))
 
 
-def send_offline_detail(app_id, app_detail, prev_detail, date=model_manager.yesterday()):
+def send_offline_detail(app_id, app_detail, prev_detail, date=model_manager.yesterday(), send_mail=True):
     total_na = 0
     stats = model_manager.query(ShopCouponStatSum).filter(partnerId=app_id, useDate=date.strftime('%Y-%m-%d')).order_by(
         '-useNum')
@@ -166,9 +171,10 @@ def send_offline_detail(app_id, app_detail, prev_detail, date=model_manager.yest
         'yesterday_details': stats,
     })
 
-    om = RuntimeData.objects.filter(name='offline_%s' % app_id).first()
-    api_helper.send_html_mail('%s%s地推日报' % (app_detail['app'], date.strftime('%Y-%m-%d')),
-                              'yonghui.chen@cutt.com' if not om else om.value, html)
+    if send_mail:
+        om = RuntimeData.objects.filter(name='offline_%s' % app_id).first()
+        api_helper.send_html_mail('%s%s地推日报' % (app_detail['app'], date.strftime('%Y-%m-%d')),
+                                  'yonghui.chen@cutt.com' if not om else om.value, html)
 
     return html
 

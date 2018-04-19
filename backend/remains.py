@@ -88,6 +88,10 @@ def sync_remain_online_rt():
     user_ids = {x.user_id for x in
                 ItemDeviceUser.objects.filter(created_at__range=(from_date, from_date + timedelta(days=1)))}
     ItemDeviceUser.objects.filter(user_id__in=get_last_active_yesterday(user_ids)).update(remain_7=1)
+    early_date = from_date - timedelta(days=7)
+    user_ids = {x.user_id for x in
+                ItemDeviceUser.objects.filter(created_at__range=(early_date, from_date))}
+    ItemDeviceUser.objects.filter(user_id__in=get_last_active_yesterday(user_ids)).update(remain_14=1)
 
 
 def sync_remain_offline_rt():
@@ -95,6 +99,10 @@ def sync_remain_offline_rt():
     user_ids = {x.user_id for x in
                 OfflineUser.objects.filter(created_at__range=(from_date, from_date + timedelta(days=1)))}
     OfflineUser.objects.filter(user_id__in=get_last_active_yesterday(user_ids)).update(remain_7=1)
+    early_date = from_date - timedelta(days=7)
+    user_ids = {x.user_id for x in
+                OfflineUser.objects.filter(created_at__range=(early_date, from_date))}
+    OfflineUser.objects.filter(user_id__in=get_last_active_yesterday(user_ids)).update(remain_14=1)
 
 
 def get_last_active_yesterday(ids):
