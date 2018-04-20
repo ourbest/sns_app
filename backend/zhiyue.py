@@ -5,7 +5,6 @@ from datetime import datetime, timedelta
 
 from dj import times
 from dj.utils import api_func_anonymous
-from django.conf import settings
 from django.db import connections
 from django.db.models import Count, Sum, Max
 from django.http import HttpResponse
@@ -387,6 +386,11 @@ def get_coupon_details(save):
 
 @api_func_anonymous
 def make_offline(the_date):
+    do_offline_stat.delay(the_date)
+
+
+@job
+def do_offline_stat(the_date):
     stat_date_from = 'current_date - interval 1 day'
     stat_date_to = 'current_date'
 
@@ -411,9 +415,11 @@ def make_offline(the_date):
         for [app_id, cnt] in rows:
             try:
                 OfflineDailyStat(app_id=app_id, stat_date=date_str, user_num=cnt).save()
+                save_bonus_daily_stat()
             except:
                 pass
 
+    save_bonus_daily_stat()
     make_offline_remain(the_date)
 
     return "ok"
@@ -953,3 +959,24 @@ def sync_offline_from_hive(the_date):
 
 def get_users(ids):
     return model_manager.query(ZhiyueUser).filter(userId__in=ids)
+
+
+def save_bonus_daily_stat(date=model_manager.yesterday()):
+    if isinstance(date, str):
+        date = model_manager.get_date(date)
+
+    for x in OfflineUser.objects.filter(created_at__range=(date, date + timedelta(1))).values(
+            'app_id').annotate(total=Sum('bonus_pick')):
+        OfflineDailyStat.objects.filter(app_id=x['app_id'],
+                                        stat_date=date.strftime('%Y-%m-%d')).update(user_bonus_num=x['total'])
+
+    for x in OfflineUser.objects.filter(withdraw_time__range=(date, date + timedelta(1))).values(
+            'app_id').annotate(total=Sum('bonus_withdraw'), num=Count('withdraw_time')):
+        OfflineDailyStat.objects.filter(app_id=x['app_id'],
+                                        stat_date=date.strftime('%Y-%m-%d')).update(user_cash_num=x['num'],
+                                                                                    bonus_cash=x['total'])
+
+    for x in OfflineUser.objects.filter(bonus_time__range=(date, date + timedelta(1))).values(
+            'app_id').annotate(total=Sum('bonus_amount')):
+        OfflineDailyStat.objects.filter(app_id=x['app_id'],
+                                        stat_date=date.strftime('%Y-%m-%d')).update(user_bonus_got=x['total'])

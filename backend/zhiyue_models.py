@@ -367,8 +367,10 @@ class OfflineDailyStat(models.Model):
     user_cost = models.IntegerField('花费', default=0)
     remain = models.IntegerField('留存', default=0)
     user_bonus_num = models.IntegerField('领取红包数', default=0)
+    user_bonus_got = models.IntegerField('获得红包数', default=0)
     bonus_cost = models.IntegerField('红包奖励', default=0)
     bonus_cash = models.IntegerField('红包提取', default=0)
+    user_cash_num = models.IntegerField('红包提取个数', default=0)
     total_cost = models.IntegerField('总花费', default=0)
 
 

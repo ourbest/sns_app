@@ -138,30 +138,52 @@ def daily_report():
 
 
 @api_func_anonymous
-def api_weekly_report():
+def api_weekly_report(i_week=0):
     """
     获取周报数据
     :return:
     """
-    this_week = model_manager.current_week()
-    return list(OfflineDailyStat.objects.filter(stat_date__range=this_week).values(
-        'app_id').annotate(total=Sum('user_num'), amount=Sum('user_cost'), remain=Sum('remain')))
+    this_week = model_manager.current_week() if not i_week else model_manager.plus_week(-i_week)
+    apps = {x.app_id: x.app_name for x in App.objects.all()}
+    ret = list(OfflineDailyStat.objects.filter(stat_date__range=this_week).values(
+        'app_id').annotate(total=Sum('user_num'),
+                           amount=Sum('user_cost'),
+                           remain=Sum('remain'),
+                           bonus_num=Sum('user_bonus_num'),
+                           cash_num=Sum('user_cash_num'),
+                           withdraw=Sum('bonus_cash')))
+
+    for x in ret:
+        x['app'] = apps[x['app_id']][:-3]
+
+    return ret
 
 
 @api_func_anonymous
-def api_cash_amount():
+def api_cash_amount(from_date, to_date):
     """
     获取提款情况
     :return:
     """
-    query = 'select app_name, sum(bonus_withdraw), count(*), date(withdraw_time) dt ' \
+    if not from_date:
+        today = model_manager.today()
+        from_date = (today - timedelta(today.weekday())).strftime('%Y-%m-%d')
+    else:
+        from_date = from_date[:10]
+
+    if not to_date:
+        to_date = (today + timedelta(1)).strftime('%Y-%m-%d')
+    else:
+        to_date = to_date[:10]
+
+    query = 'select app_name, sum(bonus_withdraw), count(*) ' \
             'from backend_app a, backend_offlineuser u ' \
-            'where a.app_id = u.app_id and u.withdraw_time > current_date - interval 15 day ' \
-            'group by app_name, date(withdraw_time) order by dt desc'
+            'where a.app_id = u.app_id and u.withdraw_time between \'%s\' and \'%s\' ' \
+            'group by app_name' % (from_date, to_date)
 
     with connection.cursor() as cursor:
         cursor.execute(query)
-        return [{'app': app_name, 'amount': amount, 'cnt': cnt, 'date': date} for [app_name, amount, cnt, date] in
+        return [{'app': app_name, 'amount': amount, 'cnt': cnt} for [app_name, amount, cnt] in
                 cursor.fetchall()]
 
 
