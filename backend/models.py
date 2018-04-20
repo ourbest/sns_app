@@ -790,3 +790,32 @@ class KPIPeriod(models.Model):
             'remain': self.remains,
             'editors': '/'.join(editors),
         }
+
+
+class ChannelUser(models.Model):
+    """
+    渠道用户
+    """
+    user_id = models.BigIntegerField(primary_key=True)
+    app = models.ForeignKey(App, on_delete=CASCADE)
+    channel = models.CharField(max_length=50)
+    created_at = models.DateTimeField()
+    remain = models.IntegerField(default=0)
+    ip = models.CharField(max_length=20, default='')
+    city = models.CharField(max_length=50, default='')
+    location = models.CharField(max_length=100, default='', null=True)
+    remain_7 = models.IntegerField(default=0)
+    remain_14 = models.IntegerField(default=0)
+
+    @property
+    def json(self):
+        return {
+            'user_id': self.user_id,
+            'remain': self.remain,
+            'location': self.location,
+            'created_at': self.created_at.strftime('%Y-%m-%d %H:%M'),
+            'app_id': self.app_id,
+            'channel': self.channel,
+            'ip': self.ip,
+            'city': self.city,
+        }

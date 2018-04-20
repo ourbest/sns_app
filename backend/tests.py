@@ -11,11 +11,12 @@ from django.utils import timezone
 from django_rq import job
 from logzero import logger
 
+import backend.daily_stat
 import backend.stat_utils
 from backend import model_manager, api_helper, stats, zhiyue_models, zhiyue, remains
 from backend.models import SnsGroupSplit, SnsGroup, SnsUser, SnsUserGroup, SnsTask, DistArticle, DistArticleStat, \
     ItemDeviceUser, App, AppDailyStat, User, UserDailyStat, OfflineUser, AppUser, UserDailyDeviceUser, PhoneDevice
-from backend.zhiyue import sync_to_item_dev_user
+from backend.user_factory import sync_to_item_dev_user
 from backend.zhiyue_models import DeviceUser, CouponInst, CouponLog
 
 
@@ -291,7 +292,7 @@ def sync_all_remain(date=None):
     # for x in range(8, 8):
     date = '2018-04-08' if not date else date
     for app in model_manager.get_dist_apps():
-        zhiyue.make_daily_remain(app.app_id, date)
+        backend.daily_stat.make_daily_remain(app.app_id, date)
 
 
 def sync_device_user(date):
@@ -320,7 +321,7 @@ def sync_bonus_test():
     date = model_manager.today() - timedelta(days=5)
     for app in App.objects.filter(offline=1):
         users = OfflineUser.objects.filter(app=app, created_at__gt=date)
-        zhiyue.save_bonus_info(app, users, until=date)
+        backend.daily_stat.save_bonus_info(app, users, until=date)
 
 
 def sync_user_stat(date):

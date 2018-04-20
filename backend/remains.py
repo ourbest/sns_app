@@ -4,7 +4,7 @@ from datetime import timedelta
 from logzero import logger
 
 from backend import model_manager, hives, zhiyue
-from backend.models import OfflineUser, ItemDeviceUser
+from backend.models import OfflineUser, ItemDeviceUser, ChannelUser
 from backend.zhiyue_models import ZhiyueUser
 
 
@@ -103,6 +103,9 @@ def sync_remain_offline_rt():
     user_ids = {x.user_id for x in
                 OfflineUser.objects.filter(created_at__range=(early_date, from_date))}
     OfflineUser.objects.filter(user_id__in=get_last_active_yesterday(user_ids)).update(remain_14=1)
+    user_ids = {x.user_id for x in
+                ChannelUser.objects.filter(created_at__range=(early_date, from_date))}
+    ChannelUser.objects.filter(user_id__in=get_last_active_yesterday(user_ids)).update(remain_14=1)
 
 
 def get_last_active_yesterday(ids):

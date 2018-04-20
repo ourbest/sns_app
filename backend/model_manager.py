@@ -493,3 +493,7 @@ def plus_week(delta):
 def to_str(week, format='%Y-%m-%d'):
     (from_dt, to_dt) = week
     return '%s - %s' % (from_dt.strftime(format), to_dt.strftime(format))
+
+
+def app_names():
+    return {x.app_id: x.app_name for x in App.objects.all()}

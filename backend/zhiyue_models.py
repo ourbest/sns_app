@@ -8,6 +8,8 @@ class ZhiyueUser(models.Model):
     userId = models.IntegerField(primary_key=True)
     platform = models.CharField(max_length=50)
     lastActiveTime = models.DateTimeField()
+    createTime = models.DateTimeField()
+    source = models.CharField(max_length=200)
 
     @staticmethod
     def db_name():
