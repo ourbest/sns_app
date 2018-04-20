@@ -1,7 +1,10 @@
+from datetime import timedelta
+
 from dj.utils import api_func_anonymous
 from django.db.models import Count
 
-from backend import model_manager
+from backend import model_manager, api_helper
+from backend.models import ChannelUser
 from backend.zhiyue_models import ZhiyueUser
 
 
@@ -25,3 +28,22 @@ def api_channel_stats(date):
 
     # query = 'select * from pojo_ZhiyueUser where source!= \'0000\' and source is not null and source != \'\' ' \
     #         'and createTime > current_date '
+
+
+@api_func_anonymous
+def api_channel_details(request, date, channel):
+    app = api_helper.get_session_app(request)
+    query = ChannelUser.objects.filter(app_id=app)
+    if date:
+        from_date = model_manager.get_date(date)
+        query = query.filter(created_at__range=(from_date, from_date + timedelta(1)))
+    if channel:
+        query = query.filter(channel=channel)
+    return [x.json for x in query]
+
+
+@api_func_anonymous
+def api_channel_names(request):
+    return list(ChannelUser.objects.values('channel').filter(created_at__gt=model_manager.yesterday(),
+                                                             app_id=api_helper.get_session_app(request)).annotate(
+        total=Count('user_id')))

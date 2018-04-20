@@ -517,7 +517,8 @@ def sync_channel_user_in_minutes(minutes):
 
         saved = {x.user_id for x in query}
 
-        user_query = model_manager.query(ZhiyueUser).filter(platform='android', appId=str(app.app_id))
+        user_query = model_manager.query(ZhiyueUser).filter(
+            platform='android', appId=str(app.app_id)).exclude(source__isnull=True, source='')
         if minutes > 0:
             user_query = user_query.filter(createTime__gt=timezone.now() - timedelta(minutes=minutes))
         else:
@@ -527,7 +528,7 @@ def sync_channel_user_in_minutes(minutes):
 
         user_dict = {x.userId: x for x in users}
 
-        for device_user in model_manager.query(DeviceUser).filter(userId__in=[x.userId for x in users]):
+        for device_user in model_manager.query(DeviceUser).filter(deviceUserId__in=[x.userId for x in users]):
             if device_user.deviceUserId not in saved:
                 model_manager.save_ignore(sync_to_channel_user(user_dict[device_user.deviceUserId], device_user))
 

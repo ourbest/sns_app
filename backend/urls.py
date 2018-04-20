@@ -207,4 +207,6 @@ urlpatterns = [
 
     # channels
     url(r'channels/stat$', channels.api_channel_stats),
+    url(r'channels/details$', channels.api_channel_details),
+    url(r'channels/names$', channels.api_channel_names),
 ]
