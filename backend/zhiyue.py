@@ -541,7 +541,7 @@ def _sync_remain(obj, date=0, app=None):
     today = model_manager.today()
     if date:
         today = today + timedelta(date)
-    yesterday = today - timedelta(-1)
+    yesterday = today - timedelta(1)
 
     for app in model_manager.get_dist_apps():
         ids = [x.user_id for x in
