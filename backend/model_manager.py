@@ -475,3 +475,21 @@ def yesterday():
 def delta(date_str, days):
     dt = datetime.strptime(date_str, '%Y-%m-%d') + timedelta(days=days)
     return dt.strftime('%Y-%m-%d')
+
+
+def current_week():
+    now = today()
+    if now.weekday() == 7:
+        return now, now + timedelta(days=7)
+    sunday = now - timedelta(now.weekday() + 1)
+    return sunday, sunday + timedelta(6)
+
+
+def plus_week(delta):
+    f, t = current_week()
+    return f + timedelta(7 * delta), t + timedelta(7 * delta)
+
+
+def to_str(week, format='%Y-%m-%d'):
+    (from_dt, to_dt) = week
+    return '%s - %s' % (from_dt.strftime(format), to_dt.strftime(format))

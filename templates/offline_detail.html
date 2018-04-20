@@ -61,7 +61,7 @@
             <th align="left">{{ item.name }}</th>
             <td>{{ item.total }}</td>
             <td>{{ item.pick }} ({% rate item.pick item.total 100 2 %})</td>
-            <td{% if item.ratio < 0.2 %} style="color: red"{% endif %}>{{ item.remain }}
+            <td{% if item.ratio < 0.25 %} style="color: red"{% endif %}>{{ item.remain }}
                 ({% rate item.remain item.total 100 2 %})
             </td>
         </tr>

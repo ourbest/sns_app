@@ -8,11 +8,16 @@ from django_rq import job
 
 from backend import api_helper, model_manager, zhiyue
 from backend.models import OfflineUser, App, RuntimeData
-from backend.zhiyue_models import ShopCouponStatSum, UserRewardHistory, UserRewardGroundHistory
+from backend.zhiyue_models import ShopCouponStatSum, UserRewardHistory, UserRewardGroundHistory, OfflineDailyStat
 
 
 @api_func_anonymous
 def api_owners(request):
+    """
+    获取扫码用户
+    :param request:
+    :return:
+    """
     app = api_helper.get_session_app(request)
     today = model_manager.today()
     ret = [x for x in
@@ -27,6 +32,11 @@ def api_owners(request):
 
 @api_func_anonymous
 def api_owner_remain(owner):
+    """
+    根据扫码用户获取留存情况
+    :param owner:
+    :return:
+    """
     today = model_manager.today()
     return OfflineUser.objects.filter(owner=owner,
                                       created_at__lt=today - timedelta(days=1)).values('owner').annotate(
@@ -36,6 +46,11 @@ def api_owner_remain(owner):
 
 @api_func_anonymous
 def api_daily_remain(request):
+    """
+    日留存情况
+    :param request:
+    :return:
+    """
     sql = 'select date(created_at), count(*), sum(remain) from backend_offlineuser ' \
           'where app_id = %s group by date(created_at) order by date(created_at) desc' \
           % api_helper.get_session_app(request)
@@ -52,6 +67,12 @@ def api_daily_remain(request):
 
 @api_func_anonymous
 def api_owner_detail(owner, date):
+    """
+    扫码兼职日留存情况
+    :param owner:
+    :param date:
+    :return:
+    """
     if not owner:
         return []
 
@@ -64,6 +85,12 @@ def api_owner_detail(owner, date):
 
 @api_func_anonymous
 def api_app_detail(request, date):
+    """
+    整体日留存情况
+    :param request:
+    :param date:
+    :return:
+    """
     app = api_helper.get_session_app(request)
 
     if not date:
@@ -79,6 +106,11 @@ def api_app_detail(request, date):
 
 @api_func_anonymous
 def api_owner_date(owner):
+    """
+    兼职日留存情况
+    :param owner:
+    :return:
+    """
     if not owner:
         return []
 
@@ -98,11 +130,59 @@ def api_owner_date(owner):
 
 @api_func_anonymous
 def daily_report():
+    """
+    发送日志
+    :return:
+    """
     do_send_daily_report.delay()
 
 
+@api_func_anonymous
+def api_weekly_report():
+    """
+    获取周报数据
+    :return:
+    """
+    this_week = model_manager.current_week()
+    return list(OfflineDailyStat.objects.filter(stat_date__range=this_week).values(
+        'app_id').annotate(total=Sum('user_num'), amount=Sum('user_cost'), remain=Sum('remain')))
+
+
+@api_func_anonymous
+def api_cash_amount():
+    """
+    获取提款情况
+    :return:
+    """
+    query = 'select app_name, sum(bonus_withdraw), count(*), date(withdraw_time) dt ' \
+            'from backend_app a, backend_offlineuser u ' \
+            'where a.app_id = u.app_id and u.withdraw_time > current_date - interval 15 day ' \
+            'group by app_name, date(withdraw_time) order by dt desc'
+
+    with connection.cursor() as cursor:
+        cursor.execute(query)
+        return [{'app': app_name, 'amount': amount, 'cnt': cnt, 'date': date} for [app_name, amount, cnt, date] in
+                cursor.fetchall()]
+
+
+@api_func_anonymous
+def api_weekdays():
+    return {
+        'current': model_manager.to_str(model_manager.current_week()),
+        'last': model_manager.to_str(model_manager.plus_week(-1)),
+        'last2': model_manager.to_str(model_manager.plus_week(-2)),
+    }
+
+
+# --------------------------------------------- #
+
 @job
 def do_send_daily_report(send_mail=True):
+    """
+    发送日报
+    :param send_mail:
+    :return:
+    """
     yesterday = model_manager.yesterday()
 
     apps = {x.app_id: x.app_name for x in App.objects.filter(offline=1)}
