@@ -59,7 +59,8 @@ def remain_obj(obj, app_id, date_range=(model_manager.today() - timedelta(days=1
     for k, v in date_users.items():
         users = {x.user_id: x for x in v}
         remain_ids = get_remain_ids(app_id, list(users.keys()), k + timedelta(1), device=device)
-        obj.objects.filter(user_id__in=remain_ids).update(remain_7=1)
+        if remain_ids:
+            obj.objects.filter(user_id__in=remain_ids).update(remain=1)
 
 
 def classify_users(remains):
@@ -88,6 +89,7 @@ def get_remain_ids(app_id, ids, date, to_date=None, device=True):
 
         cursor.execute(query)
         rows = cursor.fetchall()
+        logger.info('remain %s' % len(rows))
         return [x[0] for x in rows]
     finally:
         cursor.close()
