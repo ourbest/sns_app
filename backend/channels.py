@@ -34,9 +34,8 @@ def api_channel_stats(date):
 def api_channel_details(request, date, channel):
     app = api_helper.get_session_app(request)
     query = ChannelUser.objects.filter(app_id=app)
-    if date:
-        from_date = model_manager.get_date(date)
-        query = query.filter(created_at__range=(from_date, from_date + timedelta(1)))
+    from_date = model_manager.get_date(date) if date else model_manager.today()
+    query = query.filter(created_at__range=(from_date, from_date + timedelta(1)))
     if channel:
         query = query.filter(channel=channel)
     return [x.json for x in query]
