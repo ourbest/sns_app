@@ -1,7 +1,8 @@
 from datetime import timedelta
 
 from dj.utils import api_func_anonymous
-from django.db.models import Count
+from django.db import connection
+from django.db.models import Count, Sum
 
 from backend import model_manager, api_helper, hives, remains
 from backend.models import ChannelUser
@@ -36,6 +37,30 @@ def api_channel_details(request, date, channel):
     if channel:
         query = query.filter(channel=channel)
     return [x.json for x in query]
+
+
+@api_func_anonymous
+def api_channel_remain(request, date, channel):
+    app = api_helper.get_session_app(request)
+
+    if date:
+        from_date = model_manager.get_date(date)
+        date_str = 'created_at between \'%s\' and \'%s\'' % (from_date.strftime('%Y-%m-%d'),
+                                                             from_date.strftime('%Y-%m-%d 23:59'))
+    else:
+        from_date = model_manager.today() - timedelta(10)
+        date_str = 'created_at > \'%s\'' % from_date.strftime('%Y-%m-%d')
+
+    channel_str = '' if not channel else 'and channel=\'%s\'' % channel
+
+    sql = 'select date(created_at) date, channel, count(user_id) total, sum(remain) remain from backend_channeluser ' \
+          'where app_id=%s and %s %s group by channel, date(created_at) order by date desc' % (
+          app, date_str, channel_str)
+
+    with connection.cursor() as cursor:
+        cursor.execute(sql)
+        rows = cursor.fetchall()
+        return [{'date': x[0], 'channel': x[1], 'total': x[2], 'remain': x[3]} for x in rows]
 
 
 @api_func_anonymous
