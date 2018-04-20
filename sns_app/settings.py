@@ -179,6 +179,8 @@ DAILY_REPORT_EMAIL = ['yonghui.chen@cutt.com']
 
 HIVE_SERVER = '10.19.186.236'
 
+CASSANDRA_SERVERS = ['10.9.104.243', '10.9.170.109', '10.9.178.66']
+
 try:
     from .local_settings import *
 except ImportError:

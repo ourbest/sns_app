@@ -48,6 +48,20 @@ def remain_week_offline(app_id=1564460, date_range=(model_manager.today() - time
         OfflineUser.objects.filter(user_id__in=remain_ids).update(remain_14=1)
 
 
+def remain_obj(obj, app_id, date_range=(model_manager.today() - timedelta(days=14),
+                                        model_manager.today() - timedelta(days=7)), device=True):
+    remains = obj.objects.filter(created_at__range=date_range, app_id=app_id, remain=0)
+    # if not remains:
+    #     zhiyue.sync_offline_from_hive()
+
+    date_users = classify_users(remains)
+
+    for k, v in date_users.items():
+        users = {x.user_id: x for x in v}
+        remain_ids = get_remain_ids(app_id, list(users.keys()), k + timedelta(1), device=device)
+        obj.objects.filter(user_id__in=remain_ids).update(remain_7=1)
+
+
 def classify_users(remains):
     date_users = defaultdict(list)
     for x in remains:
