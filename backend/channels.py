@@ -98,16 +98,20 @@ def api_set_ad_channels(channels):
 def api_weekly_report(i_week):
     date_range = model_manager.plus_week(i_week)
     app_names = model_manager.app_names()
-    channels = get_ad_channels().split('\n')
+    channels = dict()
+    for x in get_ad_channels().split('\n'):
+        arr = x.split(' ')
+        channels[arr[0]] = arr[-1]
 
     ret = list(ChannelUser.objects.filter(created_at__range=date_range,
-                                          channel__in=channels).values(
+                                          channel__in=channels.keys()).values(
         'app_id', 'channel').annotate(total=Count('user_id'),
                                       remain=Sum('remain')).order_by('channel'))
 
     ava_channels = []
     for x in ret:
         x['app_name'] = app_names[x['app_id']][:-3]
+        x['channel'] = channels[x['channel']]
         if x['channel'] not in ava_channels:
             ava_channels.append(x['channel'])
 
