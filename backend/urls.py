@@ -210,4 +210,7 @@ urlpatterns = [
     url(r'channels/details$', channels.api_channel_details),
     url(r'channels/names$', channels.api_channel_names),
     url(r'channels/remain$', channels.api_channel_remain),
+    url(r'channels/config$', channels.api_get_ad_channels),
+    url(r'channels/weekly$', channels.api_weekly_report),
+    url(r'channels/config/save$', channels.api_set_ad_channels),
 ]

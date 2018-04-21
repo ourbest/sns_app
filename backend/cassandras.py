@@ -5,10 +5,12 @@ cassandra_session = None
 cassandra_cluster = None
 
 
-def is_online(app_id, user_ids, date):
+def get_online_ids(app_id, user_ids, date):
+    date_str = date if isinstance(date, str) else date.strftime('%Y-%m-%d')
+
     session = get_session()
     cql = 'select userid from cassandra_OnlineUser where userId in (%s) and partnerId=%s and onlineDate=\'%s\''
-    rows = session.execute(cql % (','.join([str(x) for x in user_ids]), app_id, date))
+    rows = session.execute(cql % (','.join([str(x) for x in user_ids]), app_id, date_str))
     return [x[0] for x in rows]
 
 

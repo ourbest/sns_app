@@ -5,7 +5,7 @@ from django.db import connection
 from django.db.models import Count, Sum
 
 from backend import model_manager, api_helper, hives, remains
-from backend.models import ChannelUser
+from backend.models import ChannelUser, RuntimeData
 from backend.zhiyue_models import ZhiyueUser
 
 
@@ -55,7 +55,7 @@ def api_channel_remain(request, date, channel):
 
     sql = 'select date(created_at) date, channel, count(user_id) total, sum(remain) remain from backend_channeluser ' \
           'where app_id=%s and %s %s group by channel, date(created_at) order by date desc' % (
-          app, date_str, channel_str)
+              app, date_str, channel_str)
 
     with connection.cursor() as cursor:
         cursor.execute(sql)
@@ -68,6 +68,57 @@ def api_channel_names(request):
     return list(ChannelUser.objects.values('channel').filter(created_at__gt=model_manager.yesterday(),
                                                              app_id=api_helper.get_session_app(request)).annotate(
         total=Count('user_id')))
+
+
+@api_func_anonymous
+def api_get_ad_channels():
+    return get_ad_channels()
+
+
+def get_ad_channels():
+    cfg = RuntimeData.objects.filter(name='ad_channels').first()
+    return cfg.value if cfg else ''
+
+
+@api_func_anonymous
+def api_set_ad_channels(channels):
+    cfg = RuntimeData.objects.filter(name='ad_channels').first()
+    if not cfg:
+        cfg = RuntimeData('ad_channels')
+    else:
+        if cfg.value == channels:
+            return channels
+
+    cfg.value = channels
+    cfg.save()
+    return channels
+
+
+@api_func_anonymous
+def api_weekly_report(i_week):
+    date_range = model_manager.plus_week(i_week)
+    app_names = model_manager.app_names()
+    channels = get_ad_channels().split('\n')
+
+    ret = list(ChannelUser.objects.filter(created_at__range=date_range,
+                                          channel__in=channels).values(
+        'app_id', 'channel').annotate(total=Count('user_id'),
+                                      remain=Sum('remain')).order_by('channel'))
+
+    ava_channels = []
+    for x in ret:
+        x['app_name'] = app_names[x['app_id']][:-3]
+        if x['channel'] not in ava_channels:
+            ava_channels.append(x['channel'])
+
+    return {
+        'channels': ava_channels,
+        'dates': {
+            'from': date_range[0].strftime('%Y-%m-%d'),
+            'to': date_range[1].strftime('%Y-%m-%d'),
+        },
+        'data': ret,
+    }
 
 
 # ================= methods ================
