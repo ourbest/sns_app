@@ -5,6 +5,7 @@ from django.db import connection
 from django.db.models import Count, Sum
 from django.template.loader import render_to_string
 from django_rq import job
+from logzero import logger
 
 from backend import api_helper, model_manager, zhiyue
 from backend.models import OfflineUser, App, RuntimeData
@@ -236,6 +237,7 @@ def do_send_daily_report(send_mail=True):
 
 def send_offline_detail(app_id, app_detail, prev_detail, date=model_manager.yesterday(), send_mail=True):
     total_na = 0
+    logger.info('Send offline detail at %s' % date.strftime('%Y-%m-%d'))
     stats = model_manager.query(ShopCouponStatSum).filter(partnerId=app_id, useDate=date.strftime('%Y-%m-%d')).order_by(
         '-useNum')
     picks = {x['owner']: x['pick'] for x in
@@ -277,6 +279,8 @@ def send_offline_detail(app_id, app_detail, prev_detail, date=model_manager.yest
         om = RuntimeData.objects.filter(name='offline_%s' % app_id).first()
         api_helper.send_html_mail('%s%s地推日报' % (app_detail['app'], date.strftime('%Y-%m-%d')),
                                   'yonghui.chen@cutt.com' if not om else om.value, html)
+    else:
+        logger.info(html)
 
     return html
 
