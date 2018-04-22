@@ -486,7 +486,7 @@ def check_cassandra(app_id):
 
     cnt = 0
     for x in model_manager.query(ZhiyueUser).filter(
-            appId=app_id, createTime__gt=dates.today()).order_by('-lastActiveTime')[0:2000]:
+            appId=app_id, createTime__gt=dates.today()).order_by('-lastActiveTime')[0:300]:
         rows = session.execute(query, (int(x.appId), x.userId, x.createTime.strftime('%Y-%m-%d')))
         one = rows.one()
         if not one:
