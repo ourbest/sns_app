@@ -359,22 +359,23 @@ def get_coupon_message_details():
 
 
 @api_func_anonymous
-def get_coupon_details(save):
-    date = model_manager.today()
+def get_coupon_details(date, save):
+    date = model_manager.get_date(date)
     yesterday = date - timedelta(days=1)
     apps = {x.app_id: x.app_name for x in App.objects.filter(offline=1)}
 
-    remains = dict()
+    remain_rates = dict()
 
-    query = OfflineUser.objects.filter(created_at__gt=date).values('app_id').annotate(
-        total=Count('user_id'), viewed=Sum('bonus_view'), picked=Sum('bonus_pick'))
+    query = OfflineUser.objects.filter(created_at__range=(date, date + timedelta(1))).values('app_id').annotate(
+        total=Count('user_id'), viewed=Sum('bonus_view'), picked=Sum('bonus_pick'), remain=Sum('remain'))
 
     for u in OfflineUser.objects.filter(created_at__range=(yesterday, date)).values(
             'app_id').annotate(total=Count('user_id'), remain=Sum('remain')):
-        remains[u['app_id']] = int(u['remain'] / u['total'] * 100)
+        remain_rates[u['app_id']] = int(u['remain'] / u['total'] * 100)
 
     ret = [{'app_id': x['app_id'], 'app_name': apps[x['app_id']][:-3], 'today': x['total'],
-            'remain': '%s%%' % remains[x['app_id']],
+            'remain': '%s%%' % remain_rates[x['app_id']],
+            'today_remain': '%s%%' % int(x['remain'] / x['total'] * 100),
             'open': x['viewed'],
             'picked': x['picked']} for x in query]
     if save:

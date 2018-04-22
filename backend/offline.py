@@ -46,24 +46,32 @@ def api_owner_remain(owner):
 
 
 @api_func_anonymous
-def api_daily_remain(request):
+def api_daily_remain(request, all):
     """
     日留存情况
     :param request:
     :return:
     """
-    sql = 'select date(created_at), count(*), sum(remain) from backend_offlineuser ' \
-          'where app_id = %s group by date(created_at) order by date(created_at) desc' \
-          % api_helper.get_session_app(request)
+    if all == "1":
+        sql = 'select app_id, date(created_at), count(*), sum(remain), sum(bonus_pick) from backend_offlineuser ' \
+              'where created_at > current_date - interval 14 day ' \
+              'group by app_id, date(created_at) order by date(created_at) desc'
+    else:
+        sql = 'select app_id, date(created_at), count(*), sum(remain), sum(bonus_pick) from backend_offlineuser ' \
+              'where app_id = %s group by date(created_at) order by app_id, date(created_at) desc' \
+              % api_helper.get_session_app(request)
 
+    app_names = model_manager.app_names()
     with connection.cursor() as cursor:
         cursor.execute(sql)
         rows = cursor.fetchall()
         return [{
+            'app': app_names[app_id][:-3],
             'date': date,
             'total': total,
-            'remain': remain
-        } for date, total, remain in rows]
+            'remain': remain,
+            'picked': pick
+        } for app_id, date, total, remain, pick in rows]
 
 
 @api_func_anonymous
@@ -103,6 +111,28 @@ def api_app_detail(request, date):
         query = query.extra(where=['date(created_at) =\'%s\'' % date])
 
     return [x.json for x in query]
+
+
+@api_func_anonymous
+def get_coupon_at(date):
+    date = model_manager.get_date(date)
+    yesterday = date - timedelta(days=1)
+    apps = {x.app_id: x.app_name for x in App.objects.filter(offline=1)}
+
+    remains = dict()
+
+    query = OfflineUser.objects.filter(created_at__gt=date).values('app_id').annotate(
+        total=Count('user_id'), viewed=Sum('bonus_view'), picked=Sum('bonus_pick'))
+
+    for u in OfflineUser.objects.filter(created_at__range=(yesterday, date)).values(
+            'app_id').annotate(total=Count('user_id'), remain=Sum('remain')):
+        remains[u['app_id']] = int(u['remain'] / u['total'] * 100)
+
+    ret = [{'app_id': x['app_id'], 'app_name': apps[x['app_id']][:-3], 'today': x['total'],
+            'remain': '%s%%' % remains[x['app_id']],
+            'open': x['viewed'],
+            'picked': x['picked']} for x in query]
+    return ret
 
 
 @api_func_anonymous
