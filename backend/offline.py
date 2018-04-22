@@ -237,9 +237,9 @@ def do_send_daily_report(send_mail=True):
 
 def send_offline_detail(app_id, app_detail, prev_detail, date=model_manager.yesterday(), send_mail=True):
     total_na = 0
-    logger.info('Send offline detail at %s' % date.strftime('%Y-%m-%d'))
-    stats = model_manager.query(ShopCouponStatSum).filter(partnerId=app_id, useDate=date.strftime('%Y-%m-%d')).order_by(
-        '-useNum')
+    date_str = date.strftime('%Y-%m-%d')
+    logger.info('Send offline detail at %s' % date_str)
+    stats = model_manager.query(ShopCouponStatSum).filter(partnerId=app_id, useDate=date_str).order_by('-useNum')
     picks = {x['owner']: x['pick'] for x in
              OfflineUser.objects.filter(app_id=app_id, created_at__range=(date, date + timedelta(days=1))).values(
                  'owner').annotate(total=Count('user_id'), pick=Sum('bonus_pick'))}
@@ -253,10 +253,10 @@ def send_offline_detail(app_id, app_detail, prev_detail, date=model_manager.yest
         id_names[stat.ownerId] = '%s %s' % (stat.ownerName, stat.shopName)
 
     the_date_before = date - timedelta(days=1)
+    the_date_before_str = the_date_before.strftime('%Y-%m-%d')
 
     id_names = {x.ownerId: '%s %s' % (x.ownerName, x.shopName) for x in
-                model_manager.query(ShopCouponStatSum).filter(partnerId=app_id,
-                                                              useDate=the_date_before.strftime('%Y-%m-%d'))}
+                model_manager.query(ShopCouponStatSum).filter(partnerId=app_id, useDate=the_date_before_str)}
 
     yesterday_remains = OfflineUser.objects.filter(created_at__range=(the_date_before,
                                                                       date),
@@ -273,11 +273,13 @@ def send_offline_detail(app_id, app_detail, prev_detail, date=model_manager.yest
         'yesterday_remain': prev_detail,
         'yesterday_remains': yesterday_remains,
         'yesterday_details': stats,
+        'yesterday_str': date_str,
+        'tdby_str': the_date_before_str,
     })
 
     if send_mail:
         om = RuntimeData.objects.filter(name='offline_%s' % app_id).first()
-        api_helper.send_html_mail('%s%s地推日报' % (app_detail['app'], date.strftime('%Y-%m-%d')),
+        api_helper.send_html_mail('%s%s地推日报' % (app_detail['app'], date_str),
                                   'yonghui.chen@cutt.com' if not om else om.value, html)
     else:
         logger.info(html)
