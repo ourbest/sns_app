@@ -6,6 +6,7 @@ from django.db.models import Sum, Count, Subquery
 from django.utils import timezone
 from django_rq import job
 
+import backend.dates
 from backend import api_helper, model_manager
 from backend.models import AppUser, SnsTask, User, RuntimeData, ArticleDailyInfo, DistArticleStat, ItemDeviceUser, \
     DistArticle
@@ -362,7 +363,7 @@ def sync_article_stat():
 
 
 def classify_data_app(app):
-    date = model_manager.get_date() - timedelta(days=1)
+    date = backend.dates.get_date() - timedelta(days=1)
     return list(DistArticleStat.objects.filter(article__app_id=app,
                                                article__last_started_at__range=(date - timedelta(
                                                    days=7), date)).values(

@@ -10,6 +10,7 @@ from math import radians, sin, atan2, sqrt, cos
 
 from logzero import logger
 
+import backend.dates
 from backend import api_helper, model_manager, caches, jobs
 from backend.models import ItemDeviceUser
 from backend.zhiyue_models import ZhiyueUser, DeviceUser, WeizhanItemView
@@ -18,7 +19,7 @@ from backend.zhiyue_models import ZhiyueUser, DeviceUser, WeizhanItemView
 @api_func_anonymous
 def api_owners(request):
     app = api_helper.get_session_app(request)
-    today = model_manager.today()
+    today = backend.dates.today()
     ret = [x for x in
            ItemDeviceUser.objects.filter(app_id=app, created_at__lt=today - timedelta(days=1)).values('owner_id',
                                                                                                       'type').annotate(
@@ -34,7 +35,7 @@ def api_owners(request):
 @api_func_anonymous
 def api_owner_remain(owner):
     [owner_id, type_id] = owner.split('_')
-    today = model_manager.today()
+    today = backend.dates.today()
     return ItemDeviceUser.objects.filter(owner_id=owner_id, type=type_id,
                                          created_at__lt=today - timedelta(days=1)).values('owner_id', 'type').annotate(
         total=Count('user_id'),
@@ -136,7 +137,7 @@ def api_owner_date(owner):
 def api_active_users(request):
     ids = [x.userId for x in model_manager.query(ZhiyueUser).filter(appId=str(api_helper.get_session_app(request)),
                                                                     platform__in=['iphone', 'android'],
-                                                                    lastActiveTime__gt=model_manager.get_date())]
+                                                                    lastActiveTime__gt=backend.dates.get_date())]
 
     return [{
         'remain': 0,

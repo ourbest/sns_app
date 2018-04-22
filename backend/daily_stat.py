@@ -10,13 +10,14 @@ from django.db.models import Count, Sum, Max
 from django_rq import job
 from logzero import logger
 
+import backend.dates
 from backend import model_manager
 from backend.models import ItemDeviceUser, UserDailyStat, AppDailyStat, User, App, OfflineUser
 from backend.zhiyue_models import OfflineDailyStat, UserRewardGroundHistory, UserRewardHistory, WithdrawApply
 
 
 def make_daily_remain(app_id, date):
-    the_date = model_manager.get_date(date)
+    the_date = backend.dates.get_date(date)
     qq_remain_total = 0
     wx_remain_total = 0
     for user in ItemDeviceUser.objects.filter(app_id=app_id,
@@ -118,9 +119,9 @@ def _re_calc(the_date):
                                                                                           remain=remain_map[app_id])
 
 
-def save_bonus_daily_stat(date=model_manager.yesterday()):
+def save_bonus_daily_stat(date=backend.dates.yesterday()):
     if isinstance(date, str):
-        date = model_manager.get_date(date)
+        date = backend.dates.get_date(date)
 
     for x in OfflineUser.objects.filter(created_at__range=(date, date + timedelta(1))).values(
             'app_id').annotate(total=Sum('bonus_pick')):
@@ -139,7 +140,7 @@ def save_bonus_daily_stat(date=model_manager.yesterday()):
                                         stat_date=date.strftime('%Y-%m-%d')).update(user_bonus_got=x['total'])
 
 
-def save_bonus_info(until=model_manager.yesterday()):
+def save_bonus_info(until=backend.dates.yesterday()):
     ids = [x.userId for x in model_manager.query(UserRewardGroundHistory).filter(createTime__gt=until,
                                                                                  type=-1)]
 

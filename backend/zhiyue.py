@@ -11,8 +11,9 @@ from django.utils import timezone
 from django_rq import job
 from logzero import logger
 
+import backend.dates
 import backend.stat_utils
-from backend import api_helper, model_manager, stat_utils, hives, remains
+from backend import api_helper, model_manager, stat_utils, hives, remains, cassandras
 from backend.api_helper import get_session_app
 from backend.daily_stat import make_daily_remain, save_bonus_info, make_offline_stat, \
     do_offline_stat
@@ -112,7 +113,7 @@ def count_user_sum(email, date, request):
     :param request:
     :return:
     """
-    date = model_manager.get_date(date)
+    date = backend.dates.get_date(date)
     the_user = api_helper.get_login_user(request, email)
     return backend.stat_utils.get_user_stat(date, the_user)
 
@@ -159,7 +160,7 @@ def sum_team_dist(date, request, include_sum):
     :return:
     """
     app = get_session_app(request)
-    date = model_manager.get_date(date)
+    date = backend.dates.get_date(date)
     return backend.stat_utils.app_daily_stat(app, date, include_sum)
 
 
@@ -293,10 +294,10 @@ def get_new_device():
 
     values = dict()
     online = {x['app_id']: x['total'] for x in
-              ItemDeviceUser.objects.filter(created_at__gt=model_manager.today()).values(
+              ItemDeviceUser.objects.filter(created_at__gt=backend.dates.today()).values(
                   'app_id').annotate(total=Count('user_id'))}
 
-    offline = {x['app_id']: x['total'] for x in OfflineUser.objects.filter(created_at__gt=model_manager.today()).values(
+    offline = {x['app_id']: x['total'] for x in OfflineUser.objects.filter(created_at__gt=backend.dates.today()).values(
         'app_id').annotate(total=Count('user_id'))}
 
     with connections['zhiyue'].cursor() as cursor:
@@ -360,7 +361,7 @@ def get_coupon_message_details():
 
 @api_func_anonymous
 def get_coupon_details(date, save):
-    date = model_manager.get_date(date)
+    date = backend.dates.get_date(date)
     yesterday = date - timedelta(days=1)
     apps = {x.app_id: x.app_name for x in App.objects.filter(offline=1)}
 
@@ -514,7 +515,7 @@ def sync_channel_user_in_minutes(minutes):
         if minutes > 0:
             query = query.filter(created_at__gt=timezone.now() - timedelta(minutes=minutes * 2))
         else:
-            query = query.filter(created_at__range=(model_manager.yesterday(), model_manager.today()))
+            query = query.filter(created_at__range=(backend.dates.yesterday(), backend.dates.today()))
 
         saved = {x.user_id for x in query}
 
@@ -523,7 +524,7 @@ def sync_channel_user_in_minutes(minutes):
         if minutes > 0:
             user_query = user_query.filter(createTime__gt=timezone.now() - timedelta(minutes=minutes))
         else:
-            user_query = user_query.filter(createTime__range=(model_manager.yesterday(), model_manager.today()))
+            user_query = user_query.filter(createTime__range=(backend.dates.yesterday(), backend.dates.today()))
 
         users = user_query
 
@@ -538,8 +539,8 @@ def sync_channel_remain(date=0):
     _sync_remain(ChannelUser, date)
 
 
-def _sync_remain(obj, date=0, app=None):
-    today = model_manager.today()
+def _sync_remain(obj, date=0):
+    today = backend.dates.today()
     if date:
         today = today + timedelta(date)
     yesterday = today - timedelta(1)
@@ -550,25 +551,27 @@ def _sync_remain(obj, date=0, app=None):
         if not ids:
             continue
 
-        remains_ids = [x.userId for x in
-                       model_manager.query(ZhiyueUser).filter(userId__in=ids, lastActiveTime__gt=today)]
+        # remains_ids = [x.userId for x in
+        #                model_manager.query(ZhiyueUser).filter(userId__in=ids, lastActiveTime__gt=today)]
+        remains_ids = cassandras.get_online_ids(app.app_id, ids, today)
         if remains_ids:
             obj.objects.filter(user_id__in=remains_ids, app=app, remain=0).update(remain=1)
 
 
 def _sync_app_remain(obj, app, date=0):
-    today = model_manager.today()
+    today = backend.dates.today()
     if date:
         today = today + timedelta(date)
-    yesterday = today - timedelta(-1)
+    yesterday = today - timedelta(1)
     ids = [x.user_id for x in
            obj.objects.filter(app=app, created_at__range=(yesterday, today), remain=0)]
 
     if not ids:
         return
 
-    remains_ids = [x.userId for x in
-                   model_manager.query(ZhiyueUser).filter(userId__in=ids, lastActiveTime__gt=today)]
+    remains_ids = cassandras.get_online_ids(app.app_id, ids, today) if date else \
+        [x.userId for x in
+         model_manager.query(ZhiyueUser).filter(userId__in=ids, lastActiveTime__gt=today)]
     if remains_ids:
         obj.objects.filter(user_id__in=remains_ids, app=app, remain=0).update(remain=1)
 
@@ -631,7 +634,7 @@ def sync_device_user():
         sync_channel_user_in_minutes(0)
 
         # 获取领红包信息
-    save_bonus_info(model_manager.today())
+    save_bonus_info(backend.dates.today())
 
     sync_remain()
 
@@ -647,9 +650,10 @@ def sync_remain():
 
         if app.offline:
             _sync_app_remain(OfflineUser, app, -1)
-            remains.sync_remain_offline_rt()
 
+    remains.sync_remain_offline_rt()
     remains.sync_remain_online_rt()
+    remains.sync_remain_channel_rt()
 
 
 def sync_online_remain(date=0):

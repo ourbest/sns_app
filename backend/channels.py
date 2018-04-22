@@ -4,6 +4,7 @@ from dj.utils import api_func_anonymous
 from django.db import connection
 from django.db.models import Count, Sum
 
+import backend.dates
 from backend import model_manager, api_helper, hives, remains
 from backend.models import ChannelUser, RuntimeData
 from backend.zhiyue_models import ZhiyueUser
@@ -15,7 +16,7 @@ def api_channel_stats(date):
     激活渠道的统计数据
     :return:
     """
-    date = model_manager.today() if not date else model_manager.get_date(date)
+    date = backend.dates.today() if not date else backend.dates.get_date(date)
 
     app_names = model_manager.app_names()
     ret = list(ChannelUser.objects.values('app_id', 'channel').filter(
@@ -32,7 +33,7 @@ def api_channel_stats(date):
 def api_channel_details(request, date, channel):
     app = api_helper.get_session_app(request)
     query = ChannelUser.objects.filter(app_id=app)
-    from_date = model_manager.get_date(date) if date else model_manager.today()
+    from_date = backend.dates.get_date(date) if date else backend.dates.today()
     query = query.filter(created_at__range=(from_date, from_date + timedelta(1)))
     if channel:
         query = query.filter(channel=channel)
@@ -44,11 +45,11 @@ def api_channel_remain(request, date, channel):
     app = api_helper.get_session_app(request)
 
     if date:
-        from_date = model_manager.get_date(date)
+        from_date = backend.dates.get_date(date)
         date_str = 'created_at between \'%s\' and \'%s\'' % (from_date.strftime('%Y-%m-%d'),
                                                              from_date.strftime('%Y-%m-%d 23:59'))
     else:
-        from_date = model_manager.today() - timedelta(10)
+        from_date = backend.dates.today() - timedelta(10)
         date_str = 'created_at > \'%s\'' % from_date.strftime('%Y-%m-%d')
 
     channel_str = '' if not channel else 'and channel=\'%s\'' % channel
@@ -65,7 +66,7 @@ def api_channel_remain(request, date, channel):
 
 @api_func_anonymous
 def api_channel_names(request):
-    return list(ChannelUser.objects.values('channel').filter(created_at__gt=model_manager.yesterday(),
+    return list(ChannelUser.objects.values('channel').filter(created_at__gt=backend.dates.yesterday(),
                                                              app_id=api_helper.get_session_app(request)).annotate(
         total=Count('user_id')))
 
@@ -96,7 +97,7 @@ def api_set_ad_channels(channels):
 
 @api_func_anonymous
 def api_weekly_report(i_week):
-    date_range = model_manager.plus_week(i_week)
+    date_range = backend.dates.plus_week(i_week)
     app_names = model_manager.app_names()
     channels = dict()
     for x in get_ad_channels().split('\n'):
@@ -128,7 +129,7 @@ def api_weekly_report(i_week):
 # ================= methods ================
 
 def sync_remain_from_hive(date):
-    date = model_manager.get_date(date)
+    date = backend.dates.get_date(date)
     for app in model_manager.get_dist_apps():
         ids = [x.user_id for x in ChannelUser.objects.filter(app=app, remain=0,
                                                              created_at__range=(date, date + timedelta(1)))]
@@ -139,5 +140,5 @@ def sync_remain_from_hive(date):
 
 def sync_all_from_hive():
     for app in model_manager.get_dist_apps():
-        today = model_manager.today()
+        today = backend.dates.today()
         remains.remain_obj(ChannelUser, app.app_id, (today - timedelta(90), today))

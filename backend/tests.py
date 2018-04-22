@@ -6,18 +6,19 @@ from time import sleep
 
 from dj import times
 from django.db import connections
-from django.db.models import Count, Sum
+from django.db.models import Count, Sum, F
 from django.utils import timezone
 from django_rq import job
 from logzero import logger
 
 import backend.daily_stat
+import backend.dates
 import backend.stat_utils
-from backend import model_manager, api_helper, stats, zhiyue_models, zhiyue, remains
+from backend import model_manager, api_helper, stats, zhiyue_models, zhiyue, remains, cassandras, dates
 from backend.models import SnsGroupSplit, SnsGroup, SnsUser, SnsUserGroup, SnsTask, DistArticle, DistArticleStat, \
     ItemDeviceUser, App, AppDailyStat, User, UserDailyStat, OfflineUser, AppUser, UserDailyDeviceUser, PhoneDevice
 from backend.user_factory import sync_to_item_dev_user
-from backend.zhiyue_models import DeviceUser, CouponInst, CouponLog
+from backend.zhiyue_models import DeviceUser, CouponInst, CouponLog, ZhiyueUser
 
 
 def clean_finished():
@@ -297,7 +298,7 @@ def sync_all_remain(date=None):
 
 def sync_device_user(date):
     logger.info('同步用户数据')
-    from_date = model_manager.get_date(date)
+    from_date = backend.dates.get_date(date)
     create_range = (from_date, from_date + timedelta(days=1))
     found = False
     for app in model_manager.get_dist_apps():
@@ -318,14 +319,14 @@ def sync_device_user(date):
 
 
 def sync_bonus_test():
-    date = model_manager.today() - timedelta(days=5)
+    date = backend.dates.today() - timedelta(days=5)
     for app in App.objects.filter(offline=1):
         users = OfflineUser.objects.filter(app=app, created_at__gt=date)
         backend.daily_stat.save_bonus_info(app, users, until=date)
 
 
 def sync_user_stat(date):
-    from_date = model_manager.get_date(date)
+    from_date = backend.dates.get_date(date)
 
     reports = {x.user_id: x for x in UserDailyStat.objects.filter(report_date=from_date.strftime('%Y-%m-%d'))}
     changed = set()
@@ -385,7 +386,7 @@ def sync_app_data(date):
 
 def sync_high_value_user():
     with connections['partner_rw'].cursor() as cursor:
-        for val in DeviceUser.objects.using('zhiyue_rw').filter(createTime__gt=model_manager.today(),
+        for val in DeviceUser.objects.using('zhiyue_rw').filter(createTime__gt=backend.dates.today(),
                                                                 sourceUserId__gt=0).values(
             'sourceUserId', 'partnerId').annotate(total=Count('deviceUserId')):
             query = 'update datasystem_HighValueUser set appUserNum=%s where userId=%s and partnerId=%s ' \
@@ -417,15 +418,15 @@ def sync_high_value_user():
 
 
 def sync_zhongshan_online():
-    from_dt = model_manager.today() - timedelta(days=31)
+    from_dt = backend.dates.today() - timedelta(days=31)
     for app in [1564467, 1564465, 1564471]:
-        remains.remain_week_online(app_id=app, date_range=(from_dt, model_manager.today() - timedelta(days=2)))
+        remains.remain_week_online(app_id=app, date_range=(from_dt, backend.dates.today() - timedelta(days=2)))
 
 
 def sync_zhongshan_offline():
-    from_dt = model_manager.today() - timedelta(days=31)
+    from_dt = backend.dates.today() - timedelta(days=31)
     for app in [1564462, 1564463, 1564467, 1564465, 1564471]:
-        remains.remain_week_offline(app_id=app, date_range=(from_dt, model_manager.today() - timedelta(days=2)))
+        remains.remain_week_offline(app_id=app, date_range=(from_dt, backend.dates.today() - timedelta(days=2)))
 
 
 @job("default", timeout=3600 * 5)
@@ -475,3 +476,24 @@ def sync_rizhao_off(app_id=1564450):
                                             to_date=k + timedelta(days=14),
                                             device=False)
         OfflineUser.objects.filter(user_id__in=remain_ids).update(remain_14=1)
+
+
+def check_cassandra(app_id):
+    cql = 'insert into cassandra_onlineuser (partnerId, userId, onlinedate, firstup) values (%s,%s,%s,%s) if not exists'
+    query = 'select userId from cassandra_onlineuser where partnerId=%s and userId=%s and onlinedate=%s'
+
+    session = cassandras.get_session()
+
+    cnt = 0
+    for x in model_manager.query(ZhiyueUser).filter(
+            appId=app_id, createTime__gt=dates.today()).order_by('-lastActiveTime')[0:2000]:
+        rows = session.execute(query, (int(x.appId), x.userId, x.createTime.strftime('%Y-%m-%d')))
+        one = rows.one()
+        if not one:
+            rows = session.execute(cql, (int(x.appId), x.userId, x.createTime.strftime('%Y-%m-%d'), x.createTime))
+            r = rows.one()
+            if r.applied:
+                cnt += 1
+                print(app_id, x.userId)
+
+    print(app_id, cnt)
