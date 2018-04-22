@@ -250,6 +250,28 @@ class ShopCouponStatSum(models.Model):
     ownerId = models.IntegerField(primary_key=True)
     useNum = models.IntegerField()
     naNum = models.IntegerField()
+    memo = models.CharField(max_length=20)
+    remainDay = models.CharField(max_length=50)
+
+    @property
+    def json(self):
+        remain = self.remainDay
+        if remain:
+            s = remain.split(';')[0]
+            remain = int(s[2:]) if len(s) > 2 else 0
+        else:
+            remain = 0
+        return {
+            'name': '%s %s' % (self.ownerName, self.shopName),
+            'app_id': self.partnerId,
+            'date': self.useDate,
+            'owner_id': self.ownerId,
+            'total': self.useNum,
+            'na': self.naNum,
+            'remain': remain,
+            'memo': self.memo,
+            'ratio': '%s%%' % round(remain / self.useNum * 100)
+        }
 
     @staticmethod
     def db_name():

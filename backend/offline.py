@@ -46,6 +46,12 @@ def api_owner_remain(owner):
 
 
 @api_func_anonymous
+def api_owner_stat(app_id, date):
+    return [x.json for x in
+            model_manager.query(ShopCouponStatSum).filter(partnerId=app_id, useDate=date).order_by('-useNum')]
+
+
+@api_func_anonymous
 def api_daily_remain(request, all):
     """
     日留存情况
@@ -66,6 +72,7 @@ def api_daily_remain(request, all):
         cursor.execute(sql)
         rows = cursor.fetchall()
         return [{
+            'app_id': app_id,
             'app': app_names[app_id][:-3],
             'date': date,
             'total': total,
@@ -90,6 +97,12 @@ def api_owner_detail(owner, date):
         query = query.extra(where=['date(created_at) =\'%s\'' % date])
 
     return [x.json for x in query]
+
+
+@api_func_anonymous
+def api_owner_detail_stat(owner, app_id):
+    return [x.json for x in
+            model_manager.query(ShopCouponStatSum).filter(partnerId=app_id, ownerId=owner).order_by("-useDate")]
 
 
 @api_func_anonymous

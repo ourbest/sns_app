@@ -187,6 +187,8 @@ urlpatterns = [
     url(r'offline/owner/remain$', offline.api_owner_remain),
     url(r'offline/owner/detail$', offline.api_owner_detail),
     url(r'offline/owner/date$', offline.api_owner_date),
+    url(r'offline/owner/stat$', offline.api_owner_stat),
+    url(r'offline/owner/detail/stat$', offline.api_owner_detail_stat),
     url(r'offline/report$', offline.daily_report),
     url(r'offline/withdraw$', offline.api_cash_amount),
     url(r'offline/weekdays$', offline.api_weekdays),
