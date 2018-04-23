@@ -8,7 +8,7 @@ def get_date(date=None):
         return times.localtime(datetime.strptime(date[0:10], '%Y-%m-%d'))
 
     if not date:
-        return times.localtime(datetime.now().replace(hour=0, second=0, minute=0, microsecond=0))
+        return times.localtime(datetime.now()).replace(hour=0, second=0, minute=0, microsecond=0)
 
     else:
         return times.localtime(date).replace(hour=0, second=0, minute=0, microsecond=0)

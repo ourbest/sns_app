@@ -497,3 +497,10 @@ def check_cassandra(app_id):
                 print(app_id, x.userId)
 
     print(app_id, cnt)
+
+
+def get_remain_time():
+    user_ids = [x.user_id for x in OfflineUser.objects.filter(app_id=1564471, remain=1,
+                                                              created_at__range=(dates.yesterday(), dates.today()))]
+
+    cassandras.get_online_time(1564471, user_ids, dates.today())

@@ -29,3 +29,14 @@ def get_session():
     if cassandra_session is None:
         cassandra_session = get_cluster().connect("cutt")
     return cassandra_session
+
+
+def get_online_time(app_id, user_ids, date):
+    date_str = date if isinstance(date, str) else date.strftime('%Y-%m-%d')
+
+    session = get_session()
+    cql = 'select userid, firstup from cassandra_OnlineUser ' \
+          'where userId in (%s) and partnerId=%s and onlineDate=\'%s\'' \
+          % (','.join([str(x) for x in user_ids]), app_id, date_str)
+    rows = session.execute(cql)
+    return {x[0]: x[1] for x in rows}

@@ -7,7 +7,7 @@ from django.template.loader import render_to_string
 from django_rq import job
 from logzero import logger
 
-import backend.dates
+from backend import dates
 from backend import api_helper, model_manager, zhiyue
 from backend.models import OfflineUser, App, RuntimeData
 from backend.zhiyue_models import ShopCouponStatSum, UserRewardHistory, UserRewardGroundHistory, OfflineDailyStat
@@ -21,7 +21,7 @@ def api_owners(request):
     :return:
     """
     app = api_helper.get_session_app(request)
-    today = backend.dates.today()
+    today = dates.today()
     ret = [x for x in
            OfflineUser.objects.filter(app_id=app, created_at__lt=today - timedelta(days=1)).values('owner').annotate(
                total=Count('user_id'), remain=Sum('remain')) if x['total'] >= 30]
@@ -39,7 +39,7 @@ def api_owner_remain(owner):
     :param owner:
     :return:
     """
-    today = backend.dates.today()
+    today = dates.today()
     return OfflineUser.objects.filter(owner=owner,
                                       created_at__lt=today - timedelta(days=1)).values('owner').annotate(
         total=Count('user_id'),
@@ -129,7 +129,7 @@ def api_app_detail(request, date):
 
 @api_func_anonymous
 def get_coupon_at(date):
-    date = backend.dates.get_date(date)
+    date = dates.get_date(date)
     yesterday = date - timedelta(days=1)
     apps = {x.app_id: x.app_name for x in App.objects.filter(offline=1)}
 
@@ -188,13 +188,14 @@ def api_weekly_report(i_week=0):
     获取周报数据
     :return:
     """
-    this_week = backend.dates.current_week() if not i_week else backend.dates.plus_week(-i_week)
+    this_week = dates.current_week() if not i_week else dates.plus_week(-i_week)
     apps = {x.app_id: x.app_name for x in App.objects.all()}
     ret = list(OfflineDailyStat.objects.filter(stat_date__range=this_week).values(
         'app_id').annotate(total=Sum('user_num'),
                            amount=Sum('user_cost'),
                            remain=Sum('remain'),
                            bonus_num=Sum('user_bonus_num'),
+                           bonus_got=Sum('user_bonus_got'),
                            cash_num=Sum('user_cash_num'),
                            withdraw=Sum('bonus_cash')))
 
@@ -211,7 +212,7 @@ def api_cash_amount(from_date, to_date):
     :return:
     """
     if not from_date:
-        today = backend.dates.today()
+        today = dates.today()
         from_date = (today - timedelta(today.weekday())).strftime('%Y-%m-%d')
     else:
         from_date = from_date[:10]
@@ -235,9 +236,9 @@ def api_cash_amount(from_date, to_date):
 @api_func_anonymous
 def api_weekdays():
     return {
-        'current': backend.dates.to_str(backend.dates.current_week()),
-        'last': backend.dates.to_str(backend.dates.plus_week(-1)),
-        'last2': backend.dates.to_str(backend.dates.plus_week(-2)),
+        'current': dates.to_str(dates.current_week()),
+        'last': dates.to_str(dates.plus_week(-1)),
+        'last2': dates.to_str(dates.plus_week(-2)),
     }
 
 
@@ -250,11 +251,11 @@ def do_send_daily_report(send_mail=True):
     :param send_mail:
     :return:
     """
-    yesterday = backend.dates.yesterday()
+    yesterday = dates.yesterday()
 
     apps = {x.app_id: x.app_name for x in App.objects.filter(offline=1)}
 
-    sum = OfflineUser.objects.filter(created_at__range=(yesterday, backend.dates.today())).values('app_id').annotate(
+    sum = OfflineUser.objects.filter(created_at__range=(yesterday, dates.today())).values('app_id').annotate(
         total=Count('user_id'), view=Sum('bonus_view'), picked=Sum('bonus_pick'))
 
     for x in sum:
@@ -279,7 +280,7 @@ def do_send_daily_report(send_mail=True):
                               'yonghui.chen@cutt.com', '<p>'.join(htmls))
 
 
-def send_offline_detail(app_id, app_detail, prev_detail, date=backend.dates.yesterday(), send_mail=True):
+def send_offline_detail(app_id, app_detail, prev_detail, date=dates.yesterday(), send_mail=True):
     total_na = 0
     date_str = date.strftime('%Y-%m-%d')
     logger.info('Send offline detail at %s' % date_str)
@@ -332,7 +333,7 @@ def send_offline_detail(app_id, app_detail, prev_detail, date=backend.dates.yest
 
 
 @job
-def sync_bonus_data(date_range=(backend.dates.yesterday() - timedelta(days=30), backend.dates.yesterday()),
+def sync_bonus_data(date_range=(dates.yesterday() - timedelta(days=30), dates.yesterday()),
                     app_id=1564460):
     picked = model_manager.query(UserRewardGroundHistory).filter(createTime__range=date_range, type=1,
                                                                  amount__gt=0, partnerId=app_id)

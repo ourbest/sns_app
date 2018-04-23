@@ -156,3 +156,16 @@ def get_last_active_yesterday(app_id, ids):
     #                                                                     lastActiveTime__range=(
     #                                                                         model_manager.yesterday(),
     #                                                                         model_manager.today())).values('userId')]
+
+
+def get_remains_at(app_id, user_ids, date, hour):
+    """
+    获取用户在hour点的次日留存率
+    :param app_id
+    :param user_ids:
+    :param date:
+    :param hour:
+    :return:
+    """
+    pass
+
