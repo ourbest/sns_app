@@ -251,7 +251,7 @@ def do_send_daily_report(send_mail=True):
     :param send_mail:
     :return:
     """
-    yesterday = dates.yesterday()
+    yesterday = dates.yesterdday()
 
     apps = {x.app_id: x.app_name for x in App.objects.filter(offline=1)}
 
@@ -274,7 +274,8 @@ def do_send_daily_report(send_mail=True):
 
     htmls = list()
     for idx, value in enumerate(sum):
-        htmls.append(send_offline_detail(value['app_id'], value, sum_yesterday[idx], send_mail=send_mail))
+        htmls.append(send_offline_detail(value['app_id'], value, sum_yesterday[idx],
+                                         date=yesterday, send_mail=send_mail))
 
     api_helper.send_html_mail('%s地推详情汇总' % yesterday.strftime('%Y-%m-%d'),
                               'yonghui.chen@cutt.com', '<p>'.join(htmls))

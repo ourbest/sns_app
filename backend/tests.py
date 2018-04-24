@@ -16,7 +16,8 @@ import backend.dates
 import backend.stat_utils
 from backend import model_manager, api_helper, stats, zhiyue_models, zhiyue, remains, cassandras, dates
 from backend.models import SnsGroupSplit, SnsGroup, SnsUser, SnsUserGroup, SnsTask, DistArticle, DistArticleStat, \
-    ItemDeviceUser, App, AppDailyStat, User, UserDailyStat, OfflineUser, AppUser, UserDailyDeviceUser, PhoneDevice
+    ItemDeviceUser, App, AppDailyStat, User, UserDailyStat, OfflineUser, AppUser, UserDailyDeviceUser, PhoneDevice, \
+    ChannelUser
 from backend.user_factory import sync_to_item_dev_user
 from backend.zhiyue_models import DeviceUser, CouponInst, CouponLog, ZhiyueUser
 
@@ -499,8 +500,23 @@ def check_cassandra(app_id):
     print(app_id, cnt)
 
 
-def get_remain_time():
-    user_ids = [x.user_id for x in OfflineUser.objects.filter(app_id=1564471, remain=1,
-                                                              created_at__range=(dates.yesterday(), dates.today()))]
+def get_remain_time(app_id):
+    do_get_remain_time(OfflineUser, app_id)
+    do_get_remain_time(ItemDeviceUser, app_id)
+    do_get_remain_time(ChannelUser, app_id)
 
-    cassandras.get_online_time(1564471, user_ids, dates.today())
+
+def do_get_remain_time(obj, app_id):
+    yesterday = dates.yesterday() - timedelta(2)
+    user_ids = [x.user_id for x in obj.objects.filter(app_id=app_id, remain=1,
+                                                      created_at__range=(yesterday, yesterday + timedelta(1)))]
+    before_10 = 0
+    after_10 = 0
+    for k, v in cassandras.get_online_time(app_id, user_ids, yesterday + timedelta(1)).items():
+        if times.localtime(v).hour < 9:
+            before_10 += 1
+        else:
+            after_10 += 1
+
+    if user_ids:
+        print(before_10, after_10, before_10 / len(user_ids))
