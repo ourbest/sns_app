@@ -24,7 +24,7 @@ def api_owners(request):
     today = dates.today()
     ret = [x for x in
            OfflineUser.objects.filter(app_id=app, created_at__lt=today - timedelta(days=1)).values('owner').annotate(
-               total=Count('user_id'), remain=Sum('remain')) if x['total'] >= 30]
+               total=Count('user_id'), remain=Sum('remain'))]
     ids = [x['owner'] for x in ret]
     users = {x.userId: x.name for x in zhiyue.get_users(ids)}
     for x in ret:
