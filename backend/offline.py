@@ -190,14 +190,15 @@ def api_weekly_report(i_week=0):
     """
     this_week = dates.current_week() if not i_week else dates.plus_week(-i_week)
     apps = {x.app_id: x.app_name for x in App.objects.all()}
-    ret = list(OfflineDailyStat.objects.filter(stat_date__range=this_week).values(
-        'app_id').annotate(total=Sum('user_num'),
-                           amount=Sum('user_cost'),
-                           remain=Sum('remain'),
-                           bonus_num=Sum('user_bonus_num'),
-                           bonus_got=Sum('user_bonus_got'),
-                           cash_num=Sum('user_cash_num'),
-                           withdraw=Sum('bonus_cash')))
+    ret = list(
+        OfflineDailyStat.objects.filter(stat_date__range=dates.to_date_str_range(this_week)).values(
+            'app_id').annotate(total=Sum('user_num'),
+                               amount=Sum('user_cost'),
+                               remain=Sum('remain'),
+                               bonus_num=Sum('user_bonus_num'),
+                               bonus_got=Sum('user_bonus_got'),
+                               cash_num=Sum('user_cash_num'),
+                               withdraw=Sum('bonus_cash')))
 
     for x in ret:
         x['app'] = apps[x['app_id']][:-3]
@@ -251,7 +252,7 @@ def do_send_daily_report(send_mail=True):
     :param send_mail:
     :return:
     """
-    yesterday = dates.yesterdday()
+    yesterday = dates.yesterday()
 
     apps = {x.app_id: x.app_name for x in App.objects.filter(offline=1)}
 

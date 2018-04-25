@@ -43,3 +43,8 @@ def plus_week(delta):
 def to_str(week, format='%Y-%m-%d'):
     (from_dt, to_dt) = week
     return '%s - %s' % (from_dt.strftime(format), to_dt.strftime(format))
+
+
+def to_date_str_range(week, format='%Y-%m-%d'):
+    (from_dt, to_dt) = week
+    return from_dt.strftime(format), to_dt.strftime(format)
