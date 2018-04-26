@@ -344,3 +344,8 @@ def sync_bonus_data(date_range=(dates.yesterday() - timedelta(days=30), dates.ye
 
     for x in model_manager.query(UserRewardHistory).filter(userId__in=user_ids, source='GroundPush'):
         OfflineUser.objects.filter(user_id=x.userId).update(bonus_amount=x.amount, bonus_got=1, bonus_time=x.createTime)
+
+
+@api_func_anonymous
+def api_offline_app(request):
+    return model_manager.get_app(api_helper.get_session_app(request)).json
