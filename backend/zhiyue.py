@@ -375,7 +375,7 @@ def get_coupon_details(date, save):
         remain_rates[u['app_id']] = int(u['remain'] / u['total'] * 100)
 
     ret = [{'app_id': x['app_id'], 'app_name': apps[x['app_id']][:-3], 'today': x['total'],
-            'remain': '%s%%' % remain_rates[x['app_id']],
+            'remain': '%s%%' % remain_rates.get(x['app_id'], 0),
             'today_remain': '%s%%' % int(x['remain'] / x['total'] * 100),
             'open': x['viewed'],
             'picked': x['picked']} for x in query]

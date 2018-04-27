@@ -458,7 +458,7 @@ def import_test():
 
 
 def sync_rizhao():
-    coupons = model_manager.query(CouponInst).filter(partnerId=1564450, useDate__range=('2017-11-11', '2017-11-30'))
+    coupons = model_manager.query(CouponInst).filter(partnerId=1564469, useDate__range=('2018-04-26', '2018-04-28'))
     print('Total ', len(coupons))
     zhiyue.save_coupon_user(coupons)
 
