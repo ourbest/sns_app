@@ -174,7 +174,7 @@ class Robot:
                 if before:
                     if timezone.is_naive(before):
                         before = timezone.make_aware(before)
-                    time_diff = (now - before).total_seconds() - shortest
+                    time_diff = int((now - before).total_seconds()) - shortest
                 else:
                     time_diff = 0
 
