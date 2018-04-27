@@ -348,4 +348,5 @@ def sync_bonus_data(date_range=(dates.yesterday() - timedelta(days=30), dates.ye
 
 @api_func_anonymous
 def api_offline_app(request):
-    return model_manager.get_app(api_helper.get_session_app(request)).json
+    app = model_manager.get_app(api_helper.get_session_app(request))
+    return app.json if app else {}
