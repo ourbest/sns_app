@@ -437,7 +437,8 @@ def my_apply_log(request, i_size, i_page, keyword):
 
 @api_func_anonymous
 def my_pending_remove(ids):
-    SnsGroupSplit.objects.filter(pk__in=ids.split(';')).update(status=-1)
+    if ids:
+        SnsGroupSplit.objects.filter(pk__in=ids.split(';')).update(status=-1)
     return 'ok'
 
 
