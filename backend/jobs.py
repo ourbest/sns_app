@@ -718,13 +718,13 @@ def do_gen_daily_report():
 
 
 @job
-def make_weekly_stat():
+def make_weekly_stat(to_date=datetime.now() - timedelta(days=2)):
     """
     周日到周六的数据，周一跑
     :return:
     """
-    to_date = (datetime.now() - timedelta(days=2)).strftime('%Y-%m-%d')
-    from_date = (datetime.now() - timedelta(days=8)).strftime('%Y-%m-%d')
+    from_date = (to_date - timedelta(days=6)).strftime('%Y-%m-%d')
+    to_date = to_date.strftime('%Y-%m-%d')
     # to_date_1 = (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d')
     # from_date_1 = (datetime.now() - timedelta(days=7)).strftime('%Y-%m-%d')
     values = list(AppDailyStat.objects.filter(report_date__range=(from_date, to_date)).values(
@@ -771,10 +771,10 @@ def make_weekly_stat():
 
 
 @job
-def send_stat_mail():
+def send_stat_mail(to_date=datetime.now() - timedelta(days=2)):
     data = []
-    from_str = (datetime.now() - timedelta(days=8)).strftime('%Y-%m-%d')
-    to_str = (datetime.now() - timedelta(days=2)).strftime('%Y-%m-%d')
+    from_str = (to_date - timedelta(days=6)).strftime('%Y-%m-%d')
+    to_str = to_date.strftime('%Y-%m-%d')
     time_range = '{} 到 {}'.format(from_str, to_str)
     for app in model_manager.get_dist_apps():
         best = '''

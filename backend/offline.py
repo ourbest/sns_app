@@ -275,7 +275,7 @@ def do_send_daily_report(send_mail=True):
 
     htmls = list()
     for idx, value in enumerate(sum):
-        htmls.append(send_offline_detail(value['app_id'], value, sum_yesterday[idx],
+        htmls.append(send_offline_detail(value['app_id'], value, sum_yesterday.get(idx, dict()),
                                          date=yesterday, send_mail=send_mail))
 
     api_helper.send_html_mail('%s地推详情汇总' % yesterday.strftime('%Y-%m-%d'),

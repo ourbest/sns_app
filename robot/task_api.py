@@ -21,7 +21,7 @@ def get_task_api(request):
         elif check == -1:
             task.status = -1
             task.result = '超时'
-            task.save()
+            update_task(task)
 
             device = task.device
             user = device.owner
@@ -73,7 +73,7 @@ def get_apply_content(task):
     else:
         task.status = -1
         task.result = '无群号'
-        task.save()
+        update_task(task)
         return None
 
     # 任务类型 客户端 帐号 密码 群号
@@ -94,7 +94,7 @@ def get_search_content(task):
     if not search:
         task.status = -1
         task.result = '无搜索词'
-        task.save()
+        update_task(task)
         return None
 
     models_manager.update_search(search=search)
@@ -135,13 +135,13 @@ def task_result_api(request):
             result = post.get('result')
             if result:
                 task.result = result
-            task.save()
+            update_task(task)
         elif status == '-1' or status == '-2':
             task.status = int(status)
             result = post.get('result')
             if result:
                 task.result = result
-            task.save()
+            update_task(task)
 
             if result and re.search('帐号被封', result):
                 msg = '托管任务(QQ%s)：%s' % (task.sns_user.login_name if task.sns_user else '', result)
@@ -176,7 +176,7 @@ def search_result(request, task):
         else:
             result = '1/' + str(group_user_count)
         task.result = result
-        task.save()
+        update_task(task)
 
 
 def apply_result(request, task):
@@ -207,12 +207,12 @@ def apply_result(request, task):
         elif apply_ret == '5':
             update_sns_group_split_status(group, task.device, 3)
             task.result = group
-            task.save()
+            update_task(task)
 
         elif apply_ret == '6' or apply_ret == '9':
             update_sns_group_split_status(group, task.device, 0)
             task.result = '加群受限'
-            task.save()
+            update_task(task)
 
             robot = Robot(user=task.device.owner)
             models_manager.update_operation_sns_user(task.sns_user, today_apply=robot.config.max_num_of_apply)
@@ -220,7 +220,7 @@ def apply_result(request, task):
         elif apply_ret == '8':
             update_sns_group_split_status(group, task.device, 2)
             task.result = group
-            task.save()
+            update_task(task)
         else:
             raise ValueError('error apply_ret=' + apply_ret)
     else:
@@ -229,3 +229,10 @@ def apply_result(request, task):
 
 def update_sns_group_split_status(group_id, device, status):
     SnsGroupSplit.objects.filter(group_id=group_id, phone=device).update(status=status)
+
+
+def update_task(task):
+    try:
+        task.save()
+    except:
+        pass
