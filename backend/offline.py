@@ -261,6 +261,7 @@ def do_send_daily_report(send_mail=True):
 
     for x in sum:
         x['app'] = apps[x['app_id']]
+        x['rate'] = x['picked'] / x['total'] * 100
 
     sum_yesterday = OfflineUser.objects.filter(created_at__range=(yesterday - timedelta(days=1),
                                                                   yesterday)).values('app_id').annotate(

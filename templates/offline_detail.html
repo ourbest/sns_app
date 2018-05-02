@@ -3,6 +3,10 @@
 <html>
 <body>
 <h3>{{ yesterday.app }}昨日扫码情况</h3>
+{% if item.rate < 60 %}
+    <div><span style="color:red; font-weight: bold">注意，红包领取率太低，请加强红包介绍培训！</span>红包将在扫码后弹出，请告知
+    用户领取，连续3天登录都可以领取一个随机红包，所有提示的红包领取完之后，领取到的红包将存放到余额中，即可取现。</div>
+{% endif %}
 <table width="100%" border="1" style="border-collapse: collapse; text-align: center" cellpadding="5">
     <tr>
         <th>扫码量</th>
@@ -11,10 +15,6 @@
     <tr>
         <th>质量评分</th>
         <td>{{ yesterday.na }}</td>
-    </tr>
-    <tr>
-        <th>红包查看数</th>
-        <td>{{ yesterday.view }} ({% rate yesterday.view yesterday.total 100 2 %})</td>
     </tr>
     <tr>
         <th>红包领取数</th>
@@ -37,7 +37,7 @@
         <tr>
             <th align="left">{{ item.ownerName }} {{ item.shopName }}</th>
             <td>{{ item.useNum }}</td>
-            <td>{{ item.pick }}</td>
+            <td>{{ item.pick }} ({% rate item.pick item.useNum 100 2 %})</td>
             <td{% if item.rate < 20 %} style="color: red"{% endif %}>{{ item.rate }}</td>
         </tr>
     {% endfor %}
