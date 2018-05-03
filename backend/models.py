@@ -819,3 +819,33 @@ class ChannelUser(models.Model):
             'ip': self.ip,
             'city': self.city,
         }
+
+
+class ShareUser(models.Model):
+    """
+    分享活动带来的新增
+    """
+    user_id = models.BigIntegerField(primary_key=True)
+    app = models.ForeignKey(App, on_delete=CASCADE)
+    referer_id = models.BigIntegerField('分享人', db_index=True)
+    created_at = models.DateTimeField()
+    remain = models.IntegerField(default=0)
+    ip = models.CharField(max_length=20, default='')
+    city = models.CharField(max_length=50, default='')
+    location = models.CharField(max_length=100, default='', null=True)
+    remain_7 = models.IntegerField(default=0)
+    remain_14 = models.IntegerField(default=0)
+    enrolled = models.IntegerField(default=0)
+
+    @property
+    def json(self):
+        return {
+            'user_id': self.user_id,
+            'remain': self.remain,
+            'referer_id': self.referer_id,
+            'location': self.location,
+            'created_at': self.created_at.strftime('%Y-%m-%d %H:%M'),
+            'app_id': self.app_id,
+            'ip': self.ip,
+            'city': self.city,
+        }

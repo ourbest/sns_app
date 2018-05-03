@@ -448,3 +448,32 @@ class UserRewardGroundHistory(models.Model):
     class Meta:
         db_table = 'partner_UserRewardGroundHistory'
         managed = False
+
+
+class ShareEventStat(models.Model):
+    partnerId = models.BigIntegerField()
+    userId = models.BigIntegerField(primary_key=True)
+    statDate = models.CharField(max_length=20)
+    amount = models.IntegerField()
+
+    @staticmethod
+    def db_name():
+        return 'cms'
+
+    class Meta:
+        db_table = 'partner_ShareEventStat'
+        managed = False
+
+
+class ShareRewardEvent(models.Model):
+    partnerId = models.BigIntegerField()
+    userId = models.BigIntegerField(primary_key=True)
+    createTime = models.DateTimeField()
+
+    @staticmethod
+    def db_name():
+        return 'cms'
+
+    class Meta:
+        db_table = 'partner_ShareRewardEvent'
+        managed = False

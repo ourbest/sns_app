@@ -13,7 +13,7 @@ from logzero import logger
 
 import backend.dates
 import backend.stat_utils
-from backend import api_helper, model_manager, stat_utils, hives, remains, cassandras
+from backend import api_helper, model_manager, stat_utils, hives, remains, cassandras, shares
 from backend.api_helper import get_session_app
 from backend.daily_stat import make_daily_remain, save_bonus_info, make_offline_stat, \
     do_offline_stat
@@ -632,6 +632,7 @@ def sync_device_user():
                 save_coupon_user(coupons, saved)
 
         sync_channel_user_in_minutes(0)
+        shares.sync_user(from_date, stat_date)
 
         # 获取领红包信息
     save_bonus_info(backend.dates.today())
@@ -654,6 +655,7 @@ def sync_remain():
     remains.sync_remain_offline_rt()
     remains.sync_remain_online_rt()
     remains.sync_remain_channel_rt()
+    remains.sync_remain_share_rt()
 
 
 def sync_online_remain(date=0):

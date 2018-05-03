@@ -4,7 +4,7 @@ from datetime import timedelta
 from logzero import logger
 
 from backend import model_manager, hives, cassandras, dates
-from backend.models import OfflineUser, ItemDeviceUser, ChannelUser
+from backend.models import OfflineUser, ItemDeviceUser, ChannelUser, ShareUser
 
 
 def remain_week_online(app_id=1564460, date_range=(dates.today() - timedelta(days=14),
@@ -98,6 +98,10 @@ def sync_remain_week_today():
     pass
 
 
+def sync_remain_share_rt():
+    sync_remain_rt(ShareUser)
+
+
 def sync_remain_online_rt():
     sync_remain_rt(ItemDeviceUser)
 
@@ -168,4 +172,3 @@ def get_remains_at(app_id, user_ids, date, hour):
     :return:
     """
     pass
-
