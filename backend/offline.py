@@ -267,8 +267,10 @@ def do_send_daily_report(send_mail=True):
                                                                   yesterday)).values('app_id').annotate(
         total=Count('user_id'), remain=Sum('remain'), picked=Sum('bonus_pick'))
 
+    app_yesterday = dict()
     for x in sum_yesterday:
         x['app'] = apps[x['app_id']]
+        app_yesterday[x['app_id']] = x
 
     html = render_to_string('offline_daily.html', {'sum': sum, 'sum_yesterday': sum_yesterday})
     if send_mail:
@@ -276,7 +278,7 @@ def do_send_daily_report(send_mail=True):
 
     htmls = list()
     for idx, value in enumerate(sum):
-        htmls.append(send_offline_detail(value['app_id'], value, sum_yesterday.get(idx, dict()),
+        htmls.append(send_offline_detail(value['app_id'], value, app_yesterday.get(value['app_id'], dict()),
                                          date=yesterday, send_mail=send_mail))
 
     api_helper.send_html_mail('%s地推详情汇总' % yesterday.strftime('%Y-%m-%d'),
