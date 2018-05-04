@@ -13,6 +13,24 @@ from backend.zhiyue_models import DeviceUser, ShareRewardEvent
 
 
 @api_func_anonymous
+def api_share_stat_weekly(date):
+    from_date = dates.get_date(date)
+    to_date = from_date + timedelta(7)
+    result = ShareUser.objects.filter(created_at__range=(from_date, to_date),
+                                      enrolled=1).values(
+        'app_id').annotate(referer=Count('referer_id', distinct=True),
+                           users=Count('user_id'), remain=Sum('remain'))
+
+    apps = {x.app_id: x.app_name for x in model_manager.get_dist_apps()}
+    return [{
+        'app_name': apps[x['app_id']],
+        'referer': x['referer'],
+        'users': x['users'],
+        'remain': x['remain'],
+    } for x in result]
+
+
+@api_func_anonymous
 def api_share_stat():
     result = ShareUser.objects.filter(created_at__gt=dates.today() - timedelta(14),
                                       enrolled=1).values(

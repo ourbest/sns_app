@@ -219,5 +219,6 @@ urlpatterns = [
 
     # shares
     url(r'shares/stat$', shares.api_share_stat),
+    url(r'shares/weekly$', shares.api_share_stat_weekly),
     url(r'shares/details$', shares.api_stat_details),
 ]
