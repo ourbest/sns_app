@@ -168,7 +168,7 @@ FILE_UPLOAD_HANDLERS = ["django.core.files.uploadhandler.TemporaryFileUploadHand
 EMAIL_HOST = 'smtp.mxhichina.com'
 EMAIL_HOST_USER = 'yonghui.chen@cutt.com'
 
-JS_VER = '974342565e66b8ee5a24'
+JS_VER = 'a8de6a8e41fa30614962'
 QINIU_URL = 'http://jwres.cutt.com/'
 
 DEFAULT_CHARSET = 'utf-8'
