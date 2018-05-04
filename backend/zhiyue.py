@@ -18,7 +18,7 @@ from backend.api_helper import get_session_app
 from backend.daily_stat import make_daily_remain, save_bonus_info, make_offline_stat, \
     do_offline_stat
 from backend.models import AppUser, AppDailyStat, UserDailyStat, App, DailyActive, ItemDeviceUser, UserDailyDeviceUser, \
-    User, OfflineUser, ChannelUser
+    User, OfflineUser, ChannelUser, ShareUser
 from backend.user_factory import sync_to_channel_user, sync_to_item_dev_user
 from backend.zhiyue_models import ShareArticleLog, ClipItem, WeizhanCount, AdminPartnerUser, CouponInst, ItemMore, \
     ZhiyueUser, AppConstants, CouponDailyStatInfo, OfflineDailyStat, DeviceUser, \
@@ -470,6 +470,7 @@ def sync_recent_user():
     sync_online_remain()
     sync_offline_remain()
     sync_channel_remain()
+    _sync_remain(ShareUser)
 
 
 @job
@@ -506,6 +507,7 @@ def sync_user_in_minutes(minutes):
                                                              useDate__gt=timezone.now() - timedelta(minutes=minutes))
             save_coupon_user(coupons)
 
+        shares.sync_user(timezone.now() - timedelta(minutes=minutes), timezone.now())
         sync_channel_user_in_minutes(minutes)
 
 

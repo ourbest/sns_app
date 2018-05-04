@@ -1,6 +1,6 @@
 from django.conf.urls import url
 
-from backend import apis, users, zhiyue, tasks, daemons, bot_apis, stats, exts, kpi, offline, online, channels
+from backend import apis, users, zhiyue, tasks, daemons, bot_apis, stats, exts, kpi, offline, online, channels, shares
 
 app_name = 'backend'
 urlpatterns = [
@@ -216,4 +216,8 @@ urlpatterns = [
     url(r'channels/config$', channels.api_get_ad_channels),
     url(r'channels/weekly$', channels.api_weekly_report),
     url(r'channels/config/save$', channels.api_set_ad_channels),
+
+    # shares
+    url(r'shares/stat$', shares.api_share_stat),
+    url(r'shares/details$', shares.api_stat_details),
 ]

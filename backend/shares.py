@@ -1,11 +1,41 @@
 """
 分享活动的处理
 """
+from datetime import timedelta
+from dj.utils import api_func_anonymous
+from django.db.models import Count, Sum, DateField
+from django.db.models.functions import Cast
 from django_rq import job
 
-from backend import model_manager, user_factory, remains, dates
+from backend import model_manager, user_factory, remains, dates, api_helper
 from backend.models import ShareUser
 from backend.zhiyue_models import DeviceUser, ShareRewardEvent
+
+
+@api_func_anonymous
+def api_share_stat():
+    result = ShareUser.objects.filter(created_at__gt=dates.today() - timedelta(14),
+                                      enrolled=1).values(
+        'app_id').annotate(referer=Count('referer_id', distinct=True),
+                           users=Count('user_id'), remain=Sum('remain'),
+                           date=Cast('created_at', DateField())).order_by("-date")
+
+    apps = {x.app_id: x.app_name for x in model_manager.get_dist_apps()}
+    return [{
+        'app_name': apps[x['app_id']],
+        'referer': x['referer'],
+        'users': x['users'],
+        'remain': x['remain'],
+        'date': x['date'].strftime('%Y-%m-%d')
+    } for x in result]
+
+
+@api_func_anonymous
+def api_stat_details(request, date):
+    from_date = dates.get_date(date)
+    to_date = from_date + timedelta(1)
+    app = api_helper.get_session_app(request)
+    return [x.json for x in ShareUser.objects.filter(app_id=app, created_at__range=(from_date, to_date), enrolled=1)]
 
 
 @job
