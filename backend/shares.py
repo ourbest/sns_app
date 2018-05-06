@@ -23,7 +23,7 @@ def api_share_stat_weekly(date):
 
     apps = {x.app_id: x.app_name for x in model_manager.get_dist_apps()}
     return [{
-        'app_name': apps[x['app_id']],
+        'app_name': apps[x['app_id']][:-3],
         'referer': x['referer'],
         'users': x['users'],
         'remain': x['remain'],
@@ -40,7 +40,7 @@ def api_share_stat():
 
     apps = {x.app_id: x.app_name for x in model_manager.get_dist_apps()}
     return [{
-        'app_name': apps[x['app_id']],
+        'app_name': apps[x['app_id']][:-3],
         'referer': x['referer'],
         'users': x['users'],
         'remain': x['remain'],

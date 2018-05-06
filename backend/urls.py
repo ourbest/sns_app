@@ -1,6 +1,7 @@
 from django.conf.urls import url
 
-from backend import apis, users, zhiyue, tasks, daemons, bot_apis, stats, exts, kpi, offline, online, channels, shares
+from backend import apis, users, zhiyue, tasks, daemons, bot_apis, stats, exts, kpi, offline, online, channels, shares, \
+    onlines
 
 app_name = 'backend'
 urlpatterns = [
@@ -221,4 +222,9 @@ urlpatterns = [
     url(r'shares/stat$', shares.api_share_stat),
     url(r'shares/weekly$', shares.api_share_stat_weekly),
     url(r'shares/details$', shares.api_stat_details),
+
+    # onlines
+    url(r'onlines/stat$', onlines.api_stat),
+    url(r'onlines/today$', onlines.api_today),
+    url(r'onlines/weekly$', onlines.api_weekly),
 ]

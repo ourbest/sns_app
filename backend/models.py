@@ -534,6 +534,17 @@ class AppDailyStat(models.Model):
     qq_remain = models.IntegerField('次日留存数', default=0)
     wx_remain = models.IntegerField('次日留存数', default=0)
 
+    @property
+    def json(self):
+        return {
+            'app_name': self.app.app_name[:-3],
+            'app_id': self.app_id,
+            'pv': self.qq_pv + self.wx_pv,
+            'users': self.qq_install + self.wx_install,
+            'remain': self.qq_remain + self.wx_remain,
+            'report_date': self.report_date,
+        }
+
 
 class DeviceTaskData(models.Model):
     """

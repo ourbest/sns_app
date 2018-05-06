@@ -16,7 +16,7 @@ from logzero import logger
 from qiniu import Auth, put_file
 
 import backend.stat_utils
-from backend import api_helper, model_manager, group_splitter, zhiyue, stat_utils, caches
+from backend import api_helper, model_manager, group_splitter, zhiyue, stat_utils, caches, dates
 from backend.api_helper import ADD_STATUS, deal_add_result, deal_dist_result
 from backend.model_manager import save_ignore
 from backend.models import DeviceFile, SnsUser, SnsGroup, SnsUserGroup, SnsApplyTaskLog, SnsGroupSplit, WxDistLog, \
@@ -462,10 +462,8 @@ def to_loc(x):
 
 
 @job
-def do_daily_stat(date):
-    date = times.localtime(
-        datetime.now().replace(hour=0, second=0,
-                               minute=0, microsecond=0) if not date else datetime.strptime(date, '%Y-%m-%d'))
+def do_daily_stat(date, resource=True):
+    date = dates.yesterday() if not date else datetime.strptime(date, '%Y-%m-%d')
 
     for app in model_manager.get_dist_apps():
         stat = backend.stat_utils.app_daily_stat(app.app_id, date, include_sum=True)
@@ -487,7 +485,8 @@ def do_daily_stat(date):
                              qq_down=qs['download'], wx_down=ws['download'],
                              qq_install=qs['users'], wx_install=ws['users']).save()
 
-    make_resource_stat()
+    if resource:
+        make_resource_stat()
 
 
 def make_resource_stat():

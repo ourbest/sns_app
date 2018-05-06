@@ -1,17 +1,13 @@
 import re
 from datetime import timedelta, datetime
-from functools import lru_cache
-
 from dj.utils import api_func_anonymous
 from django.db import connection
 from django.db.models import Count, Sum
 from django.shortcuts import render
-from math import radians, sin, atan2, sqrt, cos
-
 from logzero import logger
 
 import backend.dates
-from backend import api_helper, model_manager, caches, jobs
+from backend import api_helper, model_manager, jobs
 from backend.models import ItemDeviceUser
 from backend.zhiyue_models import ZhiyueUser, DeviceUser, WeizhanItemView
 
