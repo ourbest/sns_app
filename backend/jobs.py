@@ -473,24 +473,50 @@ def do_daily_stat(date, resource=True):
         for index, qs in enumerate(qq_stat):
             if qs['uid']:
                 ws = wx_stat[index]
-                UserDailyStat(report_date=date.strftime('%Y-%m-%d'),
-                              app=app, user_id=qs['uid'],
-                              qq_pv=qs['weizhan'], wx_pv=ws['weizhan'],
-                              qq_down=qs['download'], wx_down=ws['download'],
-                              qq_install=qs['users'], wx_install=ws['users']).save()
+
+                UserDailyStat.objects.filter(report_date=date.strftime('%Y-%m-%d'), app=app,
+                                             user_id=qs['uid']).delete()
+
+                db = UserDailyStat.objects.filter(report_date=date.strftime('%Y-%m-%d'), app=app,
+                                                  user_id=qs['uid']).first()
+
+                if not db:
+                    db = UserDailyStat(report_date=date.strftime('%Y-%m-%d'), app=app, user_id=qs['uid'],
+                                       qq_pv=qs['weizhan'], wx_pv=ws['weizhan'], qq_down=qs['download'],
+                                       wx_down=ws['download'], qq_install=qs['users'], wx_install=ws['users'])
+                    db.save()
+                else:
+                    db.qq_pv = qs['weizhan']
+                    db.wx_pv = ws['weizhan']
+                    db.qq_down = qs['download']
+                    db.wx_down = ws['download']
+                    db.qq_install = qs['users']
+                    db.wx_install = ws['users']
+                    model_manager.save_ignore(db)
             else:
                 ws = wx_stat[index]
-                AppDailyStat(report_date=date.strftime('%Y-%m-%d'), app=app,
-                             qq_pv=qs['weizhan'], wx_pv=ws['weizhan'],
-                             qq_down=qs['download'], wx_down=ws['download'],
-                             qq_install=qs['users'], wx_install=ws['users']).save()
+                db = AppDailyStat.objects.filter(report_date=date.strftime('%Y-%m-%d'), app=app).first()
+                if not db:
+                    db = AppDailyStat(report_date=date.strftime('%Y-%m-%d'), app=app,
+                                      qq_pv=qs['weizhan'], wx_pv=ws['weizhan'],
+                                      qq_down=qs['download'], wx_down=ws['download'],
+                                      qq_install=qs['users'], wx_install=ws['users'])
+                    db.save()
+                else:
+                    db.qq_pv = qs['weizhan']
+                    db.wx_pv = ws['weizhan']
+                    db.qq_down = qs['download']
+                    db.wx_down = ws['download']
+                    db.qq_install = qs['users']
+                    db.wx_install = ws['users']
+                    model_manager.save_ignore(db)
 
     if resource:
-        make_resource_stat()
+        make_resource_stat(date + timedelta(1))
 
 
-def make_resource_stat():
-    today = times.localtime(datetime.now().replace(hour=0, minute=0, second=0, microsecond=0))
+def make_resource_stat(today):
+    # today = times.localtime(datetime.now().replace(hour=0, minute=0, second=0, microsecond=0))
     today_range = (today - timedelta(days=1), today)
     for app in App.objects.filter(stage__in=('留守期', '分发期', '准备期')):
         # 记录资源的情况
@@ -513,7 +539,8 @@ def make_resource_stat():
             qq_cnt = SnsTask.objects.filter(creator=user, status=2, started_at__range=today_range, type=3).count()
             wx_cnt = SnsTask.objects.filter(creator=user, status=2, started_at__range=today_range, type=5).count()
 
-            s = UserDailyResourceStat(app=app, user=user, qq_cnt=qq_cnt, wx_cnt=wx_cnt,
+            UserDailyResourceStat.objects.filter(app=app, user=user, stat_date=today).delete()
+            s = UserDailyResourceStat(app=app, stat_date=today, user=user, qq_cnt=qq_cnt, wx_cnt=wx_cnt,
                                       phone_cnt=user.phonedevice_set.filter(status=0).count(),
                                       qq_acc_cnt=user.snsuser_set.filter(status=0).count(),
                                       qq_group_cnt=group_cnt, qq_uniq_group_cnt=group_uniq_cnt,
@@ -530,7 +557,8 @@ def make_resource_stat():
         wx_uniq_cnt = DeviceWeixinGroup.objects.filter(device__owner__app=app).values('name').distinct().count()
         wx_group_cnt = DeviceWeixinGroup.objects.filter(device__owner__app=app).count()
 
-        s = AppDailyResourceStat(app=app, qq_cnt=0, wx_cnt=0, phone_cnt=0, qq_acc_cnt=0,
+        AppDailyResourceStat.objects.filter(app=app, stat_date=today).delete()
+        s = AppDailyResourceStat(app=app, stat_date=today, qq_cnt=0, wx_cnt=0, phone_cnt=0, qq_acc_cnt=0,
                                  qq_group_cnt=group_cnt, qq_uniq_group_cnt=group_uniq_cnt, qq_group_new_cnt=group_new,
                                  wx_group_cnt=wx_group_cnt, wx_uniq_group_cnt=wx_uniq_cnt, qq_group_total=group_total,
                                  qq_apply_cnt=0, qq_lost_cnt=0, wx_lost_cnt=0)
