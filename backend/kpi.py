@@ -1,4 +1,5 @@
 from dj.utils import api_func_anonymous
+from logzero import logger
 
 from backend import api_helper, model_manager
 from backend.models import KPIPeriod, UserDailyStat, AppDailyStat
@@ -63,15 +64,16 @@ def get_kpi(app_id, period=None):
         }
 
     rows = []
+    rows_dict = dict()
     users = dict()
     for x in UserDailyStat.objects.filter(report_date__range=(period.from_date, period.to_date),
                                           app_id=app_id, user__status=0).order_by('report_date'):
-        if len(rows) == 0 or rows[-1]['date'] != x.report_date:
-            rows.append({
-                'date': x.report_date
-            })
+        if x.report_date not in rows_dict:
+            the_row = {'date': x.report_date}
+            rows.append(the_row)
+            rows_dict[x.report_date] = the_row
 
-        the_row = rows[-1]
+        the_row = rows_dict[x.report_date]
         the_row['pv_%s' % x.user_id] = x.qq_pv + x.wx_pv
         the_row['users_%s' % x.user_id] = x.qq_install + x.wx_install
         the_row['remain_%s' % x.user_id] = x.qq_remain + x.wx_remain
@@ -80,7 +82,9 @@ def get_kpi(app_id, period=None):
 
     for idx, x in enumerate(AppDailyStat.objects.filter(report_date__range=(period.from_date, period.to_date),
                                                         app_id=app_id).order_by('report_date')):
-        the_row = rows[idx]
+        the_row = rows_dict.get(x.report_date)
+        if the_row is None:
+            logger.warn('error get row %s' % the_row.report_date)
         the_row['pv'] = x.wx_pv + x.qq_pv
         the_row['users'] = x.qq_install + x.wx_install
         the_row['remain'] = x.qq_remain + x.wx_remain

@@ -172,6 +172,7 @@ def save_bonus_info(until=backend.dates.yesterday()):
 @job
 def make_offline_stat(the_date):
     stat_date = datetime.now()
+    logger.info('补红包数字%s' % the_date)
 
     if not the_date:
         the_date = 'current_date'
@@ -286,7 +287,7 @@ def do_offline_stat(the_date):
         for [app_id, cnt] in rows:
             try:
                 OfflineDailyStat(app_id=app_id, stat_date=date_str, user_num=cnt).save()
-                save_bonus_daily_stat()
+                # save_bonus_daily_stat()
             except:
                 pass
 
