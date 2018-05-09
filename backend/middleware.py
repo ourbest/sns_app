@@ -2,6 +2,9 @@ import logging
 
 from django.http import JsonResponse
 from django.utils import timezone
+from raven.contrib.django.raven_compat.models import client
+
+from backend import api_helper
 
 logger = logging.getLogger("django")
 
@@ -29,6 +32,10 @@ def logger_middleware(get_response):
 
         ua = request.META.get('user-agent')
 
+        client.context.merge({'user': {
+            'email': api_helper.get_session_user(request),
+        }})
+
         try:
             if seconds > 60:
                 logger.error("API %s latency is %s, check it", request.path_info, seconds)
@@ -36,8 +43,8 @@ def logger_middleware(get_response):
             if isinstance(response, JsonResponse):
                 logger.info(
                     "process request from: {0}, to: {1}, post_data: {2}, response_data: {3}, latency: {4}, ua: {5}"
-                    .format(ip, request.path_info, request.POST, response.content.decode('unicode_escape'),
-                            seconds, ua))
+                        .format(ip, request.path_info, request.POST, response.content.decode('unicode_escape'),
+                                seconds, ua))
             else:
                 logger.info("process request from: {0}, to: {1}, post_data: {2}, "
                             "response_http_code: {3}, latency: {4}, ua: {5}"
