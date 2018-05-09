@@ -590,7 +590,7 @@ def save_coupon_user(coupons, saved=None):
             model_manager.save_ignore(offline_user)
 
 
-@job
+@job('default', timeout=3600)
 def sync_device_user():
     logger.info('同步用户数据')
     stat_date = datetime.now()
@@ -642,6 +642,7 @@ def sync_device_user():
     sync_remain()
 
 
+@job
 def sync_remain():
     logger.info('同步留存数据')
     to_time = datetime.now()
@@ -654,10 +655,10 @@ def sync_remain():
         if app.offline:
             _sync_app_remain(OfflineUser, app, -1)
 
-    remains.sync_remain_offline_rt()
-    remains.sync_remain_online_rt()
-    remains.sync_remain_channel_rt()
-    remains.sync_remain_share_rt()
+    remains.sync_remain_offline_rt.delay()
+    remains.sync_remain_online_rt.delay()
+    remains.sync_remain_channel_rt.delay()
+    remains.sync_remain_share_rt.delay()
 
 
 def sync_online_remain(date=0):

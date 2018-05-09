@@ -1,5 +1,6 @@
 from collections import defaultdict
 from datetime import timedelta
+from django_rq import job
 
 from logzero import logger
 
@@ -98,10 +99,12 @@ def sync_remain_week_today():
     pass
 
 
+@job
 def sync_remain_share_rt():
     sync_remain_rt(ShareUser)
 
 
+@job
 def sync_remain_online_rt():
     sync_remain_rt(ItemDeviceUser)
 
@@ -115,6 +118,7 @@ def sync_remain_online_rt():
     # ItemDeviceUser.objects.filter(user_id__in=get_last_active_yesterday(user_ids)).update(remain_14=1)
 
 
+@job
 def sync_remain_offline_rt():
     """
     同步地推7日留存数据
@@ -123,6 +127,7 @@ def sync_remain_offline_rt():
     sync_remain_rt(OfflineUser)
 
 
+@job
 def sync_remain_channel_rt():
     sync_remain_rt(ChannelUser)
 
