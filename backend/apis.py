@@ -1306,7 +1306,7 @@ def update_task_status(device_task_id, i_status):
     db = SnsTaskDevice.objects.filter(pk=device_task_id).first()
     if db and db.status != i_status:
         db.status = i_status
-        db.save()
+        model_manager.save_ignore(db)
         task_manager.reload_next_task(db.device.label)
         model_manager.check_task_status(db.task)
 
