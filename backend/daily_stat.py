@@ -184,11 +184,11 @@ def make_offline_stat(the_date):
     ids = ','.join([str(x) for x in apps.keys()])
 
     # 补红包打开数字
-    bonus_query = '''
-    select partnerId, count(*) from pojo_ZhiyueUser u, partner_UserRewardHistory c 
-    where u.createTime between %s - interval 2 day and %s - interval 1 day
-    and u.userId = c.userId and partnerId in (%s) and c.source='groundPush' group by partnerId
-    ''' % (the_date, the_date, ids)
+    # bonus_query = '''
+    # select partnerId, count(*) from pojo_ZhiyueUser u, partner_UserRewardHistory c
+    # where u.createTime between %s - interval 2 day and %s - interval 1 day
+    # and u.userId = c.userId and partnerId in (%s) and c.source='groundPush' group by partnerId
+    # ''' % (the_date, the_date, ids)
     # 补留存率
     # 补结算数字
     query = '''
@@ -220,24 +220,24 @@ def make_offline_stat(the_date):
 
             r['remain'] = r.get('remain', 0) + remain_cnt
 
-        cursor.execute(bonus_query)
-        rows = cursor.fetchall()
+        # cursor.execute(bonus_query)
+        # rows = cursor.fetchall()
+        #
+        # for [app_id, cnt] in rows:
+        #     values[app_id]['open'] = cnt
 
-        for [app_id, cnt] in rows:
-            values[app_id]['open'] = cnt
-
-        cursor.execute(op_bonus_query)
-        rows = cursor.fetchall()
-
-        for [app_id, amount] in rows:
-            values[app_id]['bonus'] = amount
+        # cursor.execute(op_bonus_query)
+        # rows = cursor.fetchall()
+        #
+        # for [app_id, amount] in rows:
+        #     values[app_id]['bonus'] = amount
     for stat in OfflineDailyStat.objects.filter(stat_date=times.to_date_str(stat_date - timedelta(days=2),
                                                                             "%Y-%m-%d")):
         r = values[stat.app_id]
-        stat.user_bonus_num = r.get('open', 0)
+        # stat.user_bonus_num = r.get('open', 0)
         stat.remain = r.get('remain', 0)
         stat.user_cost = r.get('total', 0)
-        stat.bonus_cost = r.get('bonus', 0)
+        # stat.bonus_cost = r.get('bonus', 0)
         stat.total_cost = stat.bonus_cost + stat.user_cost
         try:
             stat.save(force_update=True)
