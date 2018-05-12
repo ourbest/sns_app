@@ -10,14 +10,13 @@ from django.db.models import Count, Sum, Max
 from django_rq import job
 from logzero import logger
 
-import backend.dates
-from backend import model_manager
+from backend import model_manager, dates
 from backend.models import ItemDeviceUser, UserDailyStat, AppDailyStat, User, App, OfflineUser
 from backend.zhiyue_models import OfflineDailyStat, UserRewardGroundHistory, UserRewardHistory, WithdrawApply
 
 
 def make_daily_remain(app_id, date):
-    the_date = backend.dates.get_date(date)
+    the_date = dates.get_date(date)
     qq_remain_total = 0
     wx_remain_total = 0
     for user in ItemDeviceUser.objects.filter(app_id=app_id,
@@ -119,9 +118,9 @@ def _re_calc(the_date):
                                                                                           remain=remain_map[app_id])
 
 
-def save_bonus_daily_stat(date=backend.dates.yesterday()):
+def save_bonus_daily_stat(date=dates.yesterday()):
     if isinstance(date, str):
-        date = backend.dates.get_date(date)
+        date = dates.get_date(date)
 
     for x in OfflineUser.objects.filter(created_at__range=(date, date + timedelta(1))).values(
             'app_id').annotate(total=Sum('bonus_pick')):
@@ -140,7 +139,7 @@ def save_bonus_daily_stat(date=backend.dates.yesterday()):
                                         stat_date=date.strftime('%Y-%m-%d')).update(user_bonus_got=x['total'])
 
 
-def save_bonus_info(until=backend.dates.yesterday()):
+def save_bonus_info(until=dates.yesterday()):
     ids = [x.userId for x in model_manager.query(UserRewardGroundHistory).filter(createTime__gt=until,
                                                                                  type=-1)]
 
@@ -167,6 +166,14 @@ def save_bonus_info(until=backend.dates.yesterday()):
     for x in model_manager.query(WithdrawApply).filter(finishTime__gt=until):
         OfflineUser.objects.filter(user_id=x.userId).update(bonus_withdraw=float(x.amount) * 100,
                                                             withdraw_time=x.finishTime)
+
+
+def save_offline_remain(date=dates.yesterday() - timedelta(1)):
+    remains = OfflineUser.objects.filter(created_at__range=(date, date + timedelta(1))).values('app_id').annotate(
+        remain=Sum('remain'))
+    for x in remains:
+        OfflineDailyStat.objects.filter(app_id=x['app_id'], stat_date=date.strftime('%Y-%m-%d')).update(
+            remain=x['remain'])
 
 
 @job
@@ -196,11 +203,11 @@ def make_offline_stat(the_date):
     WHERE useDate = %s - INTERVAL 2 DAY AND partnerId in (%s)
     ''' % (the_date, ids)
     # 补红包补贴
-    op_bonus_query = '''
-    SELECT partnerId, sum(amount)  FROM partner_RedCouponBonus
-    WHERE partnerId = 1564403 AND rewardDate = %s - INTERVAL 2 DAY
-    GROUP BY partnerId
-    ''' % the_date
+    # op_bonus_query = '''
+    # SELECT partnerId, sum(amount)  FROM partner_RedCouponBonus
+    # WHERE partnerId = 1564403 AND rewardDate = %s - INTERVAL 2 DAY
+    # GROUP BY partnerId
+    # ''' % the_date
     with connections['zhiyue'].cursor() as cursor:
         cursor.execute(query)
         rows = cursor.fetchall()
@@ -235,7 +242,7 @@ def make_offline_stat(the_date):
                                                                             "%Y-%m-%d")):
         r = values[stat.app_id]
         # stat.user_bonus_num = r.get('open', 0)
-        stat.remain = r.get('remain', 0)
+        # stat.remain = r.get('remain', 0)
         stat.user_cost = r.get('total', 0)
         # stat.bonus_cost = r.get('bonus', 0)
         stat.total_cost = stat.bonus_cost + stat.user_cost
@@ -292,4 +299,5 @@ def do_offline_stat(the_date):
                 pass
 
     make_offline_stat(the_date)
+    save_offline_remain()
     save_bonus_daily_stat()
