@@ -13,7 +13,7 @@ from logzero import logger
 
 import backend.dates
 import backend.stat_utils
-from backend import api_helper, model_manager, stat_utils, hives, remains, cassandras, shares
+from backend import api_helper, model_manager, stat_utils, hives, remains, cassandras, shares, lbs
 from backend.api_helper import get_session_app
 from backend.daily_stat import make_daily_remain, save_bonus_info, make_offline_stat, \
     do_offline_stat
@@ -745,3 +745,9 @@ def sync_offline_from_hive(the_date):
 
 def get_users(ids):
     return model_manager.query(ZhiyueUser).filter(userId__in=ids)
+
+
+def get_centers():
+    for app in App.objects.filter(center__isnull=True, app_id__gt=1564484):
+        app.center = lbs.get_center(app.app_name[:-3])
+        app.save()

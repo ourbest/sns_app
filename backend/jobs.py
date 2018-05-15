@@ -745,7 +745,7 @@ def do_gen_daily_report():
 
 
 @job
-def make_weekly_stat(to_date=datetime.now() - timedelta(days=2)):
+def make_weekly_stat(to_date=dates.today() - timedelta(days=2)):
     """
     周日到周六的数据，周一跑
     :return:

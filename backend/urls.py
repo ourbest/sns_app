@@ -119,6 +119,7 @@ urlpatterns = [
     url(r'^team/qun$', apis.team_qun),
     url(r'^team/weixin$', apis.team_weixin),
     url(r'^team/known$', apis.team_known_qun),
+    url(r'^team/split$', apis.team_split_qun),
     url(r'^team/tasks$', apis.team_tasks),
     url(r'^team/article/dist$', apis.team_dist_info),
     url(r'^team/users$', apis.team_users),

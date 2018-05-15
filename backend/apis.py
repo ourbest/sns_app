@@ -278,6 +278,37 @@ def my_qun(request, i_page, i_size, keyword, qq, phone, tag):
 
 
 @api_func_anonymous
+def team_split_qun(request, i_page, i_size, keyword):
+    query = SnsGroupSplit.objects.select_related('group', 'user', 'phone').filter(
+        group__app_id=get_session_app(request),
+        status__in=(0, 1, 2))
+    if i_page != 0:
+        if i_size == 0:
+            i_size = 50
+
+    if keyword:
+        if keyword.isdigit():
+            query = query.filter(group_id=int(keyword))
+        else:
+            query = query.filter(group_name__contains=keyword)
+
+    total = query.count()
+    query = query[(i_page - 1) * i_size:i_page * i_size]
+    return {
+        'total': total,
+        'items': [{
+            'id': x.group_id,
+            'name': x.group.group_name if x.group else '',
+            'member_count': x.group.group_user_count if x.group else '',
+            'username': x.user.name,
+            'phone': x.phone.label if x.phone else '',
+            'status': x.status,
+            'created_at': x.created_at.strftime('%Y-%m-%d'),
+        } for x in query],
+    }
+
+
+@api_func_anonymous
 def team_known_qun(request, i_page, i_size, keyword):
     query = SnsGroup.objects.filter(app_id=get_session_app(request), status__gte=0)
     if i_page != 0:
@@ -285,10 +316,13 @@ def team_known_qun(request, i_page, i_size, keyword):
             i_size = 50
 
     if keyword:
-        query = query.filter(group_name__contains=keyword)
+        if keyword.isdigit():
+            query = query.filter(group_id=int(keyword))
+        else:
+            query = query.filter(group_name__contains=keyword)
 
-    query = query[(i_page - 1) * i_size:i_page * i_size]
     total = query.count()
+    query = query[(i_page - 1) * i_size:i_page * i_size]
     return {
         'total': total,
         'items': [api_helper.sns_group_to_json(x) for x in query],
