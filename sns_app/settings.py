@@ -20,7 +20,7 @@ RAVEN_CONFIG = {
     'dsn': 'https://fe9e540bdac242f8b8368969898b18ed:8cf5e54884964a5793998a1f5dfcabb7@sentry.io/243100',
     # If you are using git, you can also automatically configure the
     # release based on the git info.
-    'release': '5665ccd74ce18cc36f2f',
+    'release': 'dao_sns_app_web_1',
 }
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
