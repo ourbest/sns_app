@@ -622,6 +622,7 @@ class DeviceWeixinGroup(models.Model):
     member_count = models.IntegerField()
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    last_dist_at = models.DateTimeField(null=True, db_index=True)
 
 
 class DeviceWeixinGroupLost(models.Model):

@@ -13,7 +13,7 @@ from logzero import logger
 
 from backend import model_manager, caches, zhiyue_models
 from backend.models import User, AppUser, TaskGroup, GroupTag, SnsGroupSplit, DistTaskLog, SnsApplyTaskLog, SnsGroup, \
-    SnsUser, SnsUserGroup, DistArticle
+    SnsUser, SnsUserGroup, DistArticle, DeviceWeixinGroup
 
 DEFAULT_APP = 1519662
 
@@ -208,6 +208,19 @@ def parse_item_id(url):
     return None
 
 
+def get_dist_wx_qun(lines, device, percent):
+    groups = list(DeviceWeixinGroup.objects.filter(device=device).order_by('last_dist_at'))
+    num = int(len(groups) * 100 / percent)
+    to_send = list()
+    for idx in range(0, num):
+        group = groups[idx]
+        lines.append('group_%s=%s' % (idx, group.name))
+        to_send.append(group.id)
+
+    if to_send:
+        DeviceWeixinGroup.objects.filter(pk__in=to_send).update(last_dist_at=timezone.now())
+
+
 def add_wx_params(device_task):
     device = device_task.device
     logger.info('%s微信分发任务手机（%s）', device_task.id, device.friend_text)
@@ -219,6 +232,10 @@ def add_wx_params(device_task):
         idx = line.find('=')
         if 0 < idx < 10:
             user_lines.append(line)
+            v = line.split('=')
+            if len(v) == 2 and v[0] == 'ratio':
+                percent = int(v[1])
+                get_dist_wx_qun(user_lines, device, percent)
 
     return '\n%s' % '\n'.join(user_lines)
 
