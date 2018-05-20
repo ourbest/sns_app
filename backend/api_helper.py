@@ -210,7 +210,7 @@ def parse_item_id(url):
 
 def get_dist_wx_qun(lines, device, percent):
     groups = list(DeviceWeixinGroup.objects.filter(device=device).order_by('last_dist_at'))
-    num = int(len(groups) * 100 / percent)
+    num = int(len(groups) * percent / 100)
     to_send = list()
     for idx in range(0, num):
         group = groups[idx]
