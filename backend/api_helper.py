@@ -234,7 +234,7 @@ def add_wx_params(device_task):
             user_lines.append(line)
             v = line.split('=')
             if len(v) == 2 and v[0] == 'ratio':
-                percent = int(v[1])
+                percent = int(v[1] if v[1].isdigit() else 100)
                 get_dist_wx_qun(user_lines, device, percent)
 
     return '\n%s' % '\n'.join(user_lines)

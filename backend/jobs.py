@@ -798,7 +798,7 @@ def make_weekly_stat(to_date=dates.today() - timedelta(days=2)):
 
 
 @job
-def send_stat_mail(to_date=datetime.now() - timedelta(days=2)):
+def send_stat_mail(to_date=dates.today() - timedelta(days=2)):
     data = []
     from_str = (to_date - timedelta(days=6)).strftime('%Y-%m-%d')
     to_str = to_date.strftime('%Y-%m-%d')
