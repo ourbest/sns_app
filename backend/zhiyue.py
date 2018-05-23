@@ -484,6 +484,7 @@ def sync_recent_user():
 @job
 def sync_user_in_minutes(minutes):
     for app in model_manager.get_dist_apps():
+        from_at = timezone.now()
         majias = {x.cutt_user_id: x for x in AppUser.objects.filter(type__in=(0, 1), user__app=app, user__status=0)}
         qq_user_ids = []
         wx_user_ids = []
@@ -510,13 +511,27 @@ def sync_user_in_minutes(minutes):
                 if majia.type in ids_map_owner:
                     ids_map_owner[majia.type].append(device_user.deviceUserId)
 
+            logger.info(
+                'sync device user of %s in %s seconds' % (app.app_id, (timezone.now() - from_at).total_seconds()))
+
         if app.offline:
+            from_at = timezone.now()
+
             coupons = model_manager.query(CouponInst).filter(partnerId=app.pk, status=1,
                                                              useDate__gt=timezone.now() - timedelta(minutes=minutes))
             save_coupon_user(coupons)
+            logger.info(
+                'sync offline user of %s in %s seconds' % (app.app_id, (timezone.now() - from_at).total_seconds()))
 
+        from_at = timezone.now()
         shares.sync_user(timezone.now() - timedelta(minutes=minutes), timezone.now())
+        logger.info(
+            'sync share user of %s in %s seconds' % (app.app_id, (timezone.now() - from_at).total_seconds()))
+
+        from_at = timezone.now()
         sync_channel_user_in_minutes(minutes)
+        logger.info(
+            'sync channel user of %s in %s seconds' % (app.app_id, (timezone.now() - from_at).total_seconds()))
 
 
 def sync_channel_user_in_minutes(minutes):
