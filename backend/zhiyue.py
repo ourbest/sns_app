@@ -215,7 +215,15 @@ def app_report_user(from_date, to_date):
 
 @api_func_anonymous
 def get_app_stat():
-    return do_get_app_stat()
+    apps = {x.app_id: x.app_name for x in model_manager.get_dist_apps()}
+    size = len(apps)
+    return sorted([{
+        'app_id': x.app_id,
+        'app_name': apps[x.app_id][:-3],
+        'iphone': x.iphone,
+        'android': x.android,
+    } for x in DailyActive.objects.all().order_by("-pk")[0:size]], key=lambda x: int(x['app_id']))
+    # return do_get_app_stat()
 
 
 @api_func_anonymous
@@ -466,11 +474,11 @@ def sync_recent_user():
     logger.info('同步最新数据')
     minutes = 30
     sync_user_in_minutes(minutes)
-    save_bonus_info()
-    sync_online_remain()
-    sync_offline_remain()
-    sync_channel_remain()
-    _sync_remain(ShareUser)
+    save_bonus_info.delay()
+    sync_online_remain.delay()
+    sync_offline_remain.delay()
+    sync_channel_remain.delay()
+    _sync_remain.delay(ShareUser)
 
 
 @job
@@ -537,10 +545,12 @@ def sync_channel_user_in_minutes(minutes):
                 model_manager.save_ignore(sync_to_channel_user(user_dict[device_user.deviceUserId], device_user))
 
 
+@job
 def sync_channel_remain(date=0):
     _sync_remain(ChannelUser, date)
 
 
+@job
 def _sync_remain(obj, date=0):
     today = backend.dates.today()
     if date:
@@ -661,10 +671,12 @@ def sync_remain():
     remains.sync_remain_share_rt.delay()
 
 
+@job
 def sync_online_remain(date=0):
     _sync_remain(ItemDeviceUser, date)
 
 
+@job
 def sync_offline_remain(date=0):
     _sync_remain(OfflineUser, date)
 

@@ -139,6 +139,7 @@ def save_bonus_daily_stat(date=dates.yesterday()):
                                         stat_date=date.strftime('%Y-%m-%d')).update(user_bonus_got=x['total'])
 
 
+@job
 def save_bonus_info(until=dates.yesterday()):
     ids = [x.userId for x in model_manager.query(UserRewardGroundHistory).filter(createTime__gt=until,
                                                                                  type=-1)]
@@ -285,7 +286,7 @@ def do_offline_stat(the_date):
     partnerId in (%s) GROUP BY partnerId
     ''' % (stat_date_from, stat_date_to, ids)
 
-    date_str = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d") if not the_date else the_date
+    date_str = dates.yesterday().strftime("%Y-%m-%d") if not the_date else the_date
 
     # 使用量
     with connections['zhiyue'].cursor() as cursor:
