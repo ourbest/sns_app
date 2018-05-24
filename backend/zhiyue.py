@@ -525,13 +525,11 @@ def sync_user_in_minutes(minutes):
 
     from_at = timezone.now()
     shares.sync_user(timezone.now() - timedelta(minutes=minutes), timezone.now())
-    logger.info(
-        'sync share user in %s seconds' % (timezone.now() - from_at).total_seconds())
+    logger.info('sync share user in %s seconds' % (timezone.now() - from_at).total_seconds())
 
     from_at = timezone.now()
     sync_channel_user_in_minutes(minutes)
-    logger.info(
-        'sync channel user in %s seconds' % (timezone.now() - from_at).total_seconds())
+    logger.info('sync channel user in %s seconds' % (timezone.now() - from_at).total_seconds())
 
 
 def sync_channel_user_in_minutes(minutes):
