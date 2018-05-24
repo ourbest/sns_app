@@ -6,8 +6,7 @@ from django.db.models import Sum, Count, Subquery
 from django.utils import timezone
 from django_rq import job
 
-import backend.dates
-from backend import api_helper, model_manager
+from backend import api_helper, model_manager, dates
 from backend.models import AppUser, SnsTask, User, RuntimeData, ArticleDailyInfo, DistArticleStat, ItemDeviceUser, \
     DistArticle
 from backend.zhiyue_models import ClipItem, HighValueUser, WeizhanItemView
@@ -281,7 +280,7 @@ def sync_item_stat():
 
     # 用户
     from_time = timezone.now()
-    stat_date = datetime.now().strftime('%Y-%m-%d')
+    stat_date = dates.today().strftime('%Y-%m-%d')
     data = {'%s_%s' % (x.item_id, x.majia_id): x for x in ArticleDailyInfo.objects.filter(stat_date=stat_date)}
     majia_dict = {x.cutt_user_id: x for x in AppUser.objects.all()}
 
@@ -371,7 +370,7 @@ def sync_article_stat():
 
 
 def classify_data_app(app):
-    date = backend.dates.get_date() - timedelta(days=1)
+    date = dates.get_date() - timedelta(days=1)
     return list(DistArticleStat.objects.filter(article__app_id=app,
                                                article__last_started_at__range=(date - timedelta(
                                                    days=7), date)).values(
