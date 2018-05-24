@@ -300,9 +300,9 @@ def sync_item_stat():
                                              stat_date=stat_date)
             value = data[key]
 
+            ua = item.ua.lower()
             if item.itemType in ('article', 'articlea', 'articleb'):
                 value.pv += 1
-                ua = item.ua.lower()
                 if 'android' in ua or 'iphone' in ua:
                     value.mobile_pv += 1
                     if 'android' in ua:
