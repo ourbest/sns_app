@@ -16,7 +16,8 @@ def sync_to_item_dev_user(app, owner, device_user, majia):
                           ip=device_user.ip,
                           city=device_user.city,
                           cutt_user_id=majia.cutt_user_id,
-                          location=device_user.location)
+                          location=device_user.location,
+                          platform='iphone' if 'iPhone' in device_user.extStr else 'android')
 
 
 def sync_to_share_dev_user(device_user):

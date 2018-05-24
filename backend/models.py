@@ -503,6 +503,7 @@ class ItemDeviceUser(models.Model):
     cutt_user_id = models.BigIntegerField(default=0, null=True)
     remain_7 = models.IntegerField(default=0)
     remain_14 = models.IntegerField(default=0)
+    platform = models.CharField(max_length=20, default='android', null=True)
 
     @property
     def json(self):
@@ -513,6 +514,7 @@ class ItemDeviceUser(models.Model):
             'location': self.location,
             'city': self.city,
             'remain': self.remain,
+            'platform': self.platform,
         }
 
     def __str__(self):
