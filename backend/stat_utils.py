@@ -306,8 +306,16 @@ def sync_item_stat():
                 ua = item.ua.lower()
                 if 'android' in ua or 'iphone' in ua:
                     value.mobile_pv += 1
+                    if 'android' in ua:
+                        value.android_pv += 1
+                    else:
+                        value.iphone_pv += 1
             elif item.itemType.endswith('-down') or item.itemType.endswith('-mochuang'):
                 value.down += 1
+                if 'android' in ua:
+                    value.android_down += 1
+                elif 'iphone' in ua:
+                    value.iphone_down += 1
             elif item.itemType.endswith('-reshare'):
                 value.reshare += 1
             if value.query_time != from_time:

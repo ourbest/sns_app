@@ -730,6 +730,10 @@ class ArticleDailyInfo(models.Model):
     query_time = models.DateTimeField(default=0)
     updated_at = models.DateTimeField(auto_now=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    android_pv = models.IntegerField(default=0)
+    iphone_pv = models.IntegerField(default=0)
+    android_down = models.IntegerField(default=0)
+    iphone_down = models.IntegerField(default=0)
 
 
 class RuntimeData(models.Model):
