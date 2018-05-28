@@ -130,7 +130,7 @@ urlpatterns = [
     url(r'^tmp$', apis.temp_func),
     url(r'^import/result$', apis.re_import),
 
-    ##### zhiyue
+    # --- zhiyue
     url(r'^zhiyue/share$', zhiyue.user_share),
     url(r'^zhiyue/message/save$', zhiyue.message_save),
     url(r'^zhiyue/messages$', zhiyue.messages),
@@ -145,6 +145,7 @@ urlpatterns = [
     url(r'^zhiyue/new$', zhiyue.get_new_device),
     url(r'^zhiyue/active/days$', zhiyue.get_stat_before_days),
     url(r'^zhiyue/active/detail$', zhiyue.get_active_detail),
+    url(r'^zhiyue/push/stat$', zhiyue.push_audit_stat),
 
     # internal
     url(r'^change/ver$', apis.change_js_version),

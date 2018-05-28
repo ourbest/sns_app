@@ -477,3 +477,22 @@ class ShareRewardEvent(models.Model):
     class Meta:
         db_table = 'partner_ShareRewardEvent'
         managed = False
+
+
+class PushAuditLog(models.Model):
+    messageId = models.CharField(max_length=64, primary_key=True)
+    actionTime = models.DateTimeField()
+    operator = models.CharField(max_length=64)
+    reason = models.CharField(max_length=64)
+    status = models.IntegerField()
+    itemId = models.BigIntegerField()
+    pushMessage = models.CharField(max_length=255)
+    partnerId = models.BigIntegerField()
+
+    @staticmethod
+    def db_name():
+        return 'cms'
+
+    class Meta:
+        db_table = 'cms_PushAuditLog'
+        managed = False

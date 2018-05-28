@@ -220,7 +220,6 @@ def get_dist_wx_qun(lines, device, percent):
         lines.append('group_%s=%s' % (idx, group.name))
         to_send.append(group.id)
 
-
     if to_send:
         DeviceWeixinGroup.objects.filter(pk__in=to_send).update(last_dist_at=timezone.now())
 

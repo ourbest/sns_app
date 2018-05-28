@@ -1,5 +1,7 @@
 import re
 from collections import defaultdict
+
+import requests
 from datetime import datetime, timedelta
 
 from dj import times
@@ -13,7 +15,7 @@ from .loggs import logger
 
 import backend.dates
 import backend.stat_utils
-from backend import api_helper, model_manager, stat_utils, hives, remains, cassandras, shares, lbs
+from backend import api_helper, model_manager, stat_utils, hives, remains, cassandras, shares, lbs, dates
 from backend.api_helper import get_session_app
 from backend.daily_stat import make_daily_remain, save_bonus_info, make_offline_stat, \
     do_offline_stat
@@ -22,7 +24,7 @@ from backend.models import AppUser, AppDailyStat, UserDailyStat, App, DailyActiv
 from backend.user_factory import sync_to_channel_user, sync_to_item_dev_user
 from backend.zhiyue_models import ShareArticleLog, ClipItem, WeizhanCount, AdminPartnerUser, CouponInst, ItemMore, \
     ZhiyueUser, AppConstants, CouponDailyStatInfo, OfflineDailyStat, DeviceUser, \
-    CouponLog
+    CouponLog, PushAuditLog
 
 
 @api_func_anonymous
@@ -776,3 +778,42 @@ def get_centers():
     for app in App.objects.filter(center__isnull=True, app_id__gt=1564484):
         app.center = lbs.get_center(app.app_name[:-3])
         app.save()
+
+
+@api_func_anonymous
+def push_audit_stat():
+    audit_logs = list(
+        model_manager.query(PushAuditLog).filter(actionTime__range=(dates.yesterday(), dates.today())).values(
+            'operator').annotate(total=Count('messageId')))
+
+    audit_logs.sort(key=lambda x: int(x['total']), reverse=True)
+    msg = ''
+    if len(audit_logs) == 1:
+        msg = '%s, 昨天你审核了%s个推送，你是最棒的，送你🌹一朵，⛽👍，继续努力💪' \
+              % (audit_logs[0]['operator'], audit_logs[0]['total'])
+    elif audit_logs:
+        msg = '%s, 昨天你审核了%s个推送，打败了所有的对手☝️，你是最棒的，送你🌹一朵，⛽👍，继续努力💪\n' \
+              % (audit_logs[0]['operator'], audit_logs[0]['total'])
+        if len(audit_logs) > 2:
+            if audit_logs[1]['total'] == audit_logs[0]['total']:
+                msg += '%s，昨天你审了%s个推送，和 %s 一样多✌️，你也有🌹，⛽👍，继续努力💪\n' \
+                       % (audit_logs[1]['operator'], audit_logs[1]['total'], audit_logs[0]['operator'])
+            else:
+                msg += '%s，昨天你审了%s个推送，差一点点就第一了，别灰心，别弃疗，🏆很快就是你的了🐱\n' \
+                       % (audit_logs[1]['operator'], audit_logs[1]['total'])
+        msg += '哎呀，%s昨天你只审了%s个推送，落在了最后啦，不带这样的，今天好好干，超过他们，你可以的🐶' \
+               % (audit_logs[-1]['operator'], audit_logs[-1]['total'])
+
+    if msg:
+        url = 'https://oapi.dingtalk.com/robot/send?access_token' \
+              '=a9485347e2627c97f52ae75899b4a606db9ecdec0b9875ae3fef982a0db962de'
+        dingding_msg = {
+            'msgtype': 'text',
+            'text': {
+                'content': msg
+            },
+            'at': {
+                'isAtAll': True
+            }
+        }
+        requests.post(url, json=dingding_msg)
