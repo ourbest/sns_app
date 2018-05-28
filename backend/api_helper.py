@@ -212,10 +212,14 @@ def get_dist_wx_qun(lines, device, percent):
     groups = list(DeviceWeixinGroup.objects.filter(device=device).order_by('last_dist_at'))
     num = int(len(groups) * percent / 100)
     to_send = list()
+    lines.append('total=%s' % len(groups))
+    lines.append('num=%s' % num)
+    lines.append('send=%s' % len(to_send))
     for idx in range(0, num):
         group = groups[idx]
         lines.append('group_%s=%s' % (idx, group.name))
         to_send.append(group.id)
+
 
     if to_send:
         DeviceWeixinGroup.objects.filter(pk__in=to_send).update(last_dist_at=timezone.now())
