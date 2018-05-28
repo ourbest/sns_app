@@ -130,7 +130,7 @@ def save_bonus_daily_stat(date=None):
                                         stat_date=date.strftime('%Y-%m-%d')).update(user_bonus_num=x['total'])
 
     for x in OfflineUser.objects.filter(withdraw_time__range=(date, date + timedelta(1))).values(
-            'app_id').annotate(total=Sum('bonus_withdraw'), num=Count('withdraw_time')):
+            'app_id').annotate(total=Sum('bonus_amount'), num=Count('withdraw_time')):
         OfflineDailyStat.objects.filter(app_id=x['app_id'],
                                         stat_date=date.strftime('%Y-%m-%d')).update(user_cash_num=x['num'],
                                                                                     bonus_cash=x['total'])
