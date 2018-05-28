@@ -13,7 +13,7 @@ from django.core.files.uploadedfile import TemporaryUploadedFile
 from django.db.models import Sum
 from django.http import HttpResponseRedirect, HttpResponse
 from django.utils import timezone
-from logzero import logger
+from .loggs import logger
 from qiniu import Auth, put_file, etag
 
 import backend.stat_utils

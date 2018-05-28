@@ -9,7 +9,7 @@ from dj import times
 from django.conf import settings
 from django.core.mail import EmailMultiAlternatives
 from django.utils import timezone
-from logzero import logger
+from .loggs import logger
 
 from backend import model_manager, caches, zhiyue_models
 from backend.models import User, AppUser, TaskGroup, GroupTag, SnsGroupSplit, DistTaskLog, SnsApplyTaskLog, SnsGroup, \

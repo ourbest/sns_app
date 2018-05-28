@@ -1,5 +1,5 @@
 from django_rq import job
-from logzero import logger
+from .loggs import logger
 
 from backend import model_manager
 from backend.models import User, SnsGroup, SnsGroupSplit, PhoneDevice

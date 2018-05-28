@@ -1,5 +1,5 @@
 from dj.utils import api_func_anonymous
-from logzero import logger
+from .loggs import logger
 
 from backend import api_helper, model_manager
 from backend.models import KPIPeriod, UserDailyStat, AppDailyStat

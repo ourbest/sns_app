@@ -12,7 +12,7 @@ from django.db.models import Sum
 from django.template.loader import render_to_string
 from django.utils import timezone
 from django_rq import job
-from logzero import logger
+from .loggs import logger
 from qiniu import Auth, put_file
 
 import backend.stat_utils
@@ -745,13 +745,17 @@ def do_gen_daily_report():
 
 
 @job
-def make_weekly_stat(to_date=dates.today() - timedelta(days=2)):
+def make_weekly_stat(to_date=None):
     """
     周日到周六的数据，周一跑
     :return:
     """
+    if not to_date:
+        to_date = dates.today() - timedelta(days=2)
+
     from_date = (to_date - timedelta(days=6)).strftime('%Y-%m-%d')
     to_date = to_date.strftime('%Y-%m-%d')
+    logger.info('Make weekly stat of from %s to %s' % (from_date, to_date))
     # to_date_1 = (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d')
     # from_date_1 = (datetime.now() - timedelta(days=7)).strftime('%Y-%m-%d')
     values = list(AppDailyStat.objects.filter(report_date__range=(from_date, to_date)).values(
@@ -798,11 +802,14 @@ def make_weekly_stat(to_date=dates.today() - timedelta(days=2)):
 
 
 @job
-def send_stat_mail(to_date=dates.today() - timedelta(days=2)):
+def send_stat_mail(to_date=None):
+    if not to_date:
+        to_date = dates.today() - timedelta(days=2)
     data = []
     from_str = (to_date - timedelta(days=6)).strftime('%Y-%m-%d')
     to_str = to_date.strftime('%Y-%m-%d')
     time_range = '{} 到 {}'.format(from_str, to_str)
+    logger.info('Send weekly stat of %s' % time_range)
     for app in model_manager.get_dist_apps():
         best = '''
         select a.`title`, a.`category`, wx_user+qq_user as users, wx_pv+qq_pv as pv, 

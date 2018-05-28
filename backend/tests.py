@@ -9,7 +9,7 @@ from django.db import connections
 from django.db.models import Count, Sum, F
 from django.utils import timezone
 from django_rq import job
-from logzero import logger
+from .loggs import logger
 
 import backend.daily_stat
 import backend.dates
@@ -520,3 +520,18 @@ def do_get_remain_time(obj, app_id):
 
     if user_ids:
         print(before_10, after_10, before_10 / len(user_ids))
+
+
+def sync_old_device_user():
+    for x in ItemDeviceUser.objects.filter(pk__lt=116823):
+        zu = model_manager.query(ZhiyueUser).filter(userId=x.user_id).first()
+        if zu and zu.platform == 'iphone':
+            x.platform = 'iphone'
+            x.save(update_fields=['platform'])
+
+
+def get_article_daily_stat():
+    sql = """
+        select * from backend_articledailyinfo d, backend_distarticle da where
+        d.item_id = da.item_id where stat_date=current_date() - interval 1 day 
+        """

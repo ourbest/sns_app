@@ -2,7 +2,7 @@ from collections import defaultdict
 from datetime import timedelta
 from django_rq import job
 
-from logzero import logger
+from .loggs import logger
 
 from backend import model_manager, hives, cassandras, dates
 from backend.models import OfflineUser, ItemDeviceUser, ChannelUser, ShareUser

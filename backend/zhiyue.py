@@ -9,7 +9,7 @@ from django.db.models import Count, Sum
 from django.http import HttpResponse
 from django.utils import timezone
 from django_rq import job
-from logzero import logger
+from .loggs import logger
 
 import backend.dates
 import backend.stat_utils

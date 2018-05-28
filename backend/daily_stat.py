@@ -8,7 +8,7 @@ from django.db import connections
 
 from django.db.models import Count, Sum, Max
 from django_rq import job
-from logzero import logger
+from .loggs import logger
 
 from backend import model_manager, dates
 from backend.models import ItemDeviceUser, UserDailyStat, AppDailyStat, User, App, OfflineUser
@@ -118,7 +118,9 @@ def _re_calc(the_date):
                                                                                           remain=remain_map[app_id])
 
 
-def save_bonus_daily_stat(date=dates.yesterday()):
+def save_bonus_daily_stat(date=None):
+    if not date:
+        date = dates.yesterday()
     if isinstance(date, str):
         date = dates.get_date(date)
 
@@ -140,7 +142,9 @@ def save_bonus_daily_stat(date=dates.yesterday()):
 
 
 @job
-def save_bonus_info(until=dates.yesterday()):
+def save_bonus_info(until=None):
+    if not until:
+        until = dates.yesterday()
     ids = [x.userId for x in model_manager.query(UserRewardGroundHistory).filter(createTime__gt=until,
                                                                                  type=-1)]
 
@@ -170,6 +174,7 @@ def save_bonus_info(until=dates.yesterday()):
 
 
 def save_offline_remain(date=dates.yesterday() - timedelta(1)):
+    logger.info('save offline remain at %s' % (date.strftime('%Y-%m-%d')))
     remains = OfflineUser.objects.filter(created_at__range=(date, date + timedelta(1))).values('app_id').annotate(
         remain=Sum('remain'))
     for x in remains:
@@ -299,6 +304,7 @@ def do_offline_stat(the_date):
             except:
                 pass
 
+    logger.info('Make offline stat at %s' % (stat_date_from))
     make_offline_stat(the_date)
     save_offline_remain()
     save_bonus_daily_stat()

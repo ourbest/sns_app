@@ -5,7 +5,7 @@ from datetime import timedelta
 from django.db.models import Q, F
 from django.utils import timezone
 from django_rq import job
-from logzero import logger
+from .loggs import logger
 
 from backend import caches
 from backend.models import PhoneDevice, SnsTaskType, App, User, ActiveDevice, SnsUser, SnsGroup, UserAuthApp, \

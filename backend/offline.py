@@ -5,7 +5,7 @@ from django.db import connection
 from django.db.models import Count, Sum
 from django.template.loader import render_to_string
 from django_rq import job
-from logzero import logger
+from .loggs import logger
 
 from backend import dates
 from backend import api_helper, model_manager, zhiyue

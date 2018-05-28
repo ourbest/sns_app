@@ -4,7 +4,7 @@ from dj.utils import api_func_anonymous
 from django.db import connection
 from django.db.models import Count, Sum
 from django.shortcuts import render
-from logzero import logger
+from .loggs import logger
 
 import backend.dates
 from backend import api_helper, model_manager, jobs
