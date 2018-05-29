@@ -60,13 +60,13 @@ def api_stat_details(request, date):
 @job
 def sync_user(from_time, to_time):
     for app in model_manager.get_dist_apps():
-        enrolls = share_enrollments(app.app_id)
         logger.debug('Query device user of %s' % app.app_id)
         new_device_users = model_manager.query(DeviceUser).filter(partnerId=app.app_id, sourceUserId__gt=0,
                                                                   createTime__range=(from_time, to_time))
         logger.debug('Total record %s' % len(new_device_users))
         if len(new_device_users):
-            saved = {x.user_id for x in ShareUser.objects.filter(app=app, created_at__gt=(from_time, to_time))}
+            enrolls = share_enrollments(app.app_id)  # 减少数据查询
+            saved = {x.user_id for x in ShareUser.objects.filter(app=app, created_at__range=(from_time, to_time))}
 
             for user in new_device_users:
                 if user.deviceUserId not in saved:
