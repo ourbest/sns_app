@@ -243,6 +243,25 @@ def api_weekdays():
     }
 
 
+@api_func_anonymous
+def api_check_coupon_rate():
+    # 检查地推红包打开率，不足5成必须警告
+    # for app in App.objects.filter(offline=1):
+    # pass
+    users = OfflineUser.objects.filter(created_at__gt=dates.today()).values('app_id').annotate(picked=Sum('bonus_pick'),
+                                                                                               total=Count('user_id'))
+
+    for x in users:
+        if int(x['total']) > int(x['picked']) * 2:
+            logger.info('%s的红包打开率不足50%%' % x['app_id'])
+            om = RuntimeData.objects.filter(name='offline_%s' % x['app_id']).first()
+            app = model_manager.get_app(x['app_id'])
+            api_helper.send_html_mail('%s红包打开不足50%%' % app.app_name,
+                                      'yonghui.chen@cutt.com' if not om else om.value,
+                                      '<H1 style="color:red">当前红包打开不足，仅%s%%请及时改正!!</H1>'
+                                      % int(100 * int(x['picked']) / int(x['total'])))
+
+
 # --------------------------------------------- #
 
 @job

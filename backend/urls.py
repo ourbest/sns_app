@@ -197,6 +197,7 @@ urlpatterns = [
     url(r'offline/weekdays$', offline.api_weekdays),
     url(r'offline/weekly$', offline.api_weekly_report),
     url(r'offline/app', offline.api_offline_app),
+    url(r'offline/check', offline.api_check_coupon_rate),
 
     # online
     url(r'online/owners$', online.api_owners),
