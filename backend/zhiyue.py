@@ -14,8 +14,6 @@ from django.utils import timezone
 from django_rq import job
 from .loggs import logger
 
-import backend.dates
-import backend.stat_utils
 from backend import api_helper, model_manager, stat_utils, hives, remains, cassandras, shares, lbs, dates
 from backend.api_helper import get_session_app
 from backend.daily_stat import make_daily_remain, save_bonus_info, make_offline_stat, \
@@ -116,9 +114,9 @@ def count_user_sum(email, date, request):
     :param request:
     :return:
     """
-    date = backend.dates.get_date(date)
+    date = dates.get_date(date)
     the_user = api_helper.get_login_user(request, email)
-    return backend.stat_utils.get_user_stat(date, the_user)
+    return stat_utils.get_user_stat(date, the_user, api_helper.get_session_app(request))
 
 
 @api_func_anonymous
@@ -163,8 +161,8 @@ def sum_team_dist(date, request, include_sum):
     :return:
     """
     app = get_session_app(request)
-    date = backend.dates.get_date(date)
-    return backend.stat_utils.app_daily_stat(app, date, include_sum)
+    date = dates.get_date(date)
+    return stat_utils.app_daily_stat(app, date, include_sum)
 
 
 def show_open_link(request):
@@ -305,10 +303,10 @@ def get_new_device():
 
     values = dict()
     online = {x['app_id']: x['total'] for x in
-              ItemDeviceUser.objects.filter(created_at__gt=backend.dates.today()).values(
+              ItemDeviceUser.objects.filter(created_at__gt=dates.today()).values(
                   'app_id').annotate(total=Count('user_id'))}
 
-    offline = {x['app_id']: x['total'] for x in OfflineUser.objects.filter(created_at__gt=backend.dates.today()).values(
+    offline = {x['app_id']: x['total'] for x in OfflineUser.objects.filter(created_at__gt=dates.today()).values(
         'app_id').annotate(total=Count('user_id'))}
 
     with connections['zhiyue'].cursor() as cursor:
@@ -372,7 +370,7 @@ def get_coupon_message_details():
 
 @api_func_anonymous
 def get_coupon_details(date, save):
-    date = backend.dates.get_date(date)
+    date = dates.get_date(date)
     yesterday = date - timedelta(days=1)
     apps = {x.app_id: x.app_name for x in App.objects.filter(offline=1)}
 
@@ -541,7 +539,7 @@ def sync_channel_user_in_minutes(minutes):
         if minutes > 0:
             query = query.filter(created_at__gt=timezone.now() - timedelta(minutes=minutes * 2))
         else:
-            query = query.filter(created_at__range=(backend.dates.yesterday(), backend.dates.today()))
+            query = query.filter(created_at__range=(dates.yesterday(), dates.today()))
 
         saved = {x.user_id for x in query}
 
@@ -550,7 +548,7 @@ def sync_channel_user_in_minutes(minutes):
         if minutes > 0:
             user_query = user_query.filter(createTime__gt=timezone.now() - timedelta(minutes=minutes))
         else:
-            user_query = user_query.filter(createTime__range=(backend.dates.yesterday(), backend.dates.today()))
+            user_query = user_query.filter(createTime__range=(dates.yesterday(), dates.today()))
 
         users = user_query
 
@@ -568,7 +566,7 @@ def sync_channel_remain(date=0):
 
 @job
 def _sync_remain(obj, date=0):
-    today = backend.dates.today()
+    today = dates.today()
     if date:
         today = today + timedelta(date)
     yesterday = today - timedelta(1)
@@ -587,7 +585,7 @@ def _sync_remain(obj, date=0):
 
 
 def _sync_app_remain(obj, app, date=0):
-    today = backend.dates.today()
+    today = dates.today()
     if date:
         today = today + timedelta(date)
     yesterday = today - timedelta(1)
@@ -663,7 +661,7 @@ def sync_device_user():
         shares.sync_user(from_date, stat_date)
 
         # 获取领红包信息
-    save_bonus_info(backend.dates.today())
+    save_bonus_info(dates.today())
 
     sync_remain()
 

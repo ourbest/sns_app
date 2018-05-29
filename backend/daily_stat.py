@@ -6,7 +6,7 @@ from datetime import timedelta, datetime
 from dj import times
 from django.db import connections
 
-from django.db.models import Count, Sum, Max
+from django.db.models import Count, Sum, Max, Case, When
 from django_rq import job
 from .loggs import logger
 
@@ -48,11 +48,17 @@ def calc_save_remain():
         report_date = (to_time - timedelta(days=1)).strftime('%Y-%m-%d')  # 留存记录是针对前一天的
         AppDailyStat.objects.filter(report_date=report_date, app=app).update(qq_remain=qq_cnt, wx_remain=wx_cnt)
 
-        for user in User.objects.filter(app=app, status=0):
-            qq_cnt = ItemDeviceUser.objects.filter(type=0, owner=user, created_at__range=create_range).count()
-            wx_cnt = ItemDeviceUser.objects.filter(type=1, owner=user, created_at__range=create_range).count()
-            UserDailyStat.objects.filter(report_date=report_date, user=user).update(
-                qq_remain=qq_cnt, wx_remain=wx_cnt)
+        for x in ItemDeviceUser.objects \
+                .filter(app=app, remain=1,
+                        created_at__range=create_range).values('owner_id') \
+                .annotate(wx_cnt=Count(Case(When(type=1, then=1))), qq_cnt=Count(Case(When(type=0, then=1)))):
+            UserDailyStat.objects.filter(report_date=report_date, user_id=x['owner_id']).update(
+                wx_remain=x['wx_cnt'], qq_remain=x['qq_cnt'])
+        # for user in User.objects.filter(app=app, status=0):
+        #     qq_cnt = ItemDeviceUser.objects.filter(type=0, owner=user, created_at__range=create_range).count()
+        #     wx_cnt = ItemDeviceUser.objects.filter(type=1, owner=user, created_at__range=create_range).count()
+        #     UserDailyStat.objects.filter(report_date=report_date, user=user).update(
+        #         qq_remain=qq_cnt, wx_remain=wx_cnt)
 
 
 def re_calc_off():

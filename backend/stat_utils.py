@@ -153,7 +153,14 @@ def get_user_share_stat(date, the_user):
     return [ret_dict[x] for x in items_in_order if x in ret_dict]
 
 
-def app_daily_stat(app, date, include_sum=False):
+def get_dist_user(app_id, date):
+    if isinstance(date, datetime):
+        date = date.strftime('%Y-%m-%d')
+    return [x['user_id'] for x in
+            ArticleDailyInfo.objects.filter(app_id=app_id, stat_date=date).values('user_id').distinct()]
+
+
+def app_daily_stat(app_id, date, include_sum=False):
     qq_stats = []
     wx_stats = []
     qq_sum = {
@@ -177,8 +184,9 @@ def app_daily_stat(app, date, include_sum=False):
         'remain': 0,
         'uid': 0,
     }
-    for user in User.objects.filter(app=app, status=0):
-        stats = get_user_stat(date, user)
+    for user_id in get_dist_user(app_id, date):
+        user = model_manager.get_user_by_id(user_id)
+        stats = get_user_stat(date, user_id, app_id)
         qq_stat = {
             'share': 0,
             'weizhan': 0,
@@ -204,7 +212,7 @@ def app_daily_stat(app, date, include_sum=False):
 
         date_inst = datetime.strptime(date, '%Y-%m-%d') if isinstance(date, str) else date
         remains = {x['type']: x['cnt'] for x in
-                   ItemDeviceUser.objects.filter(owner=user, remain=1,
+                   ItemDeviceUser.objects.filter(owner=user, remain=1, app_id=app_id,
                                                  created_at__range=(
                                                      date,
                                                      date_inst + timedelta(days=1))).values(
@@ -242,11 +250,12 @@ def app_daily_stat(app, date, include_sum=False):
     }
 
 
-def get_user_stat(date, the_user):
-    if not the_user:
+def get_user_stat(date, user_id, app_id):
+    if not user_id:
         return []
 
-    cutt_users = list(the_user.appuser_set.filter(type__gte=0))
+    cutt_users = list(
+        AppUser.objects.filter(type__gte=0, user_id=user_id))  # list(the_user.appuser_set.filter(type__gte=0))
     cutt_user_dict = {x.cutt_user_id: x for x in cutt_users}
 
     return [{
@@ -259,7 +268,7 @@ def get_user_stat(date, the_user):
         'reshare': x.secondShareNum,
         'users': x.appUserNum,
         'remain': 0,
-    } for x in model_manager.query(HighValueUser).filter(partnerId=the_user.app_id, time=date, userType=2,
+    } for x in model_manager.query(HighValueUser).filter(partnerId=app_id, time=date, userType=2,
                                                          userId__in=[x.cutt_user_id for x in cutt_users])]
 
 

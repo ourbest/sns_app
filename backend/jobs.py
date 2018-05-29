@@ -466,7 +466,7 @@ def do_daily_stat(date, resource=True):
     date = dates.yesterday() if not date else datetime.strptime(date, '%Y-%m-%d')
 
     for app in model_manager.get_dist_apps():
-        stat = backend.stat_utils.app_daily_stat(app.app_id, date, include_sum=True)
+        stat = stat_utils.app_daily_stat(app.app_id, date, include_sum=True)
         qq_stat = stat['qq']
         wx_stat = stat['wx']
 
