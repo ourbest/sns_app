@@ -487,7 +487,7 @@ def sync_recent_user():
 def sync_user_in_minutes(minutes):
     for app in model_manager.get_dist_apps():
         from_at = timezone.now()
-        majias = {x.cutt_user_id: x for x in AppUser.objects.filter(type__in=(0, 1), user__app=app, user__status=0)}
+        majias = {x.cutt_user_id: x for x in AppUser.objects.filter(type__in=(0, 1), app=app, user__status=0)}
         qq_user_ids = []
         wx_user_ids = []
         if majias:
@@ -621,8 +621,8 @@ def sync_device_user():
     stat_date = datetime.now()
     from_date = stat_date - timedelta(days=1)
     date_range = (from_date.strftime('%Y-%m-%d'), stat_date.strftime('%Y-%m-%d'))
-    majias = {x.cutt_user_id: x for x in AppUser.objects.filter(type__in=(0, 1))}
     for app in model_manager.get_dist_apps():
+        majias = {x.cutt_user_id: x for x in AppUser.objects.filter(type__in=(0, 1), app=app)}
         saved = {x.user_id for x in ItemDeviceUser.objects.filter(created_at__range=date_range, app=app)}
         for device_user in model_manager.query(DeviceUser).filter(sourceUserId__in=majias.keys(),
                                                                   partnerId=app.app_id,
