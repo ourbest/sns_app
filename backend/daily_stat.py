@@ -151,6 +151,7 @@ def save_bonus_daily_stat(date=None):
 def save_bonus_info(until=None):
     if not until:
         until = dates.yesterday()
+    logger.info('获取查看情况')
     ids = [x.userId for x in model_manager.query(UserRewardGroundHistory).filter(createTime__gt=until,
                                                                                  type=-1)]
 
@@ -158,6 +159,7 @@ def save_bonus_info(until=None):
         OfflineUser.objects.filter(user_id__in=ids, bonus_view=0).update(bonus_view=1)
 
     # 红包步骤
+    logger.info('获取红包进行的步骤')
     for x in model_manager.query(UserRewardGroundHistory).filter(createTime__gt=until,
                                                                  type__gte=0) \
             .values('userId').annotate(amount=Sum('amount'), current=Max('type')):
@@ -167,6 +169,7 @@ def save_bonus_info(until=None):
                                                                    bonus_amount=x['amount'])
 
     # 获得红包信息
+    logger.info('获取红包最终获取情况')
     for x in model_manager.query(UserRewardHistory).filter(createTime__gt=until,
                                                            source='groundPush'):
         OfflineUser.objects.filter(user_id=x.userId).update(bonus_got=1,
@@ -174,9 +177,11 @@ def save_bonus_info(until=None):
                                                             bonus_amount=x.amount,
                                                             bonus_time=x.createTime)
     # 提款信息
+    logger.info('获取红包提现情况')
     for x in model_manager.query(WithdrawApply).filter(finishTime__gt=until):
         OfflineUser.objects.filter(user_id=x.userId).update(bonus_withdraw=float(x.amount) * 100,
                                                             withdraw_time=x.finishTime)
+    logger.info('同步红包状态完成')
 
 
 def save_offline_remain(date=dates.yesterday() - timedelta(1)):

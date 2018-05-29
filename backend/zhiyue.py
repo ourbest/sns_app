@@ -476,7 +476,7 @@ def sync_recent_user():
     logger.info('同步最新数据')
     minutes = 30
     sync_user_in_minutes(minutes)
-    save_bonus_info.delay()
+    save_bonus_info.delay(timezone.now() - timedelta(minutes=30))
     sync_online_remain.delay()
     sync_offline_remain.delay()
     sync_channel_remain.delay()
