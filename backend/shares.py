@@ -61,19 +61,21 @@ def api_stat_details(request, date):
 def sync_user(from_time, to_time):
     for app in model_manager.get_dist_apps():
         enrolls = share_enrollments(app.app_id)
-        saved = {x.user_id for x in ShareUser.objects.filter(app=app)}
         logger.debug('Query device user of %s' % app.app_id)
         new_device_users = model_manager.query(DeviceUser).filter(partnerId=app.app_id, sourceUserId__gt=0,
                                                                   createTime__range=(from_time, to_time))
         logger.debug('Total record %s' % len(new_device_users))
-        for user in new_device_users:
-            if user.deviceUserId not in saved:
-                dev_user = user_factory.sync_to_share_dev_user(user)
-                if dev_user.referer_id in enrolls:
-                    if enrolls[dev_user.referer_id].createTime < user.createTime:
-                        dev_user.enrolled = 1
-                model_manager.save_ignore(dev_user)
-                logger.debug('sync share user %s' % dev_user.user_id)
+        if len(new_device_users):
+            saved = {x.user_id for x in ShareUser.objects.filter(app=app, created_at__gt=(from_time, to_time))}
+
+            for user in new_device_users:
+                if user.deviceUserId not in saved:
+                    dev_user = user_factory.sync_to_share_dev_user(user)
+                    if dev_user.referer_id in enrolls:
+                        if enrolls[dev_user.referer_id].createTime < user.createTime:
+                            dev_user.enrolled = 1
+                    model_manager.save_ignore(dev_user)
+                    logger.debug('sync share user %s' % dev_user.user_id)
 
 
 def share_enrollments(app_id):
