@@ -160,7 +160,7 @@ def save_cutt_id(user, cutt_id, user_type):
     db = user.appuser_set.filter(type=user_type).first()
     if not db:
         name = get_app_user_info(user.app_id, cutt_id)
-        db = AppUser(name=name, type=user_type, user=user)
+        db = AppUser(name=name, type=user_type, user=user, app_id=user.app_id)
     db.cutt_user_id = cutt_id
     db.save()
 

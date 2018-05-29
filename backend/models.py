@@ -97,6 +97,7 @@ class AppUser(models.Model):
     name = models.CharField('名字', max_length=30)
     type = models.IntegerField('类型', help_text='0:qq分享 1:微信分享 2:其他', default=0)
     cutt_user_id = models.BigIntegerField('生活圈用户ID')
+    app = models.ForeignKey(App, null=True, on_delete=models.SET_NULL)
     memo = models.CharField('备注', max_length=50)
     created_at = models.DateTimeField('添加时间', auto_now_add=True)
     user = models.ForeignKey(User, verbose_name='属于', on_delete=CASCADE)

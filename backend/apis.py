@@ -1658,8 +1658,9 @@ def user_majia(request, filter):
             'id': x.cutt_user_id,
             'name': x.name,
             'type': '微信' if x.type == 1 else 'QQ'
-        } for x in (AppUser.objects.filter(user__email=get_session_user(request), type__in=(0, 1))
-                    if not filter else AppUser.objects.filter(type=filter,
+        } for x in (AppUser.objects.filter(user__email=get_session_user(request), type__in=(0, 1),
+                                           app_id=api_helper.get_session_app(request))
+                    if not filter else AppUser.objects.filter(type=filter, app_id=api_helper.get_session_app(request),
                                                               user__email=get_session_user(request)))]
     }
 
@@ -1674,7 +1675,8 @@ def add_user_majia(i_cutt_id, i_type, request):
     if not zhiyue_user:
         api_error(101, '用户不存在')
 
-    AppUser(cutt_user_id=i_cutt_id, type=i_type, user=user, name=zhiyue_user.name).save()
+    AppUser(cutt_user_id=i_cutt_id, type=i_type, user=user, name=zhiyue_user.name,
+            app_id=api_helper.get_session_app(request)).save()
 
     return 'ok'
 

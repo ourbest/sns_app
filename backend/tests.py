@@ -19,7 +19,7 @@ from backend.models import SnsGroupSplit, SnsGroup, SnsUser, SnsUserGroup, SnsTa
     ItemDeviceUser, App, AppDailyStat, User, UserDailyStat, OfflineUser, AppUser, UserDailyDeviceUser, PhoneDevice, \
     ChannelUser
 from backend.user_factory import sync_to_item_dev_user
-from backend.zhiyue_models import DeviceUser, CouponInst, CouponLog, ZhiyueUser
+from backend.zhiyue_models import DeviceUser, CouponInst, CouponLog, ZhiyueUser, AdminPartnerUser
 
 
 def clean_finished():
@@ -552,3 +552,17 @@ def get_article_daily_stat():
         select * from backend_articledailyinfo d, backend_distarticle da where
         d.item_id = da.item_id where stat_date=current_date() - interval 1 day 
         """
+
+
+def sync_app_user_app_id():
+    for x in AppUser.objects.select_related('user').all():
+        x.app = x.user.app
+        x.save()
+
+
+def sync_partner_admin_user():
+    for x in AppUser.objects.select_related('user').all():
+        db = model_manager.query(AdminPartnerUser).filter(loginUser=x.user.email, user_id=x.user_id).first()
+        if db and db.partnerId != x.app_id:
+            x.app_id = db.partnerId
+            x.save(update_fields=['app_id'])

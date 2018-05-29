@@ -131,8 +131,9 @@ def get_user_majia(email, request):
     if not user:
         return []
 
+    app_id = get_session_app(request)
     cutt = {x.user_id: x.user.name for x in model_manager.query(AdminPartnerUser).select_related('user')
-        .filter(loginUser=user.email, partnerId=get_session_app(request))}
+        .filter(loginUser=user.email, partnerId=app_id)}
 
     for x in user.appuser_set.filter(type__gte=0):
         if x.cutt_user_id in cutt:
@@ -142,7 +143,7 @@ def get_user_majia(email, request):
             del cutt[x.cutt_user_id]
 
     for k, v in cutt.items():
-        AppUser(user=user, name=v if v else k, type=2, cutt_user_id=k).save()
+        AppUser(user=user, name=v if v else k, type=2, cutt_user_id=k, app_id=app_id).save()
 
     return [{
         'id': x.cutt_user_id,
