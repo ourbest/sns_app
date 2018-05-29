@@ -709,7 +709,7 @@ def do_gen_daily_report():
 
     for app in model_manager.get_dist_apps():
         item_stats = []
-        stat = app_daily_stat(app, date, True)
+        stat = app_daily_stat(app.app_id, date, True)
         app_stats.append({
             'app': app.app_name,
             'items': item_stats,
