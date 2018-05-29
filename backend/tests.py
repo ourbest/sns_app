@@ -297,9 +297,26 @@ def sync_all_remain(date=None):
         backend.daily_stat.make_daily_remain(app.app_id, date)
 
 
+def sync_all_device_user(date):
+    from_date = dates.get_date(date)
+    create_range = (from_date, from_date + timedelta(days=1))
+    majias = {x.cutt_user_id: x for x in AppUser.objects.filter(type__in=(0, 1))}
+    for app in model_manager.get_dist_apps():
+        saved = {x.user_id for x in ItemDeviceUser.objects.filter(app=app, created_at__range=create_range)}
+        for device_user in model_manager.query(DeviceUser).filter(sourceUserId__in=majias.keys(),
+                                                                  partnerId=app.app_id,
+                                                                  createTime__range=create_range):
+            if device_user.deviceUserId not in saved:
+                majia = majias.get(device_user.sourceUserId)
+                owner = majia.user
+                model_manager.save_ignore(sync_to_item_dev_user(app, owner, device_user, majia))
+                found = True
+                print('Find %s' % device_user.deviceUserId)
+
+
 def sync_device_user(date):
     logger.info('同步用户数据')
-    from_date = backend.dates.get_date(date)
+    from_date = dates.get_date(date)
     create_range = (from_date, from_date + timedelta(days=1))
     found = False
     for app in model_manager.get_dist_apps():
@@ -315,8 +332,8 @@ def sync_device_user(date):
                     found = True
                     print('Find %s' % device_user.deviceUserId)
 
-    if found:
-        zhiyue.sync_online_from_hive(date)
+    # if found:
+    #     zhiyue.sync_online_from_hive(date)
 
 
 def sync_bonus_test():

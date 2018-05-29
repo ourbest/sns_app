@@ -620,34 +620,16 @@ def sync_device_user():
     stat_date = datetime.now()
     from_date = stat_date - timedelta(days=1)
     date_range = (from_date.strftime('%Y-%m-%d'), stat_date.strftime('%Y-%m-%d'))
+    majias = {x.cutt_user_id: x for x in AppUser.objects.filter(type__in=(0, 1))}
     for app in model_manager.get_dist_apps():
-        majias = {x.cutt_user_id: x for x in AppUser.objects.filter(type__in=(0, 1), user__app=app, user__status=0)}
-        qq_user_ids = []
-        wx_user_ids = []
-        if majias:
-            saved = {x.user_id for x in ItemDeviceUser.objects.filter(app=app, created_at__range=date_range)}
-            ids_map = defaultdict(dict)
-            for device_user in model_manager.query(DeviceUser).filter(sourceUserId__in=majias.keys(),
-                                                                      createTime__range=date_range):
+        saved = {x.user_id for x in ItemDeviceUser.objects.filter(created_at__range=date_range, app=app)}
+        for device_user in model_manager.query(DeviceUser).filter(sourceUserId__in=majias.keys(),
+                                                                  partnerId=app.app_id,
+                                                                  createTime__range=date_range):
+            if device_user.deviceUserId not in saved:
                 majia = majias.get(device_user.sourceUserId)
                 owner = majia.user
-                if device_user.deviceUserId not in saved:
-                    model_manager.save_ignore(sync_to_item_dev_user(app, owner, device_user, majia))
-                (wx_user_ids if majia.type else qq_user_ids).append(device_user.deviceUserId)
-
-                ids_map_owner = ids_map[owner]
-                if len(ids_map_owner) == 0:
-                    ids_map_owner[0] = list()
-                    ids_map_owner[1] = list()
-
-                if majia.type in ids_map_owner:
-                    ids_map_owner[majia.type].append(device_user.deviceUserId)
-
-            for k, v in ids_map.items():
-                model_manager.save_ignore(
-                    UserDailyDeviceUser(report_date=from_date.strftime('%Y-%m-%d'), app=app, user=k,
-                                        qq_user_ids=','.join([str(x) for x in v[0]]),
-                                        wx_user_ids=','.join([str(x) for x in v[1]])))
+                sync_to_item_dev_user(app, owner, device_user, majia)
 
         if app.offline:
             coupons = model_manager.query(CouponInst).filter(partnerId=app.pk, status=1, useDate__range=date_range)
@@ -660,7 +642,7 @@ def sync_device_user():
         sync_channel_user_in_minutes(0)
         shares.sync_user(from_date, stat_date)
 
-        # 获取领红包信息
+    # 获取领红包信息
     save_bonus_info(dates.today())
 
     sync_remain()
