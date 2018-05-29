@@ -223,7 +223,7 @@ def api_cash_amount(from_date, to_date):
     else:
         to_date = to_date[:10]
 
-    query = 'select app_name, sum(bonus_withdraw), count(*) ' \
+    query = 'select app_name, sum(bonus_amount), count(*) ' \
             'from backend_app a, backend_offlineuser u ' \
             'where a.app_id = u.app_id and u.withdraw_time between \'%s\' and \'%s\' ' \
             'group by app_name' % (from_date, to_date)
