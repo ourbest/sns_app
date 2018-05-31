@@ -4,6 +4,7 @@ from django.db.models import CASCADE
 
 class ZhiyueUser(models.Model):
     appId = models.CharField(max_length=30)
+    deviceId = models.CharField(max_length=64)
     name = models.CharField(max_length=50)
     userId = models.IntegerField(primary_key=True)
     platform = models.CharField(max_length=50)
@@ -495,4 +496,68 @@ class PushAuditLog(models.Model):
 
     class Meta:
         db_table = 'cms_PushAuditLog'
+        managed = False
+
+
+class InviteRecord(models.Model):
+    userId = models.BigIntegerField()
+    phone = models.CharField(max_length=20)
+    invitedUserId = models.BigIntegerField(null=True)
+    registerTime = models.DateTimeField(null=True)
+    status = models.IntegerField(default=0)
+    partnerId = models.IntegerField()
+    createTime = models.DateTimeField(primary_key=True)
+
+    @staticmethod
+    def db_name():
+        return 'partner'
+
+    class Meta:
+        db_table = 'user_InviteRecord'
+        managed = False
+
+
+class InviteRewardRecord(models.Model):
+    partnerId = models.IntegerField()
+    userId = models.BigIntegerField()
+    invitedUserId = models.BigIntegerField()
+    taskId = models.IntegerField()
+    rewardType = models.IntegerField()
+    getTime = models.DateTimeField()
+    createTime = models.DateTimeField()
+    recordId = models.BigIntegerField(primary_key=True)
+
+    @staticmethod
+    def db_name():
+        return 'partner'
+
+    class Meta:
+        db_table = 'user_InviteRewardRecord'
+        managed = False
+
+
+class UserDeviceHistory(models.Model):
+    """
+   CREATE TABLE `partner_UserDeviceHistory` (
+  `appId` bigint(20) NOT NULL DEFAULT '0',
+  `userId` bigint(20) NOT NULL DEFAULT '0',
+  `loginTime` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
+  `deviceId` varchar(64) NOT NULL DEFAULT '',
+  `status` int(11) DEFAULT NULL,
+  PRIMARY KEY (`appId`,`userId`,`loginTime`,`deviceId`),
+  KEY `deviceId` (`deviceId`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+    """
+    appId = models.IntegerField()
+    userId = models.BigIntegerField(primary_key=True)
+    loginTime = models.DateTimeField()
+    deviceId = models.CharField(max_length=64)
+    status = models.IntegerField()
+
+    @staticmethod
+    def db_name():
+        return 'zhiyue'
+
+    class Meta:
+        db_table = 'partner_UserDeviceHistory'
         managed = False

@@ -212,8 +212,8 @@ def api_cash_amount(from_date, to_date):
     获取提款情况
     :return:
     """
+    today = dates.today()
     if not from_date:
-        today = dates.today()
         from_date = (today - timedelta(today.weekday())).strftime('%Y-%m-%d')
     else:
         from_date = from_date[:10]

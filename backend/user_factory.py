@@ -1,4 +1,5 @@
-from backend.models import ChannelUser, ItemDeviceUser, ShareUser
+from backend.models import ChannelUser, ItemDeviceUser, ShareUser, InviteUser
+from backend.zhiyue_models import UserDeviceHistory, ZhiyueUser
 
 
 def sync_to_channel_user(user, device_user):
@@ -28,3 +29,20 @@ def sync_to_share_dev_user(device_user):
                      ip=device_user.ip,
                      city=device_user.city,
                      location=device_user.location)
+
+
+def sync_to_invite_user(device_user):
+    return InviteUser(app_id=device_user.partnerId,
+                      created_at=device_user.createTime,
+                      user_id=device_user.deviceUserId,
+                      referer_id=device_user.sourceUserId,
+                      ip=device_user.ip,
+                      city=device_user.city,
+                      location=device_user.location)
+
+
+def get_reg_device(app_id, user_id):
+    from backend import model_manager
+    device = model_manager.query(UserDeviceHistory).filter(appId=app_id, userId=user_id).order_by("loginTime").first()
+
+    return model_manager.query(ZhiyueUser).filter(appId=app_id, deviceId=device.deviceId).first() if device else None

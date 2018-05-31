@@ -868,3 +868,36 @@ class ShareUser(models.Model):
             'ip': self.ip,
             'city': self.city,
         }
+
+
+class InviteUser(models.Model):
+    user_id = models.BigIntegerField(primary_key=True)
+    dev_user_id = models.BigIntegerField()
+    app = models.ForeignKey(App, on_delete=CASCADE)
+    referer_id = models.BigIntegerField('邀请人', db_index=True)
+    user_award = models.IntegerField(default=0)
+    refer_award = models.IntegerField(default=0)
+    task_success = models.IntegerField(default=0)
+    user_withdraw = models.IntegerField(default=0)
+    refer_withdraw = models.IntegerField(default=0)
+    created_at = models.DateTimeField()
+    remain = models.IntegerField(default=0)
+    ip = models.CharField(max_length=20, default='')
+    city = models.CharField(max_length=50, default='')
+    location = models.CharField(max_length=100, default='', null=True)
+    remain_7 = models.IntegerField(default=0)
+    remain_14 = models.IntegerField(default=0)
+
+    @property
+    def json(self):
+        return {
+            'user_id': self.user_id,
+            'remain': self.remain,
+            'referer_id': self.referer_id,
+            'success': self.task_success,
+            'location': self.location,
+            'created_at': self.created_at.strftime('%Y-%m-%d %H:%M'),
+            'app_id': self.app_id,
+            'ip': self.ip,
+            'city': self.city,
+        }

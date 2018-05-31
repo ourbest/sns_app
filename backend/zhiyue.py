@@ -19,7 +19,7 @@ from backend.api_helper import get_session_app
 from backend.daily_stat import make_daily_remain, save_bonus_info, make_offline_stat, \
     do_offline_stat
 from backend.models import AppUser, AppDailyStat, UserDailyStat, App, DailyActive, ItemDeviceUser, UserDailyDeviceUser, \
-    User, OfflineUser, ChannelUser, ShareUser
+    User, OfflineUser, ChannelUser, ShareUser, InviteUser
 from backend.user_factory import sync_to_channel_user, sync_to_item_dev_user
 from backend.zhiyue_models import ShareArticleLog, ClipItem, WeizhanCount, AdminPartnerUser, CouponInst, ItemMore, \
     ZhiyueUser, AppConstants, CouponDailyStatInfo, OfflineDailyStat, DeviceUser, \
@@ -476,11 +476,15 @@ def sync_recent_user():
     logger.info('同步最新数据')
     minutes = 30
     sync_user_in_minutes(minutes)
-    save_bonus_info.delay(timezone.now() - timedelta(minutes=30))
+    min30 = timezone.now() - timedelta(minutes=30)
+    save_bonus_info.delay(min30)
     sync_online_remain.delay()
     sync_offline_remain.delay()
     sync_channel_remain.delay()
     _sync_remain.delay(ShareUser)
+    _sync_remain.delay(InviteUser)
+    from backend import invites
+    invites.sync_user(min30)
 
 
 @job
@@ -563,6 +567,10 @@ def sync_channel_user_in_minutes(minutes):
 @job
 def sync_channel_remain(date=0):
     _sync_remain(ChannelUser, date)
+
+
+def sync_obj_remain(obj):
+    _sync_remain(obj)
 
 
 @job

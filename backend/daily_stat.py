@@ -26,10 +26,12 @@ def make_daily_remain(app_id, date):
         'type'
     ).annotate(total=Count('user_id'), remain=Sum('remain')):
         if user['type'] == 0:
-            UserDailyStat.objects.filter(report_date=date, user_id=user['owner_id']).update(qq_remain=user['remain'])
+            UserDailyStat.objects.filter(report_date=date, app_id=app_id,
+                                         user_id=user['owner_id']).update(qq_remain=user['remain'])
             qq_remain_total += user['remain']
         elif user['type'] == 1:
-            UserDailyStat.objects.filter(report_date=date, user_id=user['owner_id']).update(wx_remain=user['remain'])
+            UserDailyStat.objects.filter(report_date=date, app_id=app_id,
+                                         user_id=user['owner_id']).update(wx_remain=user['remain'])
             wx_remain_total += user['remain']
 
     AppDailyStat.objects.filter(report_date=date, app_id=app_id).update(wx_remain=wx_remain_total,
