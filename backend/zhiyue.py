@@ -654,6 +654,9 @@ def sync_device_user():
     # 获取领红包信息
     save_bonus_info(dates.today())
 
+    from backend import invites
+    invites.sync_user()
+
     sync_remain()
 
 
@@ -772,6 +775,9 @@ def get_centers():
 
 @api_func_anonymous
 def push_audit_stat():
+    url = 'https://oapi.dingtalk.com/robot/send?access_token' \
+          '=a9485347e2627c97f52ae75899b4a606db9ecdec0b9875ae3fef982a0db962de'
+
     audit_logs = list(
         model_manager.query(PushAuditLog).filter(actionTime__range=(dates.yesterday(), dates.today())).values(
             'operator').annotate(total=Count('messageId')))
@@ -796,20 +802,37 @@ def push_audit_stat():
             '📢隆重推出%s，成为我们的☝️🏅️，没看错，就是你，昨天审了%s个，倒数的，🏆非你莫属，😂😂']
 
     if len(audit_logs) == 1:
-        msg = random.choice(first) % (audit_logs[0]['operator'], audit_logs[0]['total'])
+        msg = random.choice(first) % (audit_logs[0]['operator'][:-9], audit_logs[0]['total'])
     elif audit_logs:
-        msg = random.choice(first) % (audit_logs[0]['operator'], audit_logs[0]['total'])
-        if len(audit_logs) > 2:
-            if audit_logs[1]['total'] == audit_logs[0]['total']:
-                msg += random.choice(second) % (audit_logs[1]['operator'],
-                                                audit_logs[1]['total'], audit_logs[0]['operator'])
-            else:
-                msg += random.choice(three) % (audit_logs[1]['operator'], audit_logs[1]['total'])
-        msg += random.choice(last) % (audit_logs[-1]['operator'], audit_logs[-1]['total'])
+        if datetime.now().day == 2:
+            msg = '![图](http://qn.cutt.com/180522164610352.300.300.2.2423)\n' \
+                  '### 昨天的审核排行\n'
+            for idx, x in enumerate(audit_logs):
+                msg += '%s. %s审核%s个\n' % (idx, x['operator'][:-9], x['total'])
+            msg += '#### 嗯，今天没啥好说的，就这样了，你自己对着来吧\n'
+            dingding_msg = {
+                'msgtype': 'markdown',
+                'markdown': {
+                    'title': '昨天的审核排行',
+                    'text': msg
+                },
+                'at': {
+                    'isAtAll': True
+                }
+            }
+            requests.post(url, json=dingding_msg)
+            return
+        else:
+            msg = random.choice(first) % (audit_logs[0]['operator'][:-9], audit_logs[0]['total'])
+            if len(audit_logs) > 2:
+                if audit_logs[1]['total'] == audit_logs[0]['total']:
+                    msg += random.choice(second) % (audit_logs[1]['operator'][:-9],
+                                                    audit_logs[1]['total'], audit_logs[0]['operator'][:-9])
+                else:
+                    msg += random.choice(three) % (audit_logs[1]['operator'][:-9], audit_logs[1]['total'])
+            msg += random.choice(last) % (audit_logs[-1]['operator'][:-9], audit_logs[-1]['total'])
 
     if msg:
-        url = 'https://oapi.dingtalk.com/robot/send?access_token' \
-              '=a9485347e2627c97f52ae75899b4a606db9ecdec0b9875ae3fef982a0db962de'
         dingding_msg = {
             'msgtype': 'text',
             'text': {
