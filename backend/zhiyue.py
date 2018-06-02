@@ -804,7 +804,7 @@ def push_audit_stat():
     if len(audit_logs) == 1:
         msg = random.choice(first) % (audit_logs[0]['operator'][:-9], audit_logs[0]['total'])
     elif audit_logs:
-        if datetime.now().day == 2:
+        if datetime.now().day == 3:
             msg = '![图](http://qn.cutt.com/180522164610352.300.300.2.2423)\n' \
                   '### 昨天的审核排行\n'
             for idx, x in enumerate(audit_logs):
