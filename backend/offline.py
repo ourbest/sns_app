@@ -252,12 +252,12 @@ def api_check_coupon_rate():
                                                                                                total=Count('user_id'))
 
     for x in users:
-        if int(x['total']) > int(x['picked']) * 2:
-            logger.info('%s的红包打开率不足50%%' % x['app_id'])
+        if int(x['total']) * 0.6 > int(x['picked']):
+            logger.info('%s的红包打开率不足60%%' % x['app_id'])
             om = RuntimeData.objects.filter(name='offline_%s' % x['app_id']).first()
             app = model_manager.get_app(x['app_id'])
-            api_helper.send_html_mail('%s红包打开不足50%%' % app.app_name,
-                                      'yonghui.chen@cutt.com' if not om else om.value,
+            api_helper.send_html_mail('%s红包打开不足60%%' % app.app_name,
+                                      'yonghui.chen@cutt.com' if not om else [om.value, 'yonghui.chen@cutt.com'],
                                       '<H1 style="color:red">当前红包打开不足，仅%s%%请及时改正!!</H1>'
                                       % int(100 * int(x['picked']) / int(x['total'])))
 
