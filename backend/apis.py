@@ -1066,21 +1066,22 @@ def reset_phone_split(request):
     user = get_session_user(request)
     if user:
         phones = PhoneDevice.objects.filter(owner__email=user, status=0)
-        idx = 0
-        forward = True
-        for x in SnsGroupSplit.objects.filter(user__email=user, status=0):
-            phone = phones[idx]
-            idx += 1 if forward else -1
+        if len(phones):
+            idx = 0
+            forward = True
+            for x in SnsGroupSplit.objects.filter(user__email=user, status=0):
+                phone = phones[idx]
+                idx += 1 if forward else -1
 
-            if idx == -1:
-                idx = 0
-                forward = not forward
-            elif idx == len(phones):
-                idx = idx - 1
-                forward = not forward
+                if idx == -1:
+                    idx = 0
+                    forward = not forward
+                elif idx == len(phones):
+                    idx = idx - 1
+                    forward = not forward
 
-            x.phone = phone
-            x.save()
+                x.phone = phone
+                x.save()
     return 'ok'
 
 

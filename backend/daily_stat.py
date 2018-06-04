@@ -186,7 +186,9 @@ def save_bonus_info(until=None):
     logger.info('同步红包状态完成')
 
 
-def save_offline_remain(date=dates.yesterday() - timedelta(1)):
+def save_offline_remain(date=None):
+    if not date:
+        date = dates.yesterday() - timedelta(1)
     logger.info('save offline remain at %s' % (date.strftime('%Y-%m-%d')))
     remains = OfflineUser.objects.filter(created_at__range=(date, date + timedelta(1))).values('app_id').annotate(
         remain=Sum('remain'))
