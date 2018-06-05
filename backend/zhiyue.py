@@ -193,6 +193,8 @@ def app_report(from_date, to_date, i_app):
         'wx_pv': x.wx_pv,
         'wx_down': x.wx_down,
         'wx_install': x.wx_install,
+        'qq_remain': x.qq_remain,
+        'wx_remain': x.wx_remain,
     } for x in AppDailyStat.objects.filter(report_date__range=(from_date, to_date), app_id=i_app).order_by("-pk")]
 
 
@@ -211,6 +213,8 @@ def app_report_user(from_date, to_date):
         'wx_pv': x.wx_pv,
         'wx_down': x.wx_down,
         'wx_install': x.wx_install,
+        'qq_remain': x.qq_remain,
+        'wx_remain': x.wx_remain,
     } for x in UserDailyStat.objects.filter(report_date__range=(from_date,
                                                                 to_date)).select_related('app', 'user').order_by("-pk")]
 

@@ -1,3 +1,5 @@
+import time
+
 import csv
 import os
 import re
@@ -7,7 +9,7 @@ from urllib.parse import quote
 
 import requests
 from dj import times
-from dj.utils import api_func_anonymous, api_error
+from dj.utils import api_func_anonymous, api_error, md5_hex
 from django.conf import settings
 from django.core.files.uploadedfile import TemporaryUploadedFile
 from django.db.models import Sum
@@ -1753,6 +1755,22 @@ def set_article_attr(article_id, key, value):
     db = DistArticle.objects.filter(pk=article_id).first()
     setattr(db, key, value)
     db.save()
+
+
+@api_func_anonymous
+def majiang(i_user, i_app):
+    user = model_manager.query(ZhiyueUser).filter(userId=i_user).first()
+    if user:
+        if user.platform in ('iphone', 'android'):
+            return '未登录'
+        else:
+            ts = int(time.time())
+            gamekey = ''
+            sign = md5_hex('%s%sapp%s%s' % (i_app, i_user, ts, gamekey))
+            return HttpResponseRedirect('http://mj.qiyew.com/gamehall/?uid=%s&gameId=%s'
+                                        '&channel=app&time=%s&username=%s&userimg=%s&sign=%s'
+                                        % (i_user, i_app, ts, user.name,
+                                           'https://qn.cutt.com/' + user.screenName, sign))
 
 
 def redirect(request):

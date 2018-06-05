@@ -167,67 +167,70 @@ urlpatterns = [
     url(r'^wx/contacts$', bot_apis.get_contacts),
 
     # coupon
-    url(r'coupon/users$', zhiyue.get_offline_ids),
-    url(r'coupon/detail$', zhiyue.get_coupon_details),
-    url(r'coupon/message/detail$', zhiyue.get_coupon_message_details),
-    url(r'coupon/offline$', zhiyue.get_offline_detail),
+    url(r'^coupon/users$', zhiyue.get_offline_ids),
+    url(r'^coupon/detail$', zhiyue.get_coupon_details),
+    url(r'^coupon/message/detail$', zhiyue.get_coupon_message_details),
+    url(r'^coupon/offline$', zhiyue.get_offline_detail),
 
     # stat
-    url(r'stat/city$', stats.item_user_loc),
-    url(r'stat/category$', stats.team_category),
-    url(r'stat/remain$', stats.article_remain),
+    url(r'^stat/city$', stats.item_user_loc),
+    url(r'^stat/category$', stats.team_category),
+    url(r'^stat/remain$', stats.article_remain),
 
     # kpi
-    url(r'kpi/detail$', kpi.api_kpi),
-    url(r'kpi/config$', kpi.api_kpi_config),
-    url(r'kpi/config/save$', kpi.api_kpi_save),
-    url(r'kpi/config/remove$', kpi.api_kpi_remove),
+    url(r'^kpi/detail$', kpi.api_kpi),
+    url(r'^kpi/config$', kpi.api_kpi_config),
+    url(r'^kpi/config/save$', kpi.api_kpi_save),
+    url(r'^kpi/config/remove$', kpi.api_kpi_remove),
 
     # offline
-    url(r'offline/owners$', offline.api_owners),
-    url(r'offline/dates$', offline.api_daily_remain),
-    url(r'offline/detail$', offline.api_app_detail),
-    url(r'offline/owner/remain$', offline.api_owner_remain),
-    url(r'offline/owner/detail$', offline.api_owner_detail),
-    url(r'offline/owner/date$', offline.api_owner_date),
-    url(r'offline/owner/stat$', offline.api_owner_stat),
-    url(r'offline/owner/detail/stat$', offline.api_owner_detail_stat),
-    url(r'offline/report$', offline.daily_report),
-    url(r'offline/withdraw$', offline.api_cash_amount),
-    url(r'offline/weekdays$', offline.api_weekdays),
-    url(r'offline/weekly$', offline.api_weekly_report),
-    url(r'offline/app', offline.api_offline_app),
-    url(r'offline/check', offline.api_check_coupon_rate),
+    url(r'^offline/owners$', offline.api_owners),
+    url(r'^offline/dates$', offline.api_daily_remain),
+    url(r'^offline/detail$', offline.api_app_detail),
+    url(r'^offline/owner/remain$', offline.api_owner_remain),
+    url(r'^offline/owner/detail$', offline.api_owner_detail),
+    url(r'^offline/owner/date$', offline.api_owner_date),
+    url(r'^offline/owner/stat$', offline.api_owner_stat),
+    url(r'^offline/owner/detail/stat$', offline.api_owner_detail_stat),
+    url(r'^offline/report$', offline.daily_report),
+    url(r'^offline/withdraw$', offline.api_cash_amount),
+    url(r'^offline/weekdays$', offline.api_weekdays),
+    url(r'^offline/weekly$', offline.api_weekly_report),
+    url(r'^offline/app', offline.api_offline_app),
+    url(r'^offline/check', offline.api_check_coupon_rate),
 
     # online
-    url(r'online/owners$', online.api_owners),
-    url(r'online/dates$', online.api_daily_remain),
-    url(r'online/detail$', online.api_app_detail),
-    url(r'online/owner/remain$', online.api_owner_remain),
-    url(r'online/owner/detail$', online.api_owner_detail),
-    url(r'online/owner/date$', online.api_owner_date),
-    url(r'online/heat$', online.api_all_active_users),
-    url(r'online/html$', online.html_heat),
+    url(r'^online/owners$', online.api_owners),
+    url(r'^online/dates$', online.api_daily_remain),
+    url(r'^online/detail$', online.api_app_detail),
+    url(r'^online/owner/remain$', online.api_owner_remain),
+    url(r'^online/owner/detail$', online.api_owner_detail),
+    url(r'^online/owner/date$', online.api_owner_date),
+    url(r'^online/heat$', online.api_all_active_users),
+    url(r'^online/html$', online.html_heat),
 
     # active
-    url(r'active/users$', online.api_active_users),
+    url(r'^active/users$', online.api_active_users),
 
     # channels
-    url(r'channels/stat$', channels.api_channel_stats),
-    url(r'channels/details$', channels.api_channel_details),
-    url(r'channels/names$', channels.api_channel_names),
-    url(r'channels/remain$', channels.api_channel_remain),
-    url(r'channels/config$', channels.api_get_ad_channels),
-    url(r'channels/weekly$', channels.api_weekly_report),
-    url(r'channels/config/save$', channels.api_set_ad_channels),
+    url(r'^channels/stat$', channels.api_channel_stats),
+    url(r'^channels/details$', channels.api_channel_details),
+    url(r'^channels/names$', channels.api_channel_names),
+    url(r'^channels/remain$', channels.api_channel_remain),
+    url(r'^channels/config$', channels.api_get_ad_channels),
+    url(r'^channels/weekly$', channels.api_weekly_report),
+    url(r'^channels/config/save$', channels.api_set_ad_channels),
 
     # shares
-    url(r'shares/stat$', shares.api_share_stat),
-    url(r'shares/weekly$', shares.api_share_stat_weekly),
-    url(r'shares/details$', shares.api_stat_details),
+    url(r'^shares/stat$', shares.api_share_stat),
+    url(r'^shares/weekly$', shares.api_share_stat_weekly),
+    url(r'^shares/details$', shares.api_stat_details),
 
     # onlines
-    url(r'onlines/stat$', onlines.api_stat),
-    url(r'onlines/today$', onlines.api_today),
-    url(r'onlines/weekly$', onlines.api_weekly),
+    url(r'^onlines/stat$', onlines.api_stat),
+    url(r'^onlines/today$', onlines.api_today),
+    url(r'^onlines/weekly$', onlines.api_weekly),
+
+    # majiang
+    url(r'^majiang$', apis.majiang)
 ]
