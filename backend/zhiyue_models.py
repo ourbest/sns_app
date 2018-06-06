@@ -9,6 +9,7 @@ class ZhiyueUser(models.Model):
     userId = models.IntegerField(primary_key=True)
     platform = models.CharField(max_length=50)
     lastActiveTime = models.DateTimeField()
+    screenName = models.CharField(max_length=50)
     createTime = models.DateTimeField()
     source = models.CharField(max_length=200)
 

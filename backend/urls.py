@@ -196,8 +196,8 @@ urlpatterns = [
     url(r'^offline/withdraw$', offline.api_cash_amount),
     url(r'^offline/weekdays$', offline.api_weekdays),
     url(r'^offline/weekly$', offline.api_weekly_report),
-    url(r'^offline/app', offline.api_offline_app),
-    url(r'^offline/check', offline.api_check_coupon_rate),
+    url(r'^offline/app$', offline.api_offline_app),
+    url(r'^offline/check$', offline.api_check_coupon_rate),
 
     # online
     url(r'^online/owners$', online.api_owners),

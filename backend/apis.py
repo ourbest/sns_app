@@ -1765,7 +1765,7 @@ def majiang(i_user, i_app):
             return '未登录'
         else:
             ts = int(time.time())
-            gamekey = ''
+            gamekey = 'shenghuoquan'
             sign = md5_hex('%s%sapp%s%s' % (i_app, i_user, ts, gamekey))
             return HttpResponseRedirect('http://mj.qiyew.com/gamehall/?uid=%s&gameId=%s'
                                         '&channel=app&time=%s&username=%s&userimg=%s&sign=%s'
