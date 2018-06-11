@@ -1759,6 +1759,7 @@ def set_article_attr(article_id, key, value):
 
 @api_func_anonymous
 def majiang(i_user, i_app):
+    i_app = 586432
     user = model_manager.query(ZhiyueUser).filter(userId=i_user).first()
     if user:
         if user.platform in ('iphone', 'android'):
@@ -1767,7 +1768,7 @@ def majiang(i_user, i_app):
             ts = int(time.time())
             gamekey = 'shenghuoquan'
             sign = md5_hex('%s%sapp%s%s' % (i_app, i_user, ts, gamekey))
-            return HttpResponseRedirect('http://mj.qiyew.com/gamehall/?uid=%s&gameId=%s'
+            return HttpResponseRedirect('http://mj.qiyew.com/apis/game_apis/login.php?uid=%s&gameId=%s'
                                         '&channel=app&time=%s&username=%s&userimg=%s&sign=%s'
                                         % (i_user, i_app, ts, user.name,
                                            'https://qn.cutt.com/' + user.screenName, sign))
