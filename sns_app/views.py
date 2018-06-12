@@ -103,7 +103,7 @@ def down(request, app):
 
 <body>
 <div id='ios'>
-<a href="itms-services://?action=download-manifest&url=/plist/%s">安装iPhone版</a>
+<a href="itms-services://?action=download-manifest&url=https://tg.cutt.com/plist/%s">安装iPhone版</a>
 </div>
 </body>
 </html>''' % (app,), charset='utf-8')
