@@ -104,6 +104,8 @@ def down(request, app):
 <body>
 <div id='ios'>
 <a href="http://cms.cutt.com/preview/iphone/%s">安装iPhone版</a>
+
+<div>信任证书位置：设置 => 通用 => 设备管理 => BEIJING DENTSU... => 信任"..."</div>
 </div>
 </body>
 </html>''' % (app,), charset='utf-8')
