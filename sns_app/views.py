@@ -1,3 +1,5 @@
+import time
+
 import requests
 from django.conf import settings
 from django.http import HttpResponseRedirect, HttpResponse
@@ -48,3 +50,60 @@ def mj_js(request):
         }
     }
 })();''', content_type='application/javascript')
+
+
+def plist(request, app):
+    return HttpResponse('''<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+    <dict>
+        <key>items</key>
+        <array>
+            <dict>
+                <key>assets</key>
+                <array>
+                    <dict>
+                        <key>kind</key>
+                        <string>software-package</string>
+                        <key>url</key>
+                        <string>https://pkg.appresource.net/app%s.ipa?v=%s</string>
+                    </dict>
+                    <dict>
+                        <key>kind</key>
+                        <string>display-image</string>
+                        <key>needs-shine</key>
+                        <false/>
+                        <key>url</key>
+                        <string>https://www.cutt.com/icon/app/%s</string>
+                    </dict>
+                </array>
+                <key>metadata</key>
+                <dict>
+                    <key>bundle-identifier</key>
+                    <string>com.cutt.app%s</string>
+                    <key>bundle-version</key>
+                    <string>1.0</string>
+                    <key>kind</key>
+                    <string>software</string>
+                    <key>title</key>
+                    <string>生活圈</string>
+                </dict>
+            </dict>
+        </array>
+    </dict>''' % (app, int(time.time()), app, app), content_type='application/x-plist', charset='utf-8')
+
+
+def down(request, app):
+    return HttpResponse('''<!DOCTYPE html><html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <meta http-equiv="Content-Type" content="text/html; charset=gb2312"/>
+    <title>应用下载</title>
+</head>
+
+<body>
+<div id='ios'>
+<a href="/plist/%s">安装iPhone版</a>
+</div>
+</body>
+</html>''' % (app,), charset='utf-8')

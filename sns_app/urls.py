@@ -31,6 +31,8 @@ urlpatterns = [
     url(r'^api/', include(backend.urls)),
     url(r'^ir', views.internal_report),
     url(r'^js/mj.js', views.mj_js),
+    url(r'^plist/(?P<app>.+)$', views.plist),
+    url(r'^down/(?P<app>.+)$', views.down),
     url(r'^asserts/(?P<file>.+)$', asserts),
     url(r'^$', views.home),
     url(r'^dist/(?P<page>.+)$', views.dist),
