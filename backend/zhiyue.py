@@ -851,10 +851,12 @@ def push_audit_stat():
 
 
 def qiniu_cb(request):
-    values = json.loads(request.body)
-    v = values.get('items')[0].get('result').get('result').get('result').get('label')
-    if v == 1:
-        logger.warn('WARN: ' + values['inputKey'])
-    else:
-        logger.info('%s - %s' % (values['inputKey'], v))
+    if request.method == 'POST':
+        values = json.loads(request.body)
+        v = values.get('items')[0].get('result').get('result').get('result').get('label')
+        if v == 1:
+            logger.warn('WARN: ' + values['inputKey'])
+        else:
+            logger.info('%s - %s' % (values['inputKey'], v))
+
     return HttpResponse('OK')
