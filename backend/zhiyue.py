@@ -1,3 +1,4 @@
+import json
 import random
 import re
 from collections import defaultdict
@@ -847,3 +848,13 @@ def push_audit_stat():
             }
         }
         requests.post(url, json=dingding_msg)
+
+
+def qiniu_cb(request):
+    values = json.loads(request.body)
+    v = values.get('items').get('result').get('result').get('result').get('label')
+    if v == 1:
+        logger.warn('WARN: ' + values['inputKey'])
+    else:
+        logger.info('%s - %s' % (values['inputKey'], v))
+    return None

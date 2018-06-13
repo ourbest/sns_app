@@ -232,5 +232,8 @@ urlpatterns = [
     url(r'^onlines/weekly$', onlines.api_weekly),
 
     # majiang
-    url(r'^majiang$', apis.majiang)
+    url(r'^majiang$', apis.majiang),
+
+    # 图片回掉
+    url(r'^img/cb$', zhiyue.qiniu_cb)
 ]
