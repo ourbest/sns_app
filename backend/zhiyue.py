@@ -857,4 +857,4 @@ def qiniu_cb(request):
         logger.warn('WARN: ' + values['inputKey'])
     else:
         logger.info('%s - %s' % (values['inputKey'], v))
-    return None
+    return HttpResponse('OK')
