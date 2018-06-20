@@ -865,6 +865,9 @@ def push_audit_stat():
                     msg += random.choice(three) % (audit_logs[1]['operator'][:-9], audit_logs[1]['total'])
             msg += random.choice(last) % (audit_logs[-1]['operator'][:-9], audit_logs[-1]['total'])
 
+            if datetime.now().strftime("%Y%m%d") == '20180621':
+                msg += '\n据说昨天某人编译上架玩的很high，还顺便减了下肥，这里有必要隆重鼓励一下，一举秒杀你们一干人等'
+
     if msg:
         dingding_msg = {
             'msgtype': 'text',
