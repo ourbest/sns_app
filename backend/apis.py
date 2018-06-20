@@ -1774,6 +1774,26 @@ def majiang(i_user, i_app):
                                            'https://qn.cutt.com/' + user.screenName, sign))
 
 
+def article(request):
+    article_id = request.GET.get('id')
+    clip_item = None
+    if article_id and article_id[0] != '3':
+        items = model_manager.query(ClipItem).filter(articleId=int(article_id))
+        if len(items):
+            for item in items:
+                if str(item.clipId)[0] != '8':
+                    clip_item = item
+                    break
+    else:
+        clip_item = model_manager.query(ClipItem).filter(itemId=int(article_id)).first()
+
+    if clip_item:
+        return HttpResponseRedirect(
+            'http://www.cutt.com/weizhan/article/%s/%s/%s' % (clip_item.clipId, clip_item.itemId, clip_item.fromEntity))
+
+    return HttpResponse("error", status_code=404)
+
+
 def redirect(request):
     item_id = request.GET.get('id')
     app_id = api_helper.get_session_app(request)

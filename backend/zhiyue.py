@@ -24,7 +24,7 @@ from backend.models import AppUser, AppDailyStat, UserDailyStat, App, DailyActiv
 from backend.user_factory import sync_to_channel_user, sync_to_item_dev_user
 from backend.zhiyue_models import ShareArticleLog, ClipItem, WeizhanCount, AdminPartnerUser, CouponInst, ItemMore, \
     ZhiyueUser, AppConstants, CouponDailyStatInfo, OfflineDailyStat, DeviceUser, \
-    CouponLog, PushAuditLog
+    CouponLog, PushAuditLog, PushMessage
 
 
 @api_func_anonymous
@@ -779,6 +779,13 @@ def get_centers():
 
 
 @api_func_anonymous
+def push_items(request):
+    app = api_helper.get_session_app(request)
+    return [x.json for x in
+            model_manager.query(PushMessage).filter(appId=app, status__in=[0, 1, 2]).order_by("-pushTime")[0:20]]
+
+
+@api_func_anonymous
 def push_audit_stat():
     url = 'https://oapi.dingtalk.com/robot/send?access_token' \
           '=a9485347e2627c97f52ae75899b4a606db9ecdec0b9875ae3fef982a0db962de'
@@ -792,29 +799,33 @@ def push_audit_stat():
 
     first = ['%s，昨天你审核了%s个推送，你是最棒的，送你🌹一朵，⛽👍，继续努力💪\n',
              '🐂🐂好样的%s，昨天你审核了%s个推送，最棒了，送你一朵小红花🌺，📣⛽️，💪👍\n',
-             '📣📣小喇叭开始📢了，好样的%s，昨天审核了%s个推送，棒棒哒，勇夺🏆，红花🌺一朵送给你💪👍\n']
+             '📣📣小喇叭开始📢了，好样的%s，昨天审核了%s个推送，棒棒哒，勇夺🏆，红花🌺一朵送给你💪👍\n',
+             '每个人一天的改造都很忙碌，%s还有抽出了那么多宝贵的时间，审核了%s个推送，这真的很让人感动，🏅️献给可敬的你～\n', ]
 
     second = ['%s，昨天你审了%s个推送，和 %s 一样多✌️，你也有🌹，⛽👍，继续努力💪\n',
               '还有%s，昨天你也审了%s个推送，和 %s 一样多✌️，也有小红花🌺，keep going💪\n',
-              '必须表扬下，%s昨天也审了%s个推送，和%s一样一样的，🌺伺候着📣⛽️💪👍\n']
+              '必须表扬下，%s昨天也审了%s个推送，和%s一样一样的，🌺伺候着📣⛽️💪👍\n',
+              '神了，%s也是审了%s个，是不是和%s约好的，赶紧抱一下吧，🎉🎉🎉\n', ]
 
     three = ['%s，昨天你审了%s个推送，差一点点就第一了，别灰心，别弃疗，🏆很快就是你的了🐱\n',
              '嗯，%s，别灰心，你看，昨天咱也审了%s个，离🏆就差一步了，🌺就在眼前了，👀👀，瞅准了，下次它就是你的了😄\n',
-             '当当当当，%s昨天审了%s个，🥈属于你，差点摸到🏅啦，不加油不行啦，可惜了了，🆚🏆\n️']
+             '当当当当，%s昨天审了%s个，🥈属于你，差点摸到🏅啦，不加油不行啦，可惜了了，🆚🏆\n️',
+             '%s没得着第一没关系，咱也审了有%s个，和🏅️差了一点点，闪亮亮的牌子🥈也要有，🎁奖励也一样有你一份\n']
 
     last = ['哎呀妈呀，%s昨天你只审了%s个推送，落在了最后啦，不带这样的，今天好好干，超过他们，你可以的🐶',
             '不好，%s，你垫底了😢，昨天只审了%s个推送，不好玩，今天可不能再这样了，会被笑话的😂，超过他们，你可以的💪💪',
-            '📢隆重推出%s，成为我们的☝️🏅️，没看错，就是你，昨天审了%s个，倒数的，🏆非你莫属，😂😂']
+            '🎺📢隆重推出%s，成为我们的☝️🏅️，没看错，就是你，昨天审了%s个，倒数的，🏆非你莫属，😂😂',
+            'How old are you，怎么老是你，%s说你啥好呢，还好意思就审%s个，面壁去吧']
 
     if len(audit_logs) == 1:
         msg = random.choice(first) % (audit_logs[0]['operator'][:-9], audit_logs[0]['total'])
     elif audit_logs:
-        if datetime.now().day == 3:
+        if datetime.now().day == 22:
             msg = '![图](http://qn.cutt.com/180522164610352.300.300.2.2423)\n' \
                   '### 昨天的审核排行\n'
             for idx, x in enumerate(audit_logs):
                 msg += '%s. %s审核%s个\n' % (idx, x['operator'][:-9], x['total'])
-            msg += '#### 嗯，今天没啥好说的，就这样了，你自己对着来吧\n'
+            msg += '#### 嗯，今天没啥好说的，日子都那么2了，不说啥，就这样了，你自己对着来吧\n'
             dingding_msg = {
                 'msgtype': 'markdown',
                 'markdown': {

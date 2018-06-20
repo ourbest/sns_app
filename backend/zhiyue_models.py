@@ -199,6 +199,7 @@ class PushMessage(models.Model):
     createTime = models.DateTimeField()
     pushTime = models.DateTimeField()
     articleId = models.IntegerField()
+    scheduleTime = models.DateTimeField()
 
     @staticmethod
     def db_name():
@@ -207,6 +208,14 @@ class PushMessage(models.Model):
     class Meta:
         db_table = 'push_PushMessage'
         managed = False
+
+    @property
+    def json(self):
+        return {
+            'message': self.message,
+            'articleId': self.articleId,
+            'time': self.scheduleTime.strftime('%Y-%m-%d %H:%M')
+        }
 
 
 ITEM_TYPES = {
