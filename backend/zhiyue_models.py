@@ -213,6 +213,7 @@ class PushMessage(models.Model):
     def json(self):
         return {
             'message': self.message,
+            'type': '全局',
             'articleId': self.articleId,
             'time': self.scheduleTime.strftime('%Y-%m-%d %H:%M')
         }
@@ -595,5 +596,6 @@ class CustomPush(models.Model):
         return {
             'message': self.pushDetail,
             'articleId': self.itemId,
+            'type': '个推',
             'time': self.createTime.strftime('%Y-%m-%d %H:%M')
         }

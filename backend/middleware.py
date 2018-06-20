@@ -39,6 +39,8 @@ def logger_middleware(get_response):
         try:
             if seconds > 60:
                 logger.error("API %s latency is %s, check it", request.path_info, seconds)
+            elif seconds > 10:
+                logger.warning("API %s latency is %s, check it", request.path_info, seconds)
 
             if isinstance(response, JsonResponse):
                 logger.info(
