@@ -24,7 +24,7 @@ from backend.models import AppUser, AppDailyStat, UserDailyStat, App, DailyActiv
 from backend.user_factory import sync_to_channel_user, sync_to_item_dev_user
 from backend.zhiyue_models import ShareArticleLog, ClipItem, WeizhanCount, AdminPartnerUser, CouponInst, ItemMore, \
     ZhiyueUser, AppConstants, CouponDailyStatInfo, OfflineDailyStat, DeviceUser, \
-    CouponLog, PushAuditLog, PushMessage
+    CouponLog, PushAuditLog, PushMessage, CustomPush
 
 
 @api_func_anonymous
@@ -781,8 +781,25 @@ def get_centers():
 @api_func_anonymous
 def push_items(request):
     app = api_helper.get_session_app(request)
-    return [x.json for x in
-            model_manager.query(PushMessage).filter(appId=app, status__in=[0, 1, 2]).order_by("-pushTime")[0:20]]
+    push_messages = list(
+        model_manager.query(PushMessage).filter(appId=app, status__in=[0, 1, 2]).order_by("-pushTime")[0:20])
+    cp = list(model_manager.query(CustomPush).filter(partnerId=app, status__in=(0, 1, 2),
+                                                     pushType__in=['chat', 'push']).exclude(itemId=0).order_by("-pk")[
+              0:50])
+
+    items = set()
+
+    def _check_dup(x):
+        if x.itemId in items:
+            return False
+        items.add(x.itemId)
+        return True
+
+    push_messages += [x for x in filter(_check_dup, cp)]
+
+    sorted_items = [x.json for x in push_messages]
+    sorted_items.sort(key=lambda x: x['time'], reverse=True)
+    return sorted_items
 
 
 @api_func_anonymous

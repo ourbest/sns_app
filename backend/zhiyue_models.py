@@ -571,3 +571,29 @@ class UserDeviceHistory(models.Model):
     class Meta:
         db_table = 'partner_UserDeviceHistory'
         managed = False
+
+
+class CustomPush(models.Model):
+    pushId = models.IntegerField(primary_key=True)
+    partnerId = models.IntegerField()
+    pushDetail = models.CharField(max_length=255)
+    pushType = models.CharField(max_length=20)
+    itemId = models.BigIntegerField()
+    status = models.IntegerField()
+    createTime = models.DateTimeField()
+
+    @staticmethod
+    def db_name():
+        return 'zhiyue'
+
+    class Meta:
+        db_table = 'policy_CustomPush'
+        managed = False
+
+    @property
+    def json(self):
+        return {
+            'message': self.pushDetail,
+            'articleId': self.itemId,
+            'time': self.createTime.strftime('%Y-%m-%d %H:%M')
+        }
