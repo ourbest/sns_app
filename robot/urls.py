@@ -1,23 +1,17 @@
 from django.conf.urls import url
-from . import views, search, task_api, robot_api
+
+from robot import views
 
 app_name = 'robot'
+
 urlpatterns = [
-    url(r'^$', views.index),
+    url(r'^task$', views.get_task),
+    url(r'^result$', views.handle_task_result),
+    url(r'^report$', views.handle_task_status),
 
-    # 查群
-    url(r'^search/$', views.search),
-    url(r'^search/api$', search.handle_request),
-    url(r'^search/update$', search.update, name='search/update'),
-    url(r'^search/data$', search.data, name='search/data'),
-
-    url(r'^task/api$', task_api.get_task_api),
-    url(r'^task/result$', task_api.task_result_api),
-    url(r'^task/reset$', robot_api.reset),
-    url(r'^device/trusteeship$', robot_api.trusteeship),
-    url(r'^config/save$', robot_api.save_config),
-    url(r'^config/load$', robot_api.load_config),
-    url(r'^list$', robot_api.device_list),
-    url(r'^tasks$', robot_api.task_list),
-
+    url(r'^device/trusteeship$', views.set_trusteeship),
+    url(r'^config/save$', views.save_config),
+    url(r'^config/load$', views.load_config),
+    url(r'^list$', views.device_list),
+    url(r'^tasks$', views.task_list),
 ]

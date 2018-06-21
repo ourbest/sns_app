@@ -1,45 +1,9 @@
 from django.contrib import admin
 
-# Register your models here.
-
-from robot.models import *
-
-
-@admin.register(Area)
-class AreaAdmin(admin.ModelAdmin):
-    list_display = ('area', 'app', 'isDelete')
+from robot.models import Keyword
 
 
 @admin.register(Keyword)
 class KeywordAdmin(admin.ModelAdmin):
-    list_display = ('keyword', 'isDelete')
-
-
-@admin.register(Search)
-class SearchAdmin(admin.ModelAdmin):
-    list_display = ('word', 'group_increment', 'status', 'last_time', 'area', 'keyword')
-
-
-@admin.register(ScheduledTasks)
-class ScheduledTasksAdmin(admin.ModelAdmin):
-    list_display = ('device', 'type', 'estimated_start_time', 'sns_user')
-
-
-@admin.register(Config)
-class ConfigAdmin(admin.ModelAdmin):
-    list_display = ('owner',)
-
-
-@admin.register(TaskLog)
-class TaskLogAdmin(admin.ModelAdmin):
-    list_display = ('device', 'type', 'start_time', 'sns_user', 'finish_time', 'status', 'result')
-
-
-@admin.register(OperationDevice)
-class OperationDevice(admin.ModelAdmin):
-    list_display = ('device', 'last_apply', 'today_search', 'today_statistics')
-
-
-@admin.register(OperationSnsUser)
-class OperationSnsUserAdmin(admin.ModelAdmin):
-    list_display = ('sns_user', 'today_apply')
+    list_display = ('keyword', 'created_time')
+    ordering = ('-created_time',)

@@ -197,13 +197,14 @@ def set_qun_join(qq_id, qun):
     return sug
 
 
-def reset_qun_status(device_task):
+def reset_qun_status(device_task, device=None):
     """
     将未处理的群重置成未发送
+    :param device: PhoneDevice()
     :param device_task:
     :return:
     """
-    SnsGroupSplit.objects.filter(phone=device_task.device, status=1).update(status=0)
+    SnsGroupSplit.objects.filter(phone=device or device_task.device, status=1).update(status=0)
 
 
 def remove_dup_split_data(app_id):

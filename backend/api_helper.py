@@ -522,65 +522,72 @@ def deal_result_line(device_task, line):
                 deal_dist_result(device_task, qq, qun, status)
     elif device_task.task.type_id == 1:  # 查群
         account = line.split('\t')
-        try:
-            db = SnsGroup(group_id=account[0], group_name=account[1], type=0, app_id=device_task.task.app_id,
-                          group_user_count=account[2], created_at=timezone.now(), from_user=device_task.device.owner)
-            db.save()
-            model_manager.process_tag(db)
-            logger.info('发现了新群 %s' % account[0])
-        except:
-            pass
+        save_group(account[0], account[1], account[2], device_task.task.app_id, device_task.device.owner)
     elif device_task.task.type_id == 4:  # 统计
         account = line.split('\t')
         if len(account) == 4 and account[0].isdigit():
             device = device_task.device
             [qun_num, qun_name, qun_user_cnt, qq] = account
-            qun_user_cnt = 0 if not qun_user_cnt.isdigit() else int(qun_user_cnt)
-            qun = SnsGroup.objects.filter(group_id=qun_num, type=0).first()
-            sns_user = SnsUser.objects.filter(login_name=qq, type=0).first()
-            if not sns_user:
-                logger.info("Sns user %s not found device is %s", qq, device.id)
-                sns_user = SnsUser(name=qq, login_name=qq, passwd='_',
-                                   phone=device.phone_num, device=device,
-                                   owner=device.owner, app=device.owner.app)
-                sns_user.save()
-            elif sns_user.device != device:
-                sns_user.device = device
-                sns_user.owner = device.owner
-                sns_user.phone = device.label
-                sns_user.save()
-
-            if not qun:
-                qun = SnsGroup(group_id=qun_num, group_name=qun_name, type=0, app_id=sns_user.app_id,
-                               group_user_count=qun_user_cnt, status=2, created_at=timezone.now(),
-                               from_user_id=device_task.device.owner_id)
-                qun.save()
-                model_manager.process_tag(qun)
-            else:
-                qun.group_name = qun_name
-                qun.group_user_count = qun_user_cnt
-                qun.status = 2
-                try:
-                    qun.save(update_fields=['group_name', 'group_user_count', 'status'])
-                except:
-                    pass
-                model_manager.process_tag(qun)
-
-            found = qun.snsusergroup_set.filter(sns_user=sns_user).first()
-            if found:
-                if found.status != 0:
-                    found.status = 0
-                    found.active = 1
-                    found.save()
-            else:
-                found = SnsUserGroup(sns_group=qun, sns_user=sns_user, status=0, active=1)
-                found.save()
-
-            qun.snsgroupsplit_set.filter(phone=device).update(status=3)
-
-            SnsApplyTaskLog.objects.filter(account=sns_user, memo='已发送验证', group=qun).update(status=1)
-
+            deal_count_result(qun_num, qun_name, qun_user_cnt, qq, device)
     return None
+
+
+def deal_count_result(qun_num, qun_name, qun_user_cnt, qq, device):
+    qun_user_cnt = 0 if not qun_user_cnt.isdigit() else int(qun_user_cnt)
+    qun = SnsGroup.objects.filter(group_id=qun_num, type=0).first()
+    sns_user = SnsUser.objects.filter(login_name=qq, type=0).first()
+    if not sns_user:
+        logger.info("Sns user %s not found device is %s", qq, device.id)
+        sns_user = SnsUser(name=qq, login_name=qq, passwd='_',
+                           phone=device.phone_num, device=device,
+                           owner=device.owner, app=device.owner.app)
+        sns_user.save()
+    elif sns_user.device != device:
+        sns_user.device = device
+        sns_user.owner = device.owner
+        sns_user.phone = device.label
+        sns_user.save()
+
+    if not qun:
+        qun = SnsGroup(group_id=qun_num, group_name=qun_name, type=0, app_id=sns_user.app_id,
+                       group_user_count=qun_user_cnt, status=2, created_at=timezone.now(),
+                       from_user_id=device.owner_id)
+        qun.save()
+        model_manager.process_tag(qun)
+    else:
+        qun.group_name = qun_name
+        qun.group_user_count = qun_user_cnt
+        qun.status = 2
+        try:
+            qun.save(update_fields=['group_name', 'group_user_count', 'status'])
+        except:
+            pass
+        model_manager.process_tag(qun)
+
+    found = qun.snsusergroup_set.filter(sns_user=sns_user).first()
+    if found:
+        if found.status != 0:
+            found.status = 0
+            found.active = 1
+            found.save()
+    else:
+        found = SnsUserGroup(sns_group=qun, sns_user=sns_user, status=0, active=1)
+        found.save()
+
+    qun.snsgroupsplit_set.filter(phone=device).update(status=3)
+
+    SnsApplyTaskLog.objects.filter(account=sns_user, memo='已发送验证', group=qun).update(status=1)
+
+
+def save_group(group_id, group_name, group_user_count, app_id, from_user):
+    try:
+        db = SnsGroup(group_id=group_id, group_name=group_name, type=0, app_id=app_id,
+                      group_user_count=group_user_count, created_at=timezone.now(), from_user=from_user)
+        db.save()
+        model_manager.process_tag(db)
+        logger.info('发现了新群 %s' % group_id)
+    except:
+        pass
 
 
 def deal_dist_result(device_task, qq, qun, status):
@@ -600,22 +607,22 @@ def deal_dist_result(device_task, qq, qun, status):
     return kicked
 
 
-def deal_add_result(device_task, qq, qun, status):
-    SnsApplyTaskLog(device=device_task.device, device_task=device_task, account=qq, memo=status,
+def deal_add_result(device_task, qq, qun, status, device=None):
+    SnsApplyTaskLog(device=device or device_task.device, device_task=device_task, account=qq, memo=status,
                     group=qun).save()
-    if status in ('付费群', '不存在', '不允许加入'):
+    if status in ('付费群', '不存在', '不允许加入', '满员群'):
         model_manager.set_qun_useless(qun)
     elif status in ('已加群', '无需验证已加入'):
         model_manager.set_qun_join(qq, qun)
     elif status in ('已发送验证',):
-        model_manager.set_qun_applying(device_task.device, qun)
+        model_manager.set_qun_applying(device or device_task.device, qun)
     elif status in ('需要回答问题',):
         model_manager.set_qun_manual(qun)
-    elif status in ('无需验证未加入',):
+    elif status in ('无需验证未加入', '发送验证失败'):
         pass
 
 
-ADD_STATUS = {'付费群', '不存在', '不允许加入', '已加群', '无需验证已加入', '已发送验证', '需要回答问题', '无需验证未加入'}
+ADD_STATUS = {'付费群', '不存在', '不允许加入', '已加群', '无需验证已加入', '已发送验证', '需要回答问题', '无需验证未加入', '满员群', '发送验证失败'}
 DIST_STATUS = {}
 
 
