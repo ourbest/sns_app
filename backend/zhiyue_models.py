@@ -609,4 +609,4 @@ class CustomPush(models.Model):
                 self.itemId = int(r.group(1))
                 self.pushDetail = r.group(2)
 
-        return self.itemId == 0
+        return self.itemId != 0
