@@ -1,3 +1,4 @@
+import re
 from django.db import models
 from django.db.models import CASCADE
 
@@ -599,3 +600,13 @@ class CustomPush(models.Model):
             'type': '个推',
             'time': self.createTime.strftime('%Y-%m-%d %H:%M')
         }
+
+    @property
+    def has_item(self):
+        if self.itemId == 0:
+            r = re.search(r'<a href="/article/(\d+)/0">(.+)</a>', self.pushDetail)
+            if r:
+                self.itemId = int(r.group(1))
+                self.pushDetail = r.group(2)
+
+        return self.itemId == 0
