@@ -785,7 +785,7 @@ def push_items(request):
         model_manager.query(PushMessage).filter(appId=app, status__in=[0, 1, 2]).order_by("-pushTime")[0:20])
     cp = [x for x in model_manager.query(CustomPush).filter(partnerId=app, status__in=(0, 1, 2),
                                                             pushType__in=['chat', 'push']).order_by("-pk")[0:50]
-          if x.hasItem]
+          if x.has_item]
 
     items = set()
 
