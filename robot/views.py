@@ -58,9 +58,9 @@ def load_config(request):
         return {
             'fromTime': config.from_time.strftime('%H:%M'),
             'toTime': config.to_time.strftime('%H:%M'),
-            'max': config.max_apply,
+            'max': config.apply_max,
             'interval': config.apply_interval // 60,
-            'times': config.max_search,
+            'times': config.search_max,
         }
 
 
@@ -72,8 +72,8 @@ def save_config(request, fromTime, toTime, max, interval, times):
 
         config.from_time = datetime.time(*[int(x) for x in fromTime.split(':')])
         config.to_time = datetime.time(*[int(x) for x in toTime.split(':')])
-        config.max_apply = int(max)
-        config.max_search = int(times)
+        config.apply_max = int(max)
+        config.search_max = int(times)
         config.apply_interval = int(interval) * 60
         config.save()
 
