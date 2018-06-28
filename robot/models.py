@@ -7,7 +7,7 @@ from robot.utils import tz
 
 
 class Keyword(models.Model):
-    keyword = models.CharField('关键词', max_length=255, primary_key=True)
+    keyword = models.CharField('关键词', max_length=100, primary_key=True)
     created_time = models.DateTimeField(auto_now=True)
 
     def __str__(self):
