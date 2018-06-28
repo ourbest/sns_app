@@ -30,7 +30,7 @@ from backend.task_manager import set_device_active
 from backend.zhiyue_models import ZhiyueUser, ClipItem
 from . import schedulers
 
-from robot.robot import Robot
+from robot.robot import PlanManager
 
 
 @api_func_anonymous
@@ -1282,7 +1282,7 @@ def update_account_attr(sns_id, name, value):
 
         # app-robot
         if name == 'friend' and sns_user.device.in_trusteeship:
-            Robot(user=sns_user.owner).update_scheduled_tasks(device=sns_user.device)
+            PlanManager(sns_user.device).delete_device_plans()
 
     return sns_user_to_json(sns_user)
 
