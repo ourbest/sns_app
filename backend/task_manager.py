@@ -22,8 +22,10 @@ def update_task(phone_label):
 
 
 def reload_next_task(phone_label):
-    device_task = SnsTaskDevice.objects.filter(device__label=phone_label, status=0,
-                                               schedule_at__lte=timezone.now()).first()
+    phone = model_manager.get_phone(phone_label)
+    if phone:
+        device_task = SnsTaskDevice.objects.filter(device=phone, status=0,
+                                                   schedule_at__lte=timezone.now()).first()
     if not device_task:
         device_task = SnsTaskDevice()
 
