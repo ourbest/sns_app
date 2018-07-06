@@ -509,6 +509,9 @@ def send_html_mail(subject, to, html_content, text_content='HTML'):
 
 
 def deal_result_line(device_task, line):
+    if not line:
+        return None
+
     values = re.split('\s+', line)
     if device_task.task.type_id in (2, 3):
         if len(values) == 3:

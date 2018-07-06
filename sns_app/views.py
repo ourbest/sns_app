@@ -25,7 +25,7 @@ def mj_js(request):
     return HttpResponse('''(function () {
     if (!window.JW) {
         var toURL = function (func, aa) {
-            var url = "http://zhiyue.cutt.com/jsapi/" + func + "/";
+            var url = "https://zhiyue.cutt.com/jsapi/" + func + "/";
             var a = [];
             for (var i = 0; i < aa.length; i++) {
                 var s = aa[i];
