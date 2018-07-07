@@ -22,6 +22,8 @@ urlpatterns = [
 
     url(r'^perm/save$', apis.save_perm),
 
+    url(r'^secondary/notice$', apis.secondary_task_notice),
+
     # imports ====
     url(r'^import/qq$', apis.import_qq),
     # url(r'^import/split$', apis.import_split),

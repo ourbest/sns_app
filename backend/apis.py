@@ -1,3 +1,4 @@
+import threading
 import time
 
 import csv
@@ -1851,3 +1852,24 @@ def task_groups(task_id, i_page):
         'total': total,
         'items': items
     }
+
+
+@api_func_anonymous
+def secondary_task_notice(request):
+    label = request.GET.get('id')
+    device = model_manager.get_phone(label)
+    if device:
+        msg = None
+        task_type = request.GET.get('type')
+        if task_type == 'switch':
+            msg = '[自动切换QQ通知]\n手机：%s\n客户端：%s\n切换到QQ：%s' % \
+                  (device.phone_num, request.GET.get('client'), request.GET.get('qq'))
+        elif task_type == 'like':
+            msg = '[自动QQ点赞通知]\n手机：%s\n点赞好友数：%s' % \
+                  (device.phone_num, request.GET.get('num'))
+        elif task_type == 'share':
+            msg = '[自动分享朋友圈通知]\n手机：%s' % device.phone_num
+
+        if msg is not None:
+            thread = threading.Thread(target=api_helper.send_msg, args=(msg, device.owner))
+            thread.start()
