@@ -13,7 +13,7 @@ def home(request):
 
 
 def dist(request, page):
-    return HttpResponseRedirect('%s://jwres.cutt.com/dist/%s' % (request.scheme, page))
+    return HttpResponseRedirect('%s://jwres.appgc.cn/dist/%s' % (request.scheme, page))
 
 
 def internal_report(request):
