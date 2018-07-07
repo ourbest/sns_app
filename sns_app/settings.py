@@ -169,7 +169,7 @@ EMAIL_HOST = 'smtp.mxhichina.com'
 EMAIL_HOST_USER = 'yonghui.chen@cutt.com'
 
 JS_VER = 'c8c686e4e4bb2f31c4dd'
-QINIU_URL = 'http://jwres.cutt.com/'
+QINIU_URL = 'http://jwres.appgc.cn/'
 
 DEFAULT_CHARSET = 'utf-8'
 
