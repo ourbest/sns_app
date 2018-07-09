@@ -901,3 +901,10 @@ class InviteUser(models.Model):
             'ip': self.ip,
             'city': self.city,
         }
+
+
+class SecondaryTaskLog(models.Model):
+    created_at = models.DateTimeField(auto_now=True)
+    device = models.ForeignKey(PhoneDevice, on_delete=models.CASCADE)
+    type = models.CharField(max_length=20)
+    data = models.TextField(null=True, blank=True)
