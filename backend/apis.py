@@ -606,7 +606,7 @@ def device_create(request, phone):
         if email:
             owner = User.objects.filter(email=email).first()
             if owner:
-                PhoneDevice(label=phone, phone_num=phone, owner=owner).save()
+                PhoneDevice(label=phone, phone_num=phone, owner=owner, app=owner.app).save()
     return "ok"
 
 
@@ -791,6 +791,7 @@ def import_phone(request, ids):
                 device = PhoneDevice(label=label, phone_num=phone_num, status=0)
                 if user:
                     device.owner_id = user.id
+                    device.app = user.app
 
                 device.save()
                 total += 1
@@ -925,7 +926,7 @@ def import_qun_split(app, ids, request):
 
             # if not db:
             #     db = model_manager.get_qun(qun_id)
-            split = SnsGroupSplit(group_id=qun_id, user=model_manager.get_user(user_email))
+            split = SnsGroupSplit(group_id=qun_id, user=model_manager.get_user(user_email), app_id=app)
             if phone:
                 split.phone = model_manager.get_phone(phone)
 

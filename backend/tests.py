@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 from time import sleep
 
 from dj import times
-from django.db import connections
+from django.db import connections, connection
 from django.db.models import Count, Sum, F
 from django.utils import timezone
 from django_rq import job
@@ -72,6 +72,23 @@ def clean_split_data_1(status=1):
         done.add(x.group_id)
         if len(done) == size:
             x.delete()
+
+
+def correct_split():
+    sql = """select s.id from backend_snsgroup g, backend_snsgroupsplit s, backend_phonedevice d, backend_user u
+      where g.group_id = s.group_id
+      and g.app_id != u.app_id
+      and s.phone_id = d.id
+      and u.id = d.owner_id
+      and u.app_id > 1000
+      and s.status in (0,1)"""
+
+    with connection.cursor() as cursor:
+        cursor.execute(sql)
+        rows = cursor.fetchall()
+        for row in rows:
+            SnsGroupSplit.objects.filter(pk=row[0]).delete()
+            print('delete ', row[0])
 
 
 def sync_split():

@@ -77,6 +77,7 @@ class PhoneDevice(models.Model):
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='添加时间')
     memo = models.CharField('备注', null=True, blank=True, max_length=50)
     in_trusteeship = models.BooleanField('托管', default=False)
+    app = models.ForeignKey(App, null=True, blank=True, verbose_name='所属APP', on_delete=CASCADE)
 
     @property
     def friend_text(self):
@@ -226,6 +227,7 @@ class SnsGroupSplit(models.Model):
     updated_at = models.DateTimeField('修改时间', auto_now=True, null=True)
     phone = models.ForeignKey(PhoneDevice, null=True, verbose_name='设备', on_delete=CASCADE)
     apply_count = models.IntegerField(default=0)
+    app = models.ForeignKey(App, verbose_name='所属APP', null=True, blank=True, on_delete=CASCADE)
 
     def __str__(self):
         return '<Splitter:%s@%s_%s>' % (self.group_id, self.phone_id, self.user_id)
