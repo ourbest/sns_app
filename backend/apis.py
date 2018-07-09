@@ -1,4 +1,3 @@
-import threading
 import time
 
 import csv
@@ -26,7 +25,8 @@ from backend.api_helper import get_session_user, get_session_app, sns_user_to_js
 from backend.jobs import do_re_import, _after_upload, do_import_qun_stat, do_import_qun, reload_phone_task
 from backend.models import User, App, SnsGroup, SnsGroupSplit, PhoneDevice, SnsUser, SnsUserGroup, SnsTaskDevice, \
     DeviceFile, SnsTaskType, SnsTask, ActiveDevice, SnsApplyTaskLog, UserActionLog, SnsGroupLost, GroupTag, \
-    TaskWorkingLog, AppUser, DeviceTaskData, DistArticle, UserAuthApp, WxDistLog, DistTaskLog, DeviceWeixinGroup
+    TaskWorkingLog, AppUser, DeviceTaskData, DistArticle, UserAuthApp, WxDistLog, DistTaskLog, DeviceWeixinGroup, \
+    SecondaryTaskLog
 from backend.task_manager import set_device_active
 from backend.zhiyue_models import ZhiyueUser, ClipItem
 from . import schedulers
@@ -1858,18 +1858,7 @@ def task_groups(task_id, i_page):
 def secondary_task_notice(request):
     label = request.GET.get('id')
     device = model_manager.get_phone(label)
-    if device:
-        msg = None
-        task_type = request.GET.get('type')
-        if task_type == 'switch':
-            msg = '[自动切换QQ通知]\n手机：%s\n客户端：%s\n切换到QQ：%s' % \
-                  (device.phone_num, request.GET.get('client'), request.GET.get('qq'))
-        elif task_type == 'like':
-            msg = '[自动QQ点赞通知]\n手机：%s\n点赞好友数：%s' % \
-                  (device.phone_num, request.GET.get('num'))
-        elif task_type == 'share':
-            msg = '[自动分享朋友圈通知]\n手机：%s' % device.phone_num
-
-        if msg is not None:
-            thread = threading.Thread(target=api_helper.send_msg, args=(msg, device.owner))
-            thread.start()
+    task_type = request.GET.get('type')
+    data = request.GET.get('data')
+    if device and task_type:
+        SecondaryTaskLog.objects.create(device=device, type=task_type, data=data)
