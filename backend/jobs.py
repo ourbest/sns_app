@@ -28,7 +28,7 @@ from backend.zhiyue_models import ZhiyueUser, DeviceUser
 
 
 @job("default", timeout=3600)
-def do_re_import(i_file_id):
+def do_re_import(i_file_id, merge=True):
     file = DeviceFile.objects.filter(id=i_file_id).first()
     if file:
         from backend.apis import _get_content
@@ -37,13 +37,13 @@ def do_re_import(i_file_id):
         with open(file_name, 'wt', encoding='utf-8') as out:
             out.write(text)
 
-        _after_upload(file.device_task, file.device_task.id, file_name, file.device, file.type)
+        _after_upload(file.device_task, file.device_task.id, file_name, file.device, file.type, merge)
 
     return ''
 
 
 @job
-def _after_upload(device_task, task_id, tmp_file, device, file_type):
+def _after_upload(device_task, task_id, tmp_file, device, file_type, merge=True):
     if file_type == 'result':
         logger.info('after upload import temp file %s task_id is %s file type is %s' % (tmp_file, task_id, file_type))
         from backend.apis import import_qun
@@ -65,7 +65,9 @@ def _after_upload(device_task, task_id, tmp_file, device, file_type):
                     import_wx_dist_result(device_task, upload_file_content)
                 elif device_task.task.type_id == 6:  # 微信统计
                     import_wx_qun(device_task, upload_file_content)
-                api_helper.merge_task_result(device_task.task, upload_file_content)
+
+                if merge:
+                    api_helper.merge_task_result(device_task.task, upload_file_content)
 
             if task_id == 'stat':
                 do_import_qun_stat(upload_file_content, None, 2)

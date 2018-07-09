@@ -84,6 +84,7 @@ urlpatterns = [
     url(r'^split/phone/qq$', apis.split_qun_to_device),
     url(r'^reset/phone/qq$', apis.reset_phone_split),
     url(r'^qun$', apis.export_qun),
+    url(r'^qun/history$', apis.qun_history),
     url(r'^export/qun$', apis.export_qun_csv),
     url(r'^export/user_qun$', apis.export_phone_qun_csv),
     url(r'^send/qq$', apis.send_qq),
@@ -99,6 +100,8 @@ urlpatterns = [
     url(r'^task/devices$', apis.task_devices),
     url(r'^task/files$', apis.task_files),
     url(r'^task/groups$', apis.task_groups),
+    url(r'^task/auto$', apis.task_auto_data),
+
     url(r'^file/content$', apis.file_content),
     url(r'^task/logs$', tasks.work_logs),
     url(r'^image$', apis.file_content),

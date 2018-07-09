@@ -1500,6 +1500,34 @@ def task_files(i_task_id, file_type):
 
 
 @api_func_anonymous
+def qun_history(i_qun):
+    if i_qun:
+        return [{
+            'qq': x.account.login_name,
+            'device': x.device.friend_text,
+            'created_at': x.created_at.strftime('%Y-%m-%d %H:%M'),
+            'memo': x.memo,
+            'name': x.group.group_name if x.group.group_name else '(未知)',
+        } for x in SnsApplyTaskLog.objects.filter(group_id=i_qun).select_related(
+            'device', 'account', 'group').order_by("-pk")[0:100]]
+
+
+@api_func_anonymous
+def task_auto_data(request, device):
+    objects = SecondaryTaskLog.objects.filter(
+        device__owner=model_manager.get_user(api_helper.get_session_user(request))).order_by("-pk")
+    if device:
+        objects = objects.filter(device__label=device)
+
+    return [{
+        'phone': x.device.friend_text,
+        'created_at': x.created_at.strftime('%Y-%m-%d %H:%M'),
+        'type': '赞' if x.type == 'like' else '切号' if x.type == 'switch' else '其它',
+        'data': x.data
+    } for x in objects.select_related("device")[0:100]]
+
+
+@api_func_anonymous
 def file_content(i_file_id, i_att, i_result_id):
     if i_result_id:
         return HttpResponse(api_helper.get_result_content(i_result_id))
@@ -1543,7 +1571,7 @@ def temp_func(request):
 
 @api_func_anonymous
 def re_import(i_file_id):
-    return do_re_import(i_file_id)
+    do_re_import.delay(i_file_id, False)
 
 
 @api_func_anonymous
