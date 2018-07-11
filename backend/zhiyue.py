@@ -20,7 +20,7 @@ from backend.api_helper import get_session_app
 from backend.daily_stat import make_daily_remain, save_bonus_info, make_offline_stat, \
     do_offline_stat
 from backend.models import AppUser, AppDailyStat, UserDailyStat, App, DailyActive, ItemDeviceUser, UserDailyDeviceUser, \
-    User, OfflineUser, ChannelUser, ShareUser, InviteUser
+    User, OfflineUser, ChannelUser, ShareUser, InviteUser, ShortenURL
 from backend.user_factory import sync_to_channel_user, sync_to_item_dev_user
 from backend.zhiyue_models import ShareArticleLog, ClipItem, WeizhanCount, AdminPartnerUser, CouponInst, ItemMore, \
     ZhiyueUser, AppConstants, CouponDailyStatInfo, OfflineDailyStat, DeviceUser, \
@@ -776,6 +776,24 @@ def get_centers():
     for app in App.objects.filter(center__isnull=True, app_id__gt=1564484):
         app.center = lbs.get_center(app.app_name[:-3])
         app.save()
+
+
+@api_func_anonymous
+def shorten_add(url):
+    ShortenURL(url=url).save()
+
+
+@api_func_anonymous
+def shorten_list(i_page):
+    if not i_page:
+        i_page = 1
+
+    idx = 50 * (i_page - 1)
+
+    return {
+        'total': ShortenURL.objects.count(),
+        'items': [x.json for x in ShortenURL.objects.order_by("-pk")[idx:idx + 50]]
+    }
 
 
 @api_func_anonymous

@@ -915,3 +915,11 @@ class SecondaryTaskLog(models.Model):
 class ShortenURL(models.Model):
     created_at = models.DateTimeField(auto_now=True)
     url = models.CharField(max_length=100)
+
+    @property
+    def json(self):
+        return {
+            'id': self.id,
+            'url': self.url,
+            'created_at': self.created_at.strftime('%Y-%m-%d %H:%M'),
+        }

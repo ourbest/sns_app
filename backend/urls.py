@@ -154,6 +154,10 @@ urlpatterns = [
     url(r'^zhiyue/push/stat$', zhiyue.push_audit_stat),
     url(r'^zhiyue/push/items$', zhiyue.push_items),
 
+    url(r'^zhiyue/shorten/list$', zhiyue.shorten_list),
+    url(r'^zhiyue/shorten/add', zhiyue.shorten_add),
+
+
     # internal
     url(r'^change/ver$', apis.change_js_version),
     url(r'^daemon/check$', daemons.check_online_task),
