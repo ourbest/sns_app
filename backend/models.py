@@ -910,3 +910,8 @@ class SecondaryTaskLog(models.Model):
     device = models.ForeignKey(PhoneDevice, on_delete=models.CASCADE)
     type = models.CharField(max_length=20)
     data = models.TextField(null=True, blank=True)
+
+
+class ShortenURL(models.Model):
+    created_at = models.DateTimeField(auto_now=True)
+    url = models.CharField(max_length=100)

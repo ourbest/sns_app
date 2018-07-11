@@ -19,6 +19,7 @@ from django.contrib import admin
 from django.http import FileResponse
 
 import backend.urls
+import backend.shorten
 from . import views
 
 
@@ -38,4 +39,5 @@ urlpatterns = [
     url(r'^dist/(?P<page>.+)$', views.dist),
     url(r'^robot/', include('robot.urls', namespace='robot')),
     url(r'^django-rq/', include('django_rq.urls')),
+    url(r'^a_(?P<sid>\d+)$', backend.shorten.download),
 ]
