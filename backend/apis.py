@@ -1891,3 +1891,32 @@ def secondary_task_notice(request):
     data = request.GET.get('data')
     if device and task_type:
         SecondaryTaskLog.objects.create(device=device, type=task_type, data=data)
+
+
+@api_func_anonymous
+def request_calling(request):
+    label = request.GET.get('id')
+    device = model_manager.get_phone(label)
+    if not device:
+        return
+
+    req = api_helper.RequestCalling(device)
+    # 创建
+    qq_numbers: str = request.GET.get('qqs')
+    if qq_numbers is not None:
+        qq_numbers: list = qq_numbers.split('|')
+        connection = req.create(qq_numbers)
+        if connection:
+            return HttpResponse('calling_qq=%s' % connection.calling_qq.login_name)
+    # 更新
+    status: str = request.GET.get('status')
+    if status.isdigit():
+        connection = req.update(int(status), request.GET.get('qq'))
+        if connection:
+            return HttpResponse('status=%s' % connection.status)
+    # 查看
+    connection = req.pull_connection()
+    if connection:
+        return HttpResponse('calling=%s&calling_qq=%s&called=%s&called_qq=%s&status=%d' % (
+            connection.calling.label, connection.calling_qq.login_name, connection.called.label,
+            connection.called_qq.login_name if connection.called_qq else None, connection.status))
