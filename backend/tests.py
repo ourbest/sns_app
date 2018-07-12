@@ -583,3 +583,15 @@ def sync_partner_admin_user():
         if db and db.partnerId != x.app_id:
             x.app_id = db.partnerId
             x.save(update_fields=['app_id'])
+
+
+def sync_groups():
+    select = 'select group_id from saved_group'
+    with connection.cursor() as cursor:
+        cursor.execute(select)
+        rows = cursor.fetchall()
+        for row in rows:
+            group = SnsGroup.objects.filter(group_id=row[0]).first()
+            if group and group.status == 1:
+                group.status = 0
+                model_manager.save_ignore(group)

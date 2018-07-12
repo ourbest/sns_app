@@ -55,6 +55,7 @@ def split_qun(app):
 
         if x.snsusergroup_set.filter(status=0).count() == 0:
             # 不重复分群
+            logger.info("split %s(%s) to %s at %s" % (x.group_name, x.group_id, user.name, app))
             SnsGroupSplit(group=x, user=user, app_id=app).save()
             try:
                 x.save(update_fields=['status'])
