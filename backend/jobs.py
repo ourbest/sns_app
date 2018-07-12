@@ -223,6 +223,8 @@ def do_import_qun(app, ids, email, phone, edit_method, i_ignore_dup):
                             SnsGroupSplit.objects.filter(group=qun, user=login_user, status__in=(0, 1)).delete()
 
                         if qun.snsgroupsplit_set.filter(status__in=(0, 1, 2)).count() == 0:
+                            logger.info(
+                                "split %s(%s) to %s at %s" % (qun.group_name, qun.group_id, login_user.name, app))
                             SnsGroupSplit(group=qun, user=login_user, phone=device, app_id=app).save()
 
                     continue
@@ -251,6 +253,7 @@ def do_import_qun(app, ids, email, phone, edit_method, i_ignore_dup):
                         db.save()
                 elif split_to_self and login_user and (
                         device or (the_app and the_app.self_qun == 1)) and login_user.app == the_app:
+                    logger.info("split %s(%s) to %s at %s" % (db.group_name, db.group_id, login_user.name, app))
                     SnsGroupSplit(group=db, user=login_user, phone=device, app_id=app).save()
             except:
                 logger.warning("error save %s" % line, exc_info=1)

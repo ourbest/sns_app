@@ -931,6 +931,7 @@ def import_qun_split(app, ids, request):
                 split.phone = model_manager.get_phone(phone)
 
             try:
+                logger.info("split (%s) to %s at %s" % (qun_id, split.user.name, app))
                 split.save()
             except:
                 logger.warning('error save split %s' % split, exc_info=1)
