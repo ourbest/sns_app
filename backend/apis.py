@@ -1521,10 +1521,12 @@ def task_auto_data(request, device):
     if device:
         objects = objects.filter(device__label=device)
 
+    translation = {'like': '赞', 'switch': '切号', 'share': '分享朋友圈', 'clear': '清理内存'}
+
     return [{
         'phone': x.device.friend_text,
         'created_at': x.created_at.strftime('%Y-%m-%d %H:%M'),
-        'type': '赞' if x.type == 'like' else '切号' if x.type == 'switch' else '其它',
+        'type': translation.get(x.type, x.type),
         'data': x.data
     } for x in objects.select_related("device")[0:100]]
 
