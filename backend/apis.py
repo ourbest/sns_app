@@ -1015,7 +1015,7 @@ def export_phone_qun_csv(request):
 @api_func_anonymous
 def export_qun(request, others, filter, device):
     user = get_session_user(request)
-    app = get_session_app(request)
+    app = get_session_app(request, user)
     # if user:
     #     db = User.objects.filter(email=email).first()
     #     if db:
@@ -1367,7 +1367,7 @@ def create_task(type, params, phone, request, date):
             user = devices[0].owner
 
         task = SnsTask(name=task_type.name, type=task_type,
-                       app_id=get_session_app(request), status=0, schedule_at=scheduler_date,
+                       app=user.app, status=0, schedule_at=scheduler_date,
                        data=params, creator=user)
         task.save()
 
@@ -1710,7 +1710,7 @@ def add_user_majia(i_cutt_id, i_type, request):
         api_error(101, '用户不存在')
 
     AppUser(cutt_user_id=i_cutt_id, type=i_type, user=user, name=zhiyue_user.name,
-            app_id=api_helper.get_session_app(request)).save()
+            app_id=api_helper.get_session_app(request, user)).save()
 
     return 'ok'
 
@@ -1892,3 +1892,9 @@ def secondary_task_notice(request):
     data = request.GET.get('data')
     if device and task_type:
         SecondaryTaskLog.objects.create(device=device, type=task_type, data=data)
+
+
+@api_func_anonymous
+def task_url(i_a, i_c, i_i, i_u):
+    url = 'https://tz.fafengtuqiang.cn/weizhan/article/%s/%s/%s/%s' % (i_c, i_i, i_a, i_u)
+    return None

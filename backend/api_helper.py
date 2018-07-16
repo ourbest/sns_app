@@ -24,16 +24,18 @@ def get_session_user(request):
     return request.session.get('user')
 
 
-def get_session_app(request):
+def get_session_app(request, login_user=None):
     app = request.GET.get('app') or request.POST.get('app')
     if app:
         return app
 
-    email = get_session_user(request)
-    user = User.objects.filter(email=email).first()
-    if user:
-        return user.app_id
+    if not login_user:
+        login_user = model_manager.get_user(get_session_user(request))
+
+    if login_user:
+        return login_user.app_id
     else:
+        logger.warning("cannot find session user")
         return DEFAULT_APP
 
 

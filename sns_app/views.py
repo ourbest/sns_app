@@ -109,3 +109,9 @@ def down(request, app):
 </div>
 </body>
 </html>''' % (app,), charset='utf-8')
+
+
+def to_weizhan(request):
+    resp = HttpResponseRedirect('https://tz.fafengtuqiang.cn%s' % request.get_full_path())
+    resp.set_cookie('tuiguang', '1', domain='fafengtuqiang.cn')
+    return resp
