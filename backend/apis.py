@@ -1015,7 +1015,7 @@ def export_phone_qun_csv(request):
 @api_func_anonymous
 def export_qun(request, others, filter, device):
     user = get_session_user(request)
-    app = get_session_app(request, user)
+    app = get_session_app(request)
     # if user:
     #     db = User.objects.filter(email=email).first()
     #     if db:
