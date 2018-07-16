@@ -1356,15 +1356,16 @@ def create_task(type, params, phone, request, date):
     if not type:
         return 'error'
 
+    user = model_manager.get_user(get_session_user(request))
+    if not user:
+        api_error(403, '用户未登录')
+        return '用户未登录'
+
     labels = re.split(';', phone)
     devices = model_manager.get_phones(labels)
     scheduler_date = timezone.make_aware(datetime.strptime(date, '%Y-%m-%d %H:%M')) if date else None
     if devices:
         task_type = model_manager.get_task_type(type)
-
-        user = model_manager.get_user(get_session_user(request))
-        if not user:
-            user = devices[0].owner
 
         task = SnsTask(name=task_type.name, type=task_type,
                        app=user.app, status=0, schedule_at=scheduler_date,
