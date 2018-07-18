@@ -923,3 +923,23 @@ class ShortenURL(models.Model):
             'url': self.url,
             'created_at': self.created_at.strftime('%Y-%m-%d %H:%M'),
         }
+
+
+class CallingList(models.Model):
+    calling = models.ForeignKey(PhoneDevice, on_delete=models.CASCADE, verbose_name='主叫设备')
+    calling_qq = models.ForeignKey(SnsUser, on_delete=models.CASCADE, verbose_name='主叫QQ')
+    called = models.ForeignKey(PhoneDevice, on_delete=models.CASCADE, verbose_name='被叫设备')
+    called_qq = models.ForeignKey(SnsUser, on_delete=models.CASCADE, verbose_name='被叫QQ', null=True, blank=True)
+    status = models.IntegerField(default=0, help_text='''
+                                            0-calling创建请求
+                                            1-called查看了请求
+                                            2-called返回在线qq号
+                                            3-calling查看了qq号
+                                            4-calling已呼叫
+                                            5-called接到呼叫
+                                            6-calling确认已接
+                                            ''')
+    change_time = models.DateTimeField(auto_now=True)
+    success_or_failure = models.NullBooleanField()
+    failure_reason = models.CharField(max_length=30, null=True, blank=True)
+
