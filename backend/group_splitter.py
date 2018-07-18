@@ -121,6 +121,15 @@ def merge_split():
         merge_split_group(group)
 
 
+def reset_split(app):
+    for x in SnsGroupSplit.objects.filter(app_id=app, status=0):
+        group = x.group
+        if group.status == 1:
+            group.status = 0
+            group.save()
+        x.delete()
+
+
 def merge_join():
     groups = SnsGroup.objects.filter(status=2)
     for group in groups:

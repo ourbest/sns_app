@@ -84,6 +84,7 @@ def get_item_stat(app_id, item_id, from_time, user_type=0):
     }
 
 
+# TODO 需要优化
 def get_user_share_stat(date, the_user):
     date_end = date + timedelta(days=7)
     if not the_user:

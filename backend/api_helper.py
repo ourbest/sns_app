@@ -27,16 +27,18 @@ def get_session_user(request):
     return request.session.get('user')
 
 
-def get_session_app(request):
+def get_session_app(request, login_user=None):
     app = request.GET.get('app') or request.POST.get('app')
     if app:
         return app
 
-    email = get_session_user(request)
-    user = User.objects.filter(email=email).first()
-    if user:
-        return user.app_id
+    if not login_user:
+        login_user = model_manager.get_user(get_session_user(request))
+
+    if login_user:
+        return login_user.app_id
     else:
+        logger.warning("cannot find session user")
         return DEFAULT_APP
 
 
@@ -726,11 +728,11 @@ class RequestCalling:
             elif connection.status == 2:
                 failure_reason = 'calling未及时查看返回的QQ号'
             elif connection.status == 3:
-                failure_reason = 'calling未呼叫'
+                failure_reason = 'calling未及时呼叫'
             elif connection.status == 4:
-                failure_reason = 'called未接呼叫'
+                failure_reason = 'called未及时接呼叫'
             elif connection.status == 5:
-                failure_reason = 'calling呼叫失败'
+                failure_reason = 'calling确认呼叫失败'
             else:
                 failure_reason = None
             connection.success_or_failure = False
@@ -740,12 +742,12 @@ class RequestCalling:
         else:
             return connection
 
-    status_timeout = defaultdict(lambda: None)
-    status_timeout.update([(0, 30), (1, 2 * 60), (2, 30)])
+    STATUS_TIMEOUT = defaultdict(lambda: None)
+    STATUS_TIMEOUT.update([(0, 30), (1, 2 * 60), (2, 30), (3, 3 * 60), (4, 30), (5, 30)])
 
     def _check_status_timeout(self, connection: CallingList) -> bool:
-        if self.status_timeout[connection.status]:
-            return timezone.now() > connection.change_time + timedelta(seconds=self.status_timeout[connection.status])
+        if self.STATUS_TIMEOUT[connection.status]:
+            return timezone.now() > connection.change_time + timedelta(seconds=self.STATUS_TIMEOUT[connection.status])
         return False
 
     roles = ('calling', 'called')

@@ -33,6 +33,7 @@ urlpatterns = [
     url(r'^ir', views.internal_report),
     url(r'^js/mj.js', views.mj_js),
     url(r'^plist/(?P<app>.+)$', views.plist),
+    url(r'^weizhan/article/', views.to_weizhan),
     url(r'^down/(?P<app>.+)$', views.down),
     url(r'^asserts/(?P<file>.+)$', asserts),
     url(r'^$', views.home),

@@ -595,3 +595,18 @@ def sync_groups():
             if group and group.status == 1:
                 group.status = 0
                 model_manager.save_ignore(group)
+
+
+def remove_dup():
+    select = """select user_id, group_id, count(*) from backend_snsgroupsplit s
+where status=0
+group by user_id, group_id
+having count(*) > 1"""
+
+    with connection.cursor() as cursor:
+        cursor.execute(select)
+        rows = cursor.fetchall()
+        for row in rows:
+            to_deleted = SnsGroupSplit.objects.filter(user_id=row[0], group_id=row[1], status=0)[1:]
+            for x in to_deleted:
+                x.delete()
