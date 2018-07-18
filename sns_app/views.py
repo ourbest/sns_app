@@ -1,9 +1,11 @@
 import time
+from datetime import timedelta
 
 import requests
 from django.conf import settings
 from django.http import HttpResponseRedirect, HttpResponse
 from django.shortcuts import render
+from django.utils import timezone
 
 
 def home(request):
@@ -113,5 +115,5 @@ def down(request, app):
 
 def to_weizhan(request):
     resp = HttpResponseRedirect('https://tz.fafengtuqiang.cn%s' % request.get_full_path())
-    resp.set_cookie('tuiguang', '1', domain='fafengtuqiang.cn')
+    resp.set_cookie('tuiguang', '1', domain='fafengtuqiang.cn', expires=timezone.now() + timedelta(minutes=3))
     return resp

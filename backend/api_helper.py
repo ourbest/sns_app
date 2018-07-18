@@ -636,7 +636,9 @@ ADD_STATUS = {'付费群', '不存在', '不允许加入', '已加群', '无需�
 DIST_STATUS = {}
 
 
-def parse_dist_article(data, task, from_time=timezone.now()):
+def parse_dist_article(data, task, from_time=None):
+    if not from_time:
+        from_time = timezone.now()
     item_id = parse_item_id(data)
     if item_id:
         db = DistArticle.objects.filter(item_id=item_id).first()
