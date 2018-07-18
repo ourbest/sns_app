@@ -1522,10 +1522,12 @@ def task_auto_data(request, device):
     if device:
         objects = objects.filter(device__label=device)
 
+    translation = {'like': '赞', 'switch': '切号', 'share': '分享朋友圈', 'clear': '清理内存'}
+
     return [{
         'phone': x.device.friend_text,
         'created_at': x.created_at.strftime('%Y-%m-%d %H:%M'),
-        'type': '赞' if x.type == 'like' else '切号' if x.type == 'switch' else '其它',
+        'type': translation.get(x.type, x.type),
         'data': x.data
     } for x in objects.select_related("device")[0:100]]
 
@@ -1895,7 +1897,35 @@ def secondary_task_notice(request):
         SecondaryTaskLog.objects.create(device=device, type=task_type, data=data)
 
 
-@api_func_anonymous
 def task_url(i_a, i_c, i_i, i_u):
     url = 'https://tz.fafengtuqiang.cn/weizhan/article/%s/%s/%s/%s' % (i_c, i_i, i_a, i_u)
     return None
+
+
+@api_func_anonymous
+def request_calling(request):
+    label = request.GET.get('id')
+    device = model_manager.get_phone(label)
+    if not device:
+        return
+
+    req = api_helper.RequestCalling(device)
+    # 创建
+    qq_numbers: str = request.GET.get('qqs')
+    if qq_numbers is not None:
+        qq_numbers: list = qq_numbers.split('|')
+        connection = req.create(qq_numbers)
+        if connection:
+            return HttpResponse('calling_qq=%s' % connection.calling_qq.login_name)
+    # 更新
+    status: str = request.GET.get('status')
+    if status.isdigit():
+        connection = req.update(int(status), request.GET.get('qq'))
+        if connection:
+            return HttpResponse('status=%s' % connection.status)
+    # 查看
+    connection = req.pull_connection()
+    if connection:
+        return HttpResponse('calling=%s&calling_qq=%s&called=%s&called_qq=%s&status=%d' % (
+            connection.calling.label, connection.calling_qq.login_name, connection.called.label,
+            connection.called_qq.login_name if connection.called_qq else None, connection.status))
