@@ -64,6 +64,17 @@ def remove_dup_split_data():
             print('delete %s' % x.group_id)
 
 
+def remove_dup_split_data_all():
+    splits = SnsGroupSplit.objects.filter(status=0, created_at__gt=timezone.now() - timedelta(days=7))
+    done = set()
+    for x in splits:
+        if x.group_id not in done:
+            done.add(x.group_id)
+        else:
+            x.delete()
+            print('delete %s' % x.group_id)
+
+
 def clean_split_data_1(status=1):
     splits = SnsGroupSplit.objects.filter(status=status)
     done = set()
