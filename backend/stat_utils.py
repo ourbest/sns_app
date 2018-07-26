@@ -280,8 +280,8 @@ def sync_item_stat():
     :return:
     """
     ids = model_manager.get_dist_articles(10)
-    size = 1000
-    while size == 1000:
+    size = 10000
+    while size == 10000:
         size = do_save_item_stat(ids)
         print('save %s items' % (size,))
 
