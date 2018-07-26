@@ -19,7 +19,7 @@ from backend.models import SnsGroupSplit, SnsGroup, SnsUser, SnsUserGroup, SnsTa
     ItemDeviceUser, App, AppDailyStat, User, UserDailyStat, OfflineUser, AppUser, UserDailyDeviceUser, PhoneDevice, \
     ChannelUser
 from backend.user_factory import sync_to_item_dev_user
-from backend.zhiyue_models import DeviceUser, CouponInst, CouponLog, ZhiyueUser, AdminPartnerUser
+from backend.zhiyue_models import DeviceUser, CouponInst, CouponLog, ZhiyueUser, AdminPartnerUser, WeizhanItemView
 
 
 def clean_finished():

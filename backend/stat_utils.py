@@ -338,7 +338,8 @@ def do_save_item_stat(ids):
         if v.query_time == from_time:
             model_manager.save_ignore(v)
     rd.value = str(first_id)
-    model_manager.save_ignore(rd)
+    if first_id != 0:
+        model_manager.save_ignore(rd)
     return len(values)
 
 
