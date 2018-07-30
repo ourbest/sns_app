@@ -76,24 +76,24 @@ def mark_task_finish(device_task):
         api_helper.webhook(device_task, '执行完毕')
 
 
-def sync_wx_log(device_task):
+def sync_wx_log(device_task, delete_old=True):
     try:
         if device_task.task.type_id == 5:
             # 微信分发，同步群列表
             logger.info('同步分发的微信群 %s' % device_task)
             groups = WxDistLog.objects.filter(task=device_task)
-            sync_wx_groups(device_task.device, groups)
+            sync_wx_groups(device_task.device, groups, delete_old=delete_old)
     except:
         logger.warning('error sync wx groups', exc_info=1)
 
 
-def sync_wx_groups(device, groups):
+def sync_wx_groups(device, groups, delete_old=True):
     db = DeviceWeixinGroup.objects.filter(device=device)
     new_values = {x.group_name: x for x in groups}
     old_values = {x.name: x for x in db}
     logger.info('老的微信群数:%s，新的微信群数:%s' % (len(new_values), len(old_values)))
     for x in db:
-        if x.name not in new_values:
+        if delete_old and x.name not in new_values:
             x.delete()
             DeviceWeixinGroupLost(device=device, name=x.name, member_count=x.member_count).save()
 
@@ -107,13 +107,13 @@ def sync_wx_groups(device, groups):
             DeviceWeixinGroup(device=device, name=x, member_count=vn.user_count).save()
 
 
-def sync_wx_groups_imports(device, groups):
+def sync_wx_groups_imports(device, groups, delete_old=True):
     db = DeviceWeixinGroup.objects.filter(device=device)
     new_values = {x[0]: x for x in groups}
     old_values = {x.name: x for x in db}
     logger.info('老的微信群数:%s，新的微信群数:%s' % (len(old_values), len(new_values)))
     for x in db:
-        if x.name not in new_values:
+        if delete_old and x.name not in new_values:
             x.delete()
             DeviceWeixinGroupLost(device=device, name=x.name, member_count=x.member_count).save()
 

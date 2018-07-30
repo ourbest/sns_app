@@ -281,10 +281,13 @@ def import_wx_dist_result(device_task, lines):
                             user_count=cnt)
             log.save()
 
-    model_manager.sync_wx_log(device_task)
+    model_manager.sync_wx_log(device_task, delete_old=False)
 
 
 def import_wx_qun(device_task, lines):
+    if not lines:
+        return
+
     reg = r'(.+)\t\((\d+)\)$'
     groups = list()
     for line in lines.split('\n'):
