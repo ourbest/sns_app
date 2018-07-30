@@ -1,5 +1,4 @@
 from datetime import timedelta, datetime
-
 from dj import times
 from django.db import connections
 from django.db.models import Sum, Count, Subquery
@@ -7,7 +6,7 @@ from django.utils import timezone
 from django_rq import job
 
 from backend import api_helper, model_manager, dates
-from backend.models import AppUser, SnsTask, User, RuntimeData, ArticleDailyInfo, DistArticleStat, ItemDeviceUser, \
+from backend.models import AppUser, SnsTask, RuntimeData, ArticleDailyInfo, DistArticleStat, ItemDeviceUser, \
     DistArticle
 from backend.zhiyue_models import ClipItem, HighValueUser, WeizhanItemView
 
@@ -280,6 +279,13 @@ def sync_item_stat():
     :return:
     """
     ids = model_manager.get_dist_articles(10)
+    size = 10000
+    while size == 10000:
+        size = do_save_item_stat(ids)
+        print('save %s items' % (size,))
+
+
+def do_save_item_stat(ids):
     first_id = 0
     last_id = 260099943
     rd = RuntimeData.objects.filter(name='last_view_id').first()
@@ -287,18 +293,16 @@ def sync_item_stat():
         last_id = int(rd.value)
     else:
         rd = RuntimeData(name='last_view_id')
-
     # 用户
     from_time = timezone.now()
     stat_date = dates.today().strftime('%Y-%m-%d')
     data = {'%s_%s' % (x.item_id, x.majia_id): x for x in ArticleDailyInfo.objects.filter(stat_date=stat_date)}
     majia_dict = {x.cutt_user_id: x for x in AppUser.objects.all()}
-
-    for item in model_manager.query(WeizhanItemView).filter(
-            pk__gt=last_id,
-            time__gt=timezone.now() - timedelta(days=1)).order_by('-pk'):
-        if not first_id:
-            first_id = item.viewId
+    values = model_manager.query(WeizhanItemView).filter(pk__gt=last_id,
+                                                         time__gt=timezone.now() - timedelta(days=1)).order_by('pk')[
+             0:10000]
+    for item in values:
+        first_id = item.viewId
         if item.itemId and item.itemId in ids and item.shareUserId and item.shareUserId in majia_dict:
             key = '%s_%s' % (item.itemId, item.shareUserId)
             if key not in data:
@@ -329,13 +333,13 @@ def sync_item_stat():
                 value.reshare += 1
             if value.query_time != from_time:
                 value.query_time = from_time
-
     for v in data.values():
         if v.query_time == from_time:
             model_manager.save_ignore(v)
-
     rd.value = str(first_id)
-    model_manager.save_ignore(rd)
+    if first_id != 0:
+        model_manager.save_ignore(rd)
+    return len(values)
 
 
 def sync_article_stat():

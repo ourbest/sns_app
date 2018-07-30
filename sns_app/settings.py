@@ -78,6 +78,12 @@ RQ_QUEUES = {
         'DB': 0,
         'DEFAULT_TIMEOUT': 360,
     },
+    # 'import': {
+    #     'HOST': REDIS_SERVER,
+    #     'PORT': 6379,
+    #     'DB': 0,
+    #     'DEFAULT_TIMEOUT': 360,
+    # },
 }
 
 RQ = {

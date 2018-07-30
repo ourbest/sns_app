@@ -1823,7 +1823,7 @@ def article(request):
         return HttpResponseRedirect(
             'http://www.cutt.com/weizhan/article/%s/%s/%s' % (clip_item.clipId, clip_item.itemId, clip_item.fromEntity))
 
-    return HttpResponse("error", status_code=404)
+    return HttpResponse("error", status=404)
 
 
 def redirect(request):
@@ -1833,7 +1833,7 @@ def redirect(request):
     item = model_manager.query(ClipItem).filter(itemId=item_id).first()
 
     if not item:
-        return HttpResponse("error", status_code=404)
+        return HttpResponse("error", status=404)
     if db:
         app_id = db.app_id
     else:

@@ -17,9 +17,9 @@ import backend.stat_utils
 from backend import model_manager, api_helper, stats, zhiyue_models, zhiyue, remains, cassandras, dates
 from backend.models import SnsGroupSplit, SnsGroup, SnsUser, SnsUserGroup, SnsTask, DistArticle, DistArticleStat, \
     ItemDeviceUser, App, AppDailyStat, User, UserDailyStat, OfflineUser, AppUser, UserDailyDeviceUser, PhoneDevice, \
-    ChannelUser
+    ChannelUser, ArticleDailyInfo
 from backend.user_factory import sync_to_item_dev_user
-from backend.zhiyue_models import DeviceUser, CouponInst, CouponLog, ZhiyueUser, AdminPartnerUser
+from backend.zhiyue_models import DeviceUser, CouponInst, CouponLog, ZhiyueUser, AdminPartnerUser, WeizhanItemView
 
 
 def clean_finished():
@@ -610,3 +610,54 @@ having count(*) > 1"""
             to_deleted = SnsGroupSplit.objects.filter(user_id=row[0], group_id=row[1], status=0)[1:]
             for x in to_deleted:
                 x.delete()
+
+
+def sync_pv(ids):
+    last_id = 411420037
+    size = 10000
+    stat_date = dates.today().strftime('%Y-%m-%d')
+    data = {'%s_%s' % (x.item_id, x.majia_id): x for x in ArticleDailyInfo.objects.filter(stat_date=stat_date)}
+    majia_dict = {x.cutt_user_id: x for x in AppUser.objects.all()}
+    while size == 10000:
+        values = model_manager.query(WeizhanItemView).filter(pk__gt=last_id,
+                                                             time__gt=dates.today(),
+                                                             time__lt=dates.today() + timedelta(hours=9)).order_by(
+            'pk')[0:10000]
+        changed = set()
+        for item in values:
+            last_id = item.viewId
+            if item.itemId and item.itemId in ids and item.shareUserId and item.shareUserId in majia_dict:
+                key = '%s_%s' % (item.itemId, item.shareUserId)
+                if key not in data:
+                    data[key] = ArticleDailyInfo(item_id=item.itemId,
+                                                 app_id=item.partnerId,
+                                                 majia_id=item.shareUserId,
+                                                 user=majia_dict[item.shareUserId].user,
+                                                 majia_type=majia_dict[item.shareUserId].type,
+                                                 stat_date=stat_date)
+                value = data[key]
+
+                ua = item.ua.lower()
+                if item.itemType in ('article', 'articlea', 'articleb'):
+                    changed.add(key)
+                    value.pv += 1
+                    if 'android' in ua or 'iphone' in ua:
+                        value.mobile_pv += 1
+                        if 'android' in ua:
+                            value.android_pv += 1
+                        else:
+                            value.iphone_pv += 1
+                elif item.itemType.endswith('-down') or item.itemType.endswith('-mochuang'):
+                    value.down += 1
+                    if 'android' in ua:
+                        value.android_down += 1
+                    elif 'iphone' in ua:
+                        value.iphone_down += 1
+                elif item.itemType.endswith('-reshare'):
+                    value.reshare += 1
+        for k, v in data.items():
+            if k in changed:
+                model_manager.save_ignore(v)
+
+        size = len(values)
+        print('sync %s values %s' % (size, last_id))
