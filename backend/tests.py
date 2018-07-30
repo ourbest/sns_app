@@ -609,17 +609,17 @@ def sync_groups():
 
 
 def sync_pv(ids):
-    last_id = 0
+    last_id = 411420037
     size = 10000
+    stat_date = dates.today().strftime('%Y-%m-%d')
+    data = {'%s_%s' % (x.item_id, x.majia_id): x for x in ArticleDailyInfo.objects.filter(stat_date=stat_date)}
+    majia_dict = {x.cutt_user_id: x for x in AppUser.objects.all()}
     while size == 10000:
-        stat_date = dates.today().strftime('%Y-%m-%d')
-        data = {'%s_%s' % (x.item_id, x.majia_id): x for x in ArticleDailyInfo.objects.filter(stat_date=stat_date)}
-        majia_dict = {x.cutt_user_id: x for x in AppUser.objects.all()}
-
         values = model_manager.query(WeizhanItemView).filter(pk__gt=last_id,
                                                              time__gt=dates.today(),
                                                              time__lt=dates.today() + timedelta(hours=9)).order_by(
             'pk')[0:10000]
+        changed = set()
         for item in values:
             last_id = item.viewId
             if item.itemId and item.itemId in ids and item.shareUserId and item.shareUserId in majia_dict:
@@ -635,6 +635,7 @@ def sync_pv(ids):
 
                 ua = item.ua.lower()
                 if item.itemType in ('article', 'articlea', 'articleb'):
+                    changed.add(key)
                     value.pv += 1
                     if 'android' in ua or 'iphone' in ua:
                         value.mobile_pv += 1
@@ -650,5 +651,9 @@ def sync_pv(ids):
                         value.iphone_down += 1
                 elif item.itemType.endswith('-reshare'):
                     value.reshare += 1
+        for k, v in data.items():
+            if k in changed:
+                model_manager.save_ignore(v)
+
         size = len(values)
-        print('sync %s values' % size)
+        print('sync %s values %s' % (size, last_id))
