@@ -144,12 +144,14 @@ def user_to_json(x):
 
 def auth(email, password):
     user = User.objects.filter(email=email, status__gte=0).first()
-    return user if user and password == user.passwd else None
+    if user:
+        return user if (user.passwd and password == user.passwd) or user.userauth.password == password else None
+    return None
 
 
 def set_password(user, new_pwd):
-    user.passwd = new_pwd
-    user.save()
+    user.userauth.passwd = new_pwd
+    user.userauth.save()
 
 
 def get_app_user_info(app_id, cutt_id):

@@ -26,7 +26,7 @@ from backend.jobs import do_re_import, _after_upload, do_import_qun_stat, do_imp
 from backend.models import User, App, SnsGroup, SnsGroupSplit, PhoneDevice, SnsUser, SnsUserGroup, SnsTaskDevice, \
     DeviceFile, SnsTaskType, SnsTask, ActiveDevice, SnsApplyTaskLog, UserActionLog, SnsGroupLost, GroupTag, \
     TaskWorkingLog, AppUser, DeviceTaskData, DistArticle, UserAuthApp, WxDistLog, DistTaskLog, DeviceWeixinGroup, \
-    SecondaryTaskLog
+    SecondaryTaskLog, UserAuth
 from backend.task_manager import set_device_active
 from backend.zhiyue_models import ZhiyueUser, ClipItem
 from . import schedulers
@@ -823,7 +823,9 @@ def import_user(request, ids, app):
             account = re.split('\s+', line)
             db = User.objects.filter(email=account[0]).first()
             if not db:
-                User(email=account[0], name=account[1], status=0, passwd='testpwd', app_id=app).save()
+                saved = User(email=account[0], name=account[1], status=0, app_id=app)
+                saved.save()
+                UserAuth(user=saved, password='testpwd').save()
                 total += 1
             else:
                 db.name = account[1]

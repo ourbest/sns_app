@@ -923,3 +923,8 @@ class ShortenURL(models.Model):
             'url': self.url,
             'created_at': self.created_at.strftime('%Y-%m-%d %H:%M'),
         }
+
+
+class UserAuth(models.Model):
+    user = models.OneToOneField(to=User, on_delete=CASCADE)
+    password = models.CharField(max_length=255)
