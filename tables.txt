@@ -1,0 +1,37 @@
+backend_app: 生活圈
+backend_user: 员工
+backend_userauthapp: 用户授权的APP
+backend_phonedevice: 手机
+backend_appuser: APP马甲
+backend_snsuser: 社交账号
+backend_snsgroup: 群
+backend_snsusergroup: 加入的群
+backend_snsgroupsplit: 分群的状况
+backend_snsgrouplost: 被踢的群
+backend_snstasktype: 分发类型字典
+backend_activedevice: 在线设备表
+backend_distarticle: 分发的文章
+backend_snstask: 小精灵任务
+backend_snstaskdevice: 小精灵任务设备
+backend_devicefile: 小精灵上传的文件
+backend_snsapplytasklog: QQ申请日志
+backend_taskgroup: 任务涉及的群
+backend_disttasklog: 分发任务日志
+backend_wxdistlog: 微信分发日志
+backend_useractionlog: user action log
+backend_taskworkinglog: 任务工作日志
+backend_userdailystat: 每日按人员统计
+backend_itemdeviceuser: 关联安装的用户信息
+backend_appdailystat: 每日按app统计
+backend_snsuserkicklog: 被踢群
+backend_dailyactive: daily active
+backend_distarticlestatdetail: 文章统计信息
+backend_distarticlestat: 文章统计信息
+backend_deviceweixingroup: 微信群
+backend_deviceweixingrouplost: 微信群被踢情况
+backend_userdailyresourcestat: 每日按人资源状况
+backend_appdailyresourcestat: 每日按app资源
+backend_appweeklystat: 周报
+backend_articledailyinfo: 文章每日统计
+backend_kpiperiod: kpi period
+backend_secondarytasklog: secondary task log

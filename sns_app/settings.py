@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     'utils',
     'robot',
     'django_rq',
+    'django_extensions',
 ]
 
 MIDDLEWARE = [
