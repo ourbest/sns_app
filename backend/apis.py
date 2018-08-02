@@ -19,14 +19,14 @@ from .loggs import logger
 from qiniu import Auth, put_file, etag
 
 import backend.stat_utils
-from backend import model_manager, api_helper, caches, group_splitter, task_manager
+from backend import model_manager, api_helper, caches, group_splitter, task_manager, dates
 from backend.api_helper import get_session_user, get_session_app, sns_user_to_json, device_to_json, qun_to_json, \
     parse_dist_article
 from backend.jobs import do_re_import, _after_upload, do_import_qun_stat, do_import_qun, reload_phone_task
 from backend.models import User, App, SnsGroup, SnsGroupSplit, PhoneDevice, SnsUser, SnsUserGroup, SnsTaskDevice, \
     DeviceFile, SnsTaskType, SnsTask, ActiveDevice, SnsApplyTaskLog, UserActionLog, SnsGroupLost, GroupTag, \
     TaskWorkingLog, AppUser, DeviceTaskData, DistArticle, UserAuthApp, WxDistLog, DistTaskLog, DeviceWeixinGroup, \
-    SecondaryTaskLog, UserAuth
+    SecondaryTaskLog, UserAuth, DeviceWeixinGroupLost
 from backend.task_manager import set_device_active
 from backend.zhiyue_models import ZhiyueUser, ClipItem
 from . import schedulers
@@ -365,11 +365,12 @@ def team_qun(request, i_page, i_size, keyword, owner, qq, phone):
 
 @api_func_anonymous
 def team_weixin(request, i_page, i_size, keyword, owner, phone):
-    query = DeviceWeixinGroup.objects.filter(
-        device__owner__app_id=get_session_app(request)).select_related('device', 'device__owner')
+    session_app = get_session_app(request)
+    query = DeviceWeixinGroup.objects.filter(device__owner__app_id=session_app).select_related('device',
+                                                                                               'device__owner')
+    email = get_session_user(request)
     if owner:
         if owner == 'me':
-            email = get_session_user(request)
             query = query.filter(device__owner__email=email)
         else:
             query = query.filter(device__owner__name=owner)
@@ -385,11 +386,35 @@ def team_weixin(request, i_page, i_size, keyword, owner, phone):
 
     total = query.count()
     distinct = query.values('name').distinct().count()
+
+    # 重复率
+    ex = DeviceWeixinGroup.objects.filter(device__owner__app_id=session_app,
+                                          name__in=query.values('name').distinct()).exclude(pk__in=query.values('pk'))
+    if keyword:
+        ex = ex.filter(name__contains=keyword)
+
+    has_dup = ex.values('name').distinct().count()
+
+    # 今日新增
+    today_new = query.filter(created_at__gt=dates.today()).values('name').distinct().count()
+
     query = query[(i_page - 1) * i_size:i_page * i_size]
+
+    # 今日被踢
+    ql = DeviceWeixinGroupLost.objects.filter(created_at__gt=dates.today())
+    if keyword:
+        ql = ql.filter(name__contains=keyword)
+    if phone:
+        ql = ql.filter(device__label=phone)
+
+    today_lost = ql.count()
 
     return {
         'total': total,
         'distinct': distinct,
+        'today_new': today_new,
+        'dup': has_dup,
+        'today_lost': today_lost,
         'items': [{'name': x.name,
                    'member_count': x.member_count,
                    'device': {
