@@ -141,7 +141,7 @@ def _set_task_status(device_task, status):
     device_task.save()
     if device_task.device.status != 0:
         device_task.device.status = 0
-        device_task.device.save(update_fields='status')
+        device_task.device.save(update_fields=['status'])
 
     check_task_status(device_task.task)
     from backend import task_manager
