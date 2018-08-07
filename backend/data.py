@@ -5,7 +5,7 @@ from django.http import HttpResponse
 
 
 @api_func_anonymous
-def export_data(id, from_date, to_date):
+def export_data(id, from_date, to_date, app_id):
     query = queries.get(id)
 
     if not query:
@@ -16,7 +16,7 @@ def export_data(id, from_date, to_date):
 
     html = ['<table>']
     with connections['default'].cursor() as cursor:
-        cursor.execute(query, (from_date, to_date))
+        cursor.execute(query, (from_date, to_date, app_id))
         field_names = [i[0] for i in cursor.description]
         html.append('<tr>' + (''.join(['<th>' + x + '</th>' for x in field_names])) + '</tr>')
         for row in cursor.fetchall():
@@ -53,5 +53,5 @@ queries = {
   iphone_remain '苹果留存'
 from
   backend_dailydetaildata
-where `date` between %s and %s
+where `date` between %s and %s and app_id = %s
 '''}
