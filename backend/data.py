@@ -1,3 +1,4 @@
+from datetime import datetime
 from dj.utils import api_func_anonymous
 from django.db import connections
 from django.http import HttpResponse
@@ -9,6 +10,9 @@ def export_data(id, from_date, to_date):
 
     if not query:
         return ''
+
+    from_date = datetime.strptime(from_date, '%Y/%m/%d').strftime('%Y-%m-%d')
+    to_date = datetime.strptime(to_date, '%Y/%m/%d').strftime('%Y-%m-%d')
 
     html = ['<table>']
     with connections['default'].cursor() as cursor:
