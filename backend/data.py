@@ -5,18 +5,19 @@ from django.http import HttpResponse
 
 
 @api_func_anonymous
-def export_data(id, from_date, to_date, app_id):
+def export_data(id, from_date, to_date, app):
     query = queries.get(id)
 
     if not query:
         return ''
 
-    from_date = datetime.strptime(from_date, '%Y/%m/%d').strftime('%Y-%m-%d')
-    to_date = datetime.strptime(to_date, '%Y/%m/%d').strftime('%Y-%m-%d')
+    if '/' in from_date:
+        from_date = datetime.strptime(from_date, '%Y/%m/%d').strftime('%Y-%m-%d')
+        to_date = datetime.strptime(to_date, '%Y/%m/%d').strftime('%Y-%m-%d')
 
     html = ['<table>']
     with connections['default'].cursor() as cursor:
-        cursor.execute(query, (from_date, to_date, app_id))
+        cursor.execute(query, (from_date, to_date, app))
         field_names = [i[0] for i in cursor.description]
         html.append('<tr>' + (''.join(['<th>' + x + '</th>' for x in field_names])) + '</tr>')
         for row in cursor.fetchall():
