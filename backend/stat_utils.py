@@ -85,10 +85,10 @@ def get_item_stat(app_id, item_id, from_time, user_type=0):
 
 # TODO 需要优化
 def get_user_share_stat(date, the_user):
-    date_end = date + timedelta(days=7)
+    # date_end = date + timedelta(days=7)
     if not the_user:
         return []
-    ids = [x.cutt_user_id for x in the_user.appuser_set.filter(type__gte=0)]
+    # ids = [x.cutt_user_id for x in the_user.appuser_set.filter(type__gte=0)]
     tasks = list(SnsTask.objects.filter(creator=the_user, type_id__in=(5, 3),
                                         started_at__range=(date.date(), date.date() + timedelta(days=1)))
                  .order_by('-started_at'))
@@ -106,37 +106,27 @@ def get_user_share_stat(date, the_user):
 
     items = {x for x in items if x}
 
-    # q = model_manager.query(Weizhan).filter(sourceItemId__in=items,
-    #                                            sourceUserId__in=ids).values('sourceItemId',
-    #                                                                         'sourceUserId').annotate(
-    #     Count('deviceUserId')).order_by('sourceItemId')
-    # for x in q:
-    #     print(x)
-    query = 'SELECT itemId, itemType, count(1) as cnt FROM datasystem_WeizhanItemView ' \
-            'WHERE itemId in (%s) AND shareUserId in (%s) AND time BETWEEN \'%s\' AND \'%s\' ' \
-            'GROUP BY itemId, itemType' % (
-                ','.join(map(str, items)), ','.join(map(str, ids)), times.to_date_str(date),
-                times.to_date_str(date_end))
-    device_user_query = 'select sourceItemId, count(1) as cnt from datasystem_DeviceUser ' \
-                        'where sourceItemId in (%s) and sourceUserId in (%s) ' \
-                        'and createTime between \'%s\' AND \'%s\' GROUP BY sourceItemId' % (
-                            ','.join(map(str, items)), ','.join(map(str, ids)), times.to_date_str(date),
-                            times.to_date_str(date_end))
+    values = dict()
+    for x in ArticleDailyInfo.objects.filter(item_id__in=items, user=the_user,
+                                             stat_date=times.to_date_str(dates.get_date(date))):
+        data = values.get(x.item_id)
+        if not data:
+            data = dict()
+            values[x.item_id] = data
 
-    data = {}
-    if not ids:
-        return []
-    if items:
-        with connections['zhiyue'].cursor() as cursor:
-            cursor.execute(query)
-            rows = cursor.fetchall()
-            for row in rows:
-                data['%s_%s' % (row[0], row[1])] = row[2]
+        data['pv'] = data.get('pv', 0) + x.pv
+        data['down'] = data.get('down', 0) + x.down
+        data['reshare'] = data.get('reshare', 0) + x.reshare
 
-            cursor.execute(device_user_query)
-            rows = cursor.fetchall()
-            for row in rows:
-                data['%s_du' % (row[0],)] = row[1]
+    for x in ItemDeviceUser.objects.filter(item_id__in=items, owner=the_user,
+                                           created_at__range=(date.date(), date.date() + timedelta(days=1))).values(
+        'item_id').annotate(users=Count('user_id')):
+        data = values.get(x['item_id'])
+        if not data:
+            data = dict()
+            values[x['item_id']] = data
+
+        data['users'] = x['users']
 
     ret_dict = {str(x.itemId): {
         'name': the_user.name,
@@ -144,11 +134,10 @@ def get_user_share_stat(date, the_user):
         'time': times.to_str(task_dict.get(str(x.itemId)).started_at, '%H:%M'),
         'date': times.to_str(task_dict.get(str(x.itemId)).started_at, '%y-%m-%d'),
         'title': x.title if x.title else '（无标题）',
-        'weizhan': get_count(data, x.itemId, ''),
-        'reshare': get_count(data, x.itemId, '-reshare'),
-        'download': get_count(data, x.itemId, '-down') + get_count(data, x.itemId, '-mochuang') + data.get(
-            '%s_%s' % (x.itemId, 'tongji-down'), 0),
-        'users': data.get('%s_du' % x.itemId, 0),
+        'weizhan': values.get(x.itemId, dict()).get('pv', 0),
+        'reshare': values.get(x.itemId, dict()).get('reshare', 0),
+        'download': values.get(x.itemId, dict()).get('down', 0),
+        'users': values.get(x.itemId, dict()).get('users', 0),
     } for x in ClipItem.objects.using(ClipItem.db_name()).filter(itemId__in=items)}
     return [ret_dict[x] for x in items_in_order if x in ret_dict]
 
