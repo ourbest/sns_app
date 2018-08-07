@@ -749,7 +749,76 @@ def do_gen_daily_report():
     html = render_to_string('daily_report.html', {'stats': app_stats, 'sum': summary, 'sum_yesterday': sum_yesterday})
     api_helper.send_html_mail('%s线上推广日报' % date, settings.DAILY_REPORT_EMAIL, html)
     print('Done.')
+    make_daily_detail()
     # os._exit(0)
+
+
+def make_daily_detail():
+    query = '''insert ignore into backend_dailydetaildata
+(app_id, item_id, sns_type, title, category, date, total_user,
+android_user, iphone_user, total_pv, android_pv, iphone_pv, total_down,
+android_down, iphone_down, total_remain, iphone_remain, android_remain)
+select
+  b.app,
+  b.item_id,
+  b.type,
+  REPLACE(c.title, '\n', '') title,
+  coalesce(c.category, ''),
+  b.stat_date,
+  coalesce(total, 0),
+  coalesce(android, 0),
+  coalesce(iphone, 0),
+  pv,
+  apv,
+  ipv,
+  down,
+  adown,
+  idown,
+  coalesce(remain, 0),
+  coalesce(iremain, 0),
+  coalesce(aremain, 0)
+from
+  backend_distarticle c,
+  (select
+     ai.item_id,
+     ai.majia_type        type,
+     ai.app_id            app,
+     ai.stat_date,
+     sum(ai.pv)           pv,
+     sum(ai.mobile_pv)    mpv,
+     sum(ai.down)         down,
+     sum(ai.android_down) adown,
+     sum(ai.android_pv)   apv,
+     sum(ai.iphone_down)  idown,
+     sum(ai.iphone_pv)    ipv
+   from backend_articledailyinfo ai
+   where ai.stat_date = current_date - interval 1 day
+   group by majia_type, ai.app_id, ai.stat_date, ai.item_id) b
+  left join (select
+               app_id,
+               item_id,
+               type,
+               date(created_at)                         stat_date,
+               count(*)                                 total,
+               sum(if(platform = 'android', 1, 0))      android,
+               sum(if(platform = 'iphone', 1, 0))       iphone,
+               sum(remain)                              remain,
+               sum(if(platform = 'android', remain, 0)) aremain,
+               sum(if(platform = 'iphone', remain, 0))  iremain
+             from backend_itemdeviceuser du
+             where du.created_at between current_date - interval 1 day and current_date
+             group by type, item_id, app_id, date(created_at)) a
+    on a.item_id = b.item_id and a.type = b.type and a.app_id = b.app
+       and a.stat_date = b.stat_date
+where b.item_id = c.item_id'''
+
+    with connections['default'].cursor() as cursor:
+        cursor.execute('update backend_dailydetaildata d, backend_distarticle a set '
+                       'd.category = a.category where d.item_id=a.item_id '
+                       'and a.category is not NULL '
+                       'and d.category != \'\' '
+                       'and a.category != d.category')
+        cursor.execute(query)
 
 
 @job

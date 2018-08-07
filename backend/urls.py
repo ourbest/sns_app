@@ -1,7 +1,7 @@
 from django.conf.urls import url
 
 from backend import apis, users, zhiyue, tasks, daemons, bot_apis, stats, exts, kpi, offline, online, channels, shares, \
-    onlines
+    onlines, data
 
 app_name = 'backend'
 urlpatterns = [
@@ -157,7 +157,6 @@ urlpatterns = [
     url(r'^zhiyue/shorten/list$', zhiyue.shorten_list),
     url(r'^zhiyue/shorten/add', zhiyue.shorten_add),
 
-
     # internal
     url(r'^change/ver$', apis.change_js_version),
     url(r'^daemon/check$', daemons.check_online_task),
@@ -246,5 +245,8 @@ urlpatterns = [
     url(r'^majiang$', apis.majiang),
 
     # 图片回掉
-    url(r'^img/cb$', zhiyue.qiniu_cb)
+    url(r'^img/cb$', zhiyue.qiniu_cb),
+
+    # data
+    url(r'^export/data$', data.export_data),
 ]

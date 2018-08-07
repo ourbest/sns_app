@@ -928,3 +928,27 @@ class ShortenURL(models.Model):
 class UserAuth(models.Model):
     user = models.OneToOneField(to=User, on_delete=CASCADE)
     password = models.CharField(max_length=255)
+
+
+class DailyDetailData(models.Model):
+    app = models.ForeignKey(App, on_delete=CASCADE)
+    item_id = models.BigIntegerField()
+    sns_type = models.IntegerField()
+    title = models.TextField(max_length=255)
+    category = models.CharField(max_length=10)
+    date = models.CharField(max_length=12)
+    total_user = models.IntegerField()
+    android_user = models.IntegerField()
+    iphone_user = models.IntegerField()
+    total_pv = models.IntegerField()
+    android_pv = models.IntegerField()
+    iphone_pv = models.IntegerField()
+    total_down = models.IntegerField()
+    iphone_down = models.IntegerField()
+    android_down = models.IntegerField()
+    total_remain = models.IntegerField()
+    android_remain = models.IntegerField()
+    iphone_remain = models.IntegerField()
+
+    class Meta:
+        unique_together = (('app', 'item_id', 'sns_type', 'date'),)
