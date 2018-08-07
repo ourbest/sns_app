@@ -76,31 +76,22 @@ def mark_task_finish(device_task):
         api_helper.webhook(device_task, '执行完毕')
 
 
-def sync_wx_log(device_task, delete_old=True):
+def sync_wx_log(device_task):
     try:
         if device_task.task.type_id == 5:
             # 微信分发，同步群列表
             logger.info('同步分发的微信群 %s' % device_task)
             groups = WxDistLog.objects.filter(task=device_task)
-            sync_wx_groups(device_task.device, groups, delete_old=delete_old)
+            sync_wx_groups(device_task.device, groups)
     except:
         logger.warning('error sync wx groups', exc_info=1)
 
 
-def sync_wx_groups(device, groups, delete_old=True):
+def sync_wx_groups(device, groups):
     db = DeviceWeixinGroup.objects.filter(device=device)
     new_values = {x.group_name: x for x in groups}
     old_values = {x.name: x for x in db}
-    logger.info('%s老的微信群数:%s，新的微信群数:%s，删除老的%s' % (device, len(new_values), len(old_values), delete_old))
-
-    if len(new_values) < len(old_values):
-        delta = len(new_values) - len(old_values)
-        if delete_old and delta >= 20:
-            logger.warning('此次统计数据差异较大，建议查证 %s' % device)
-    for x in db:
-        if delete_old and x.name not in new_values:
-            x.delete()
-            DeviceWeixinGroupLost(device=device, name=x.name, member_count=x.member_count).save()
+    logger.info('%s老的微信群数:%s，新的微信群数:%s' % (device, len(new_values), len(old_values)))
 
     for x in new_values:
         v = old_values.get(x)
@@ -111,12 +102,17 @@ def sync_wx_groups(device, groups, delete_old=True):
         elif not v:
             DeviceWeixinGroup(device=device, name=x, member_count=vn.user_count).save()
 
+    total = DeviceWeixinGroup.objects.filter(device=device).count()
+
+    if total < len(old_values):
+        logger.warning('一些微信群丢失%s (%s)，请检查' % (device, total - len(old_values)))
+
 
 def sync_wx_groups_imports(device, groups, delete_old=True):
     db = DeviceWeixinGroup.objects.filter(device=device)
     new_values = {x[0]: x for x in groups}
     old_values = {x.name: x for x in db}
-    logger.info('老的微信群数:%s，新的微信群数:%s' % (len(old_values), len(new_values)))
+    logger.info('微信统计 - 老的微信群数:%s，新的微信群数:%s' % (len(old_values), len(new_values)))
     for x in db:
         if delete_old and x.name not in new_values:
             x.delete()

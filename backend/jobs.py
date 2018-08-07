@@ -281,7 +281,7 @@ def import_wx_dist_result(device_task, lines):
                             user_count=cnt)
             log.save()
 
-    model_manager.sync_wx_log(device_task, delete_old=False)
+    model_manager.sync_wx_log(device_task)
 
 
 def import_wx_qun(device_task, lines):
