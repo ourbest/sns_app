@@ -91,7 +91,12 @@ def sync_wx_groups(device, groups, delete_old=True):
     db = DeviceWeixinGroup.objects.filter(device=device)
     new_values = {x.group_name: x for x in groups}
     old_values = {x.name: x for x in db}
-    logger.info('老的微信群数:%s，新的微信群数:%s' % (len(new_values), len(old_values)))
+    logger.info('%s老的微信群数:%s，新的微信群数:%s，删除老的%s' % (device, len(new_values), len(old_values), delete_old))
+
+    if len(new_values) < len(old_values):
+        delta = len(new_values) - len(old_values)
+        if delete_old and delta >= 20:
+            logger.warning('此次统计数据差异较大，建议查证 %s' % device)
     for x in db:
         if delete_old and x.name not in new_values:
             x.delete()
