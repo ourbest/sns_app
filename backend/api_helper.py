@@ -155,7 +155,7 @@ def set_password(user, new_pwd):
 
 
 def get_app_user_info(app_id, cutt_id):
-    url = 'http://api.cutt.com/user/%s/%s' % (app_id, cutt_id)
+    url = 'https://api.cutt.com/user/%s/%s' % (app_id, cutt_id)
     try:
         return requests.get(url).json().get('name')
     except:

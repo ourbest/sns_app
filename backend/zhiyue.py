@@ -76,7 +76,7 @@ def find_url(x):
     """
     # url = re.findall('https?://.+/weizhan/article/\d+/\d+/\d+', text)
     # return url[0] if url else ''
-    return 'http://www.cutt.com/weizhan/article/%s/%s/%s' % (
+    return 'https://tz.fafengtuqiang.cn/weizhan/article/%s/%s/%s' % (
         x.article.item.clipId, x.article.item_id, x.article.partnerId)
 
 

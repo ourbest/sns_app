@@ -1848,7 +1848,7 @@ def article(request):
 
     if clip_item:
         return HttpResponseRedirect(
-            'http://www.cutt.com/weizhan/article/%s/%s/%s' % (clip_item.clipId, clip_item.itemId, clip_item.fromEntity))
+            'https://tz.fafengtuqiang.cn/weizhan/article/%s/%s/%s' % (clip_item.clipId, clip_item.itemId, clip_item.fromEntity))
 
     return HttpResponse("error", status=404)
 
@@ -1867,7 +1867,7 @@ def redirect(request):
         app_id = item.fromEntity
 
     return HttpResponseRedirect(
-        'http://www.cutt.com/weizhan/article/%s/%s/%s' % (item.clipId, item_id, app_id))
+        'https://tz.fafengtuqiang.cn/weizhan/article/%s/%s/%s' % (item.clipId, item_id, app_id))
 
 
 @api_func_anonymous
