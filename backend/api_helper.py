@@ -4,18 +4,21 @@ import hashlib
 import os
 import re
 import threading
+from collections import defaultdict
+from datetime import timedelta
 from random import shuffle
 
 import requests
 from dj import times
 from django.conf import settings
 from django.core.mail import EmailMultiAlternatives
+from django.db.models import Q
 from django.utils import timezone
 from .loggs import logger
 
 from backend import model_manager, caches, zhiyue_models
 from backend.models import User, AppUser, TaskGroup, GroupTag, SnsGroupSplit, DistTaskLog, SnsApplyTaskLog, SnsGroup, \
-    SnsUser, SnsUserGroup, DistArticle, DeviceWeixinGroup
+    SnsUser, SnsUserGroup, DistArticle, DeviceWeixinGroup, PhoneDevice, CallingList, ActiveDevice
 
 DEFAULT_APP = 1519662
 
@@ -661,3 +664,136 @@ def parse_dist_article(data, task, from_time=None):
             model_manager.save_ignore(task)
     else:
         logger.warning('cannot parse task item id %s ' % data)
+
+
+class RequestCalling:
+    """在两个设备间建立呼叫连接，每个设备有且仅有一条连接"""
+
+    def __init__(self, device: PhoneDevice):
+        self.device = device
+
+    def pull_connection(self):
+        connection = self._get_existing_connection()
+        if connection:
+            return self.filter(connection)
+
+    def _get_existing_connection(self) -> CallingList:
+        return CallingList.objects.filter(Q(calling=self.device) | Q(called=self.device),
+                                          Q(success_or_failure=None)).first()
+
+    def create(self, qq_numbers: list) -> CallingList or None:
+        old_connection = self.pull_connection()
+        new_connection = None
+        qq = self._filter_calling_qq(qq_numbers)
+        if qq:
+            called_device = self.get_called_device()
+            if called_device:
+                new_connection = CallingList(calling=self.device, calling_qq=qq, called=called_device)
+
+        if new_connection is not None:
+            if old_connection:
+                old_connection.success_or_failure = False
+                old_connection.failure_reason = '%s创建了新的请求' % self.what_role(old_connection)
+            new_connection.save()
+        return new_connection
+
+    def get_called_device(self) -> PhoneDevice or None:
+        """获取另一个没有连接、在线且空闲的设备"""
+        idlers = ActiveDevice.objects.filter(active_at__gt=timezone.now() - timedelta(minutes=10),
+                                             status=0).exclude(device=self.device)
+        ids_1 = {x.device_id for x in idlers}
+        connections = CallingList.objects.filter(Q(calling_id__in=ids_1) | Q(called_id__in=ids_1),
+                                                 Q(success_or_failure=None))
+        ids_2 = {*[x.calling_id for x in connections], *[x.called_id for x in connections]}
+        ids = ids_1 - ids_2
+        return PhoneDevice.objects.filter(pk__in=ids).order_by('?').first()
+
+    def _filter_calling_qq(self, qq_numbers) -> SnsUser:
+        qqs = SnsUser.objects.filter(type=0, status=0, login_name__in=qq_numbers)
+        if qqs.exists():
+            queryset = CallingList.objects.filter(Q(calling_qq__in=qqs) | Q(called_qq__in=qqs),
+                                                  Q(success_or_failure=True),
+                                                  Q(change_time__gte=self._today_zero()))
+            listing = {*[x.calling_qq_id for x in queryset], *[x.called_qq_id for x in queryset]}
+            for qq in qqs:
+                if qq.id not in listing:
+                    return qq
+
+    @staticmethod
+    def _today_zero():
+        return timezone.localtime().replace(hour=0, minute=0, second=0, microsecond=0)
+
+    def filter(self, connection: CallingList) -> CallingList or None:
+        if self._check_status_timeout(connection):
+            if connection.status == 0:
+                failure_reason = 'calling未及时切换到指定QQ号'
+            elif connection.status == 1:
+                failure_reason = 'called未及时查看请求'
+            elif connection.status == 2:
+                failure_reason = 'called未及时返回QQ号'
+            elif connection.status == 3:
+                failure_reason = 'calling未及时查看返回的QQ号'
+            elif connection.status == 4:
+                failure_reason = 'calling未及时呼叫'
+            elif connection.status == 5:
+                failure_reason = 'called未及时接呼叫'
+            elif connection.status == 6:
+                failure_reason = 'calling确认呼叫失败'
+            else:
+                failure_reason = '未知'
+            connection.success_or_failure = False
+            connection.failure_reason = failure_reason
+            connection.save()
+
+        else:
+            return connection
+
+    STATUS_TIMEOUT = defaultdict(lambda: 30)
+    STATUS_TIMEOUT.update([(1, 60), (2, 2 * 60), (4, 3 * 60)])
+
+    def _check_status_timeout(self, connection: CallingList) -> bool:
+        if self.STATUS_TIMEOUT[connection.status]:
+            return timezone.now() > connection.change_time + timedelta(seconds=self.STATUS_TIMEOUT[connection.status])
+        return False
+
+    ROLES = ('calling', 'called')
+
+    def what_role(self, connection: CallingList):
+        if connection.calling_id == self.device.pk:
+            return self.ROLES[0]
+        elif connection.called_id == self.device.pk:
+            return self.ROLES[1]
+
+    def update(self, new_status: int, qq_number=None) -> CallingList or None:
+        connection = self.pull_connection()
+        if not connection or connection.status + 1 != new_status:
+            return
+
+        role = self.what_role(connection)
+        if new_status == 1 and role == self.ROLES[0]:
+            connection.status += 1
+            connection.save()
+        elif new_status == 2 and role == self.ROLES[1]:
+            connection.status += 1
+            connection.save()
+        elif new_status == 3 and role == self.ROLES[1] and qq_number:
+            qq = model_manager.get_qq(qq_number)
+            if qq:
+                connection.status += 1
+                connection.called_qq = qq
+                connection.save()
+        elif new_status == 4 and role == self.ROLES[0]:
+            connection.status += 1
+            connection.save()
+        elif new_status == 5 and role == self.ROLES[0]:
+            connection.status += 1
+            connection.save()
+        elif new_status == 6 and role == self.ROLES[1]:
+            connection.status += 1
+            connection.save()
+        elif new_status == 7 and role == self.ROLES[0]:
+            connection.status += 1
+            connection.success_or_failure = True
+            connection.save()
+
+        return connection
