@@ -995,6 +995,9 @@ class WeizhanClick(models.Model):
     tid = models.IntegerField(null=True, default=0)
     is_installed = models.IntegerField(default=0)
 
+    class Meta:
+        unique_together = (('item_id', 'uuid', 'uid', 'tid'),)
+
 
 class WeizhanDownClick(models.Model):
     """
@@ -1015,3 +1018,6 @@ class WeizhanDownClick(models.Model):
     ts = models.DateTimeField(db_index=True)
     ua = models.CharField(max_length=255, default='')
     task_id = models.IntegerField(null=True, default=0)
+
+    class Meta:
+        unique_together = (('item_id', 'type', 'tid', 'idx', 'uuid', 'uid', 'task_id'),)
