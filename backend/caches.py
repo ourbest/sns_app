@@ -41,5 +41,14 @@ def get_tag_names():
 def get_or_create(key, default_val, ex=1800):
     data = cache.get(key)
     if data is None:
+        data = default_val
         cache.set(key, default_val, ex)
+    return data
+
+
+def get_or_load(key, loader, ex=1800):
+    data = cache.get(key)
+    if data is None:
+        data = loader()
+        cache.set(key, data, ex)
     return data

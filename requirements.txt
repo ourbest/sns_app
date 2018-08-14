@@ -25,3 +25,4 @@ thrift_sasl
 rq_scheduler
 cassandra-driver
 django-extensions
+kafka-python

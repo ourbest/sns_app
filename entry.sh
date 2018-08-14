@@ -2,6 +2,12 @@
 
 mkdir -p logs
 
+if [ "$1" = "consumer" ]
+then
+    python manage.py consumer
+    exit 0
+fi
+
 if [ "$RQWORKER" = "1"  -o "$1" = "worker" ]
 then
     exec ./worker.sh

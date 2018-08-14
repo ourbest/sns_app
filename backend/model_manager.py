@@ -448,6 +448,10 @@ def get_dist_apps():
     return App.objects.filter(stage__in=('留守期', '分发期'))
 
 
+def get_dist_app_ids():
+    return caches.get_or_load('dist_app_ids', lambda: {x.app_id for x in get_dist_apps()})
+
+
 def get_user_by_id(user_id):
     return User.objects.filter(pk=user_id).first()
 

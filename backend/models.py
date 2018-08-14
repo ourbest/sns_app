@@ -975,3 +975,21 @@ class CallingList(models.Model):
     success_or_failure = models.NullBooleanField()
     failure_reason = models.CharField(max_length=30, null=True, blank=True)
 
+
+class WeizhanDownClick(models.Model):
+    """
+    微站下载页点开的数据
+    """
+    app_id = models.IntegerField(db_index=True)
+    item_id = models.BigIntegerField(default=0, db_index=True)
+    type = models.CharField(max_length=30, default='')
+    uid = models.BigIntegerField(default=0)
+    img = models.CharField(max_length=255, default='')
+    href = models.CharField(max_length=255, default='')
+    idx = models.IntegerField(default=0)
+    tid = models.IntegerField(default=0)
+    net = models.CharField(max_length=10, default='WIFI')
+    platform = models.CharField(max_length=20, default='android')
+    ip = models.CharField(max_length=20)
+    uuid = models.CharField(max_length=32)
+    ts = models.DateTimeField(db_index=True)

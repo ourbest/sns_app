@@ -188,6 +188,12 @@ HIVE_SERVER = '10.19.186.236'
 
 CASSANDRA_SERVERS = ['10.9.104.243', '10.9.170.109', '10.9.178.66']
 
+WEIZHAN_LOG_TOPIC = 'weizhan.log'
+
+BOOTSTRAP_SERVERS = ['k1.local.cutt.com', 'k2.local.cutt.com',
+                     'k3.local.cutt.com', 'k4.local.cutt.com',
+                     'k5.local.cutt.com', 'k6.local.cutt.com']
+
 try:
     from .local_settings import *
 except ImportError:
