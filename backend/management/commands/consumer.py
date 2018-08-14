@@ -23,7 +23,8 @@ class Command(BaseCommand):
             for msg in consumer:
                 line = msg.value.decode('utf-8')
                 self.process_line(line)
-        except:
+        except Exception as e:
+            self.stderr.write('error process {}'.format(e))
             logger.error('Consumer error', exc_info=True)
 
     def process_line(self, line):
