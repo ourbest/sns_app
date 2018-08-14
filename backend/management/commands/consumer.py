@@ -72,7 +72,7 @@ class Command(BaseCommand):
                     ps = ref.split('&')
                     for p in ps:
                         k, v = p.split('=', 1)
-                        if k == 'dt':
+                        if k == 'dev':
                             down.task_id = v
                             break
 
@@ -109,7 +109,7 @@ class Command(BaseCommand):
                         click.qq = v
                     elif k == 'ts':
                         click.ts2 = v
-                    elif k == 'dt':
+                    elif k == 'dev':
                         click.tid = v
                 click.save()
         else:

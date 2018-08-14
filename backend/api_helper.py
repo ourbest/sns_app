@@ -197,7 +197,7 @@ def to_share_url(user, url, share_type=0, label=None, task_id=0):
         u = u.replace('http://tz.', 'https://tz.')
         if label:
             suffix = label if len(label) != 11 else '%s' % (label[-4:])
-            u += '/' + suffix + '?ts=%s&dt=%s' % (int(timezone.now().timestamp() * 1000 % 1000000), task_id)
+            u += '/' + suffix + '?ts=%s&dev=%s' % (int(timezone.now().timestamp() * 1000 % 1000000), task_id)
 
     return u if u else url
 
