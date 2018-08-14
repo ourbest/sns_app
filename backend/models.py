@@ -1014,3 +1014,4 @@ class WeizhanDownClick(models.Model):
     uuid = models.CharField(max_length=32)
     ts = models.DateTimeField(db_index=True)
     ua = models.CharField(max_length=255, default='')
+    tid = models.IntegerField(null=True, default=0)

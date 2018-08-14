@@ -66,6 +66,15 @@ class Command(BaseCommand):
                 down.platform = 'android' if 'Android' in ua else 'iphone' if 'iPhone' in ua else 'other'
                 down.net = 'wifi' if 'NetType/WIFI' in ua else '4G'
                 down.ts = datetime.strptime(tm, '%d/%b/%Y:%H:%M:%S %z')
+
+                if ref:
+                    ps = ref.split('&')
+                    for p in ps:
+                        k, v = p.split('=', 1)
+                        if k == 'dt':
+                            down.tid = v
+                            break
+
                 down.save()
             elif url.startswith('/weizhan/article'):
                 elems = url.split('?', 1)
