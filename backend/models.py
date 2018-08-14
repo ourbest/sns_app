@@ -952,3 +952,25 @@ class DailyDetailData(models.Model):
 
     class Meta:
         unique_together = (('app', 'item_id', 'sns_type', 'date'),)
+
+
+class CallingList(models.Model):
+    calling = models.ForeignKey(PhoneDevice, on_delete=models.CASCADE, verbose_name='主叫设备', related_name='calling')
+    calling_qq = models.ForeignKey(SnsUser, on_delete=models.CASCADE, verbose_name='主叫QQ', related_name='calling')
+    called = models.ForeignKey(PhoneDevice, on_delete=models.CASCADE, verbose_name='被叫设备', related_name='called')
+    called_qq = models.ForeignKey(SnsUser, on_delete=models.CASCADE, verbose_name='被叫QQ', null=True, blank=True,
+                                  related_name='called')
+    status = models.IntegerField(default=0, help_text='''
+                                            0-calling创建请求
+                                            1-calling切换到指定QQ
+                                            2-called查看了请求
+                                            3-called返回在线qq号
+                                            4-calling查看了qq号
+                                            5-calling已呼叫
+                                            6-called接到呼叫
+                                            7-calling确认已接
+                                            ''')
+    change_time = models.DateTimeField(auto_now=True)
+    success_or_failure = models.NullBooleanField()
+    failure_reason = models.CharField(max_length=30, null=True, blank=True)
+
