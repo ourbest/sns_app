@@ -96,6 +96,10 @@ class Command(BaseCommand):
                         click.is_installed = int(v)
                     elif k == 'q2':
                         click.qq = v
+                    elif k == 'ts':
+                        click.ts2 = v
+                    elif k == 'dt':
+                        click.tid = v
                 click.save()
         else:
             self.stderr.write('wrong line: %s' % line)

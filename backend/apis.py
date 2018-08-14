@@ -123,11 +123,13 @@ def _make_task_content(device_task):
     elif task_type == 3:
         # 分发
         data = api_helper.to_share_url(device_task.device.owner, data,
-                                       label=device_task.device.label) + api_helper.add_dist_qun(device_task)
+                                       label=device_task.device.label,
+                                       task_id=device_task.id) + api_helper.add_dist_qun(device_task)
     elif task_type == 5:
         data = api_helper.to_share_url(device_task.device.owner, data,
                                        label=device_task.device.label,
-                                       share_type=1) + api_helper.add_wx_params(device_task)
+                                       share_type=1,
+                                       task_id=device_task.id) + api_helper.add_wx_params(device_task)
 
     if task_type in (3, 5) and not device_task.task.article:
         parse_dist_article(data, device_task.task)
@@ -1850,7 +1852,8 @@ def article(request):
 
     if clip_item:
         return HttpResponseRedirect(
-            'https://tz.fafengtuqiang.cn/weizhan/article/%s/%s/%s' % (clip_item.clipId, clip_item.itemId, clip_item.fromEntity))
+            'https://tz.fafengtuqiang.cn/weizhan/article/%s/%s/%s' % (
+                clip_item.clipId, clip_item.itemId, clip_item.fromEntity))
 
     return HttpResponse("error", status=404)
 

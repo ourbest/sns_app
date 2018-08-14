@@ -174,7 +174,7 @@ def save_cutt_id(user, cutt_id, user_type):
     db.save()
 
 
-def to_share_url(user, url, share_type=0, label=None):
+def to_share_url(user, url, share_type=0, label=None, task_id=0):
     lines = url.split('\n')
     url = lines[0]
     u = re.findall(r'(https?://.+?/weizhan/article/\d+/\d+)/\d+', url)
@@ -197,7 +197,7 @@ def to_share_url(user, url, share_type=0, label=None):
         u = u.replace('http://tz.', 'https://tz.')
         if label:
             suffix = label if len(label) != 11 else '%s' % (label[-4:])
-            u += '/' + suffix + '?ts=%s' % int(timezone.now().timestamp() * 1000 % 1000000)
+            u += '/' + suffix + '?ts=%s&dt=%s' % (int(timezone.now().timestamp() * 1000 % 1000000), task_id)
 
     return u if u else url
 

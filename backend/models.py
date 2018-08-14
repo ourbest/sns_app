@@ -992,6 +992,7 @@ class WeizhanClick(models.Model):
     net = models.CharField(max_length=10, default='WIFI')
     ip = models.CharField(max_length=20)
     from_param = models.CharField(max_length=20, default='')
+    tid = models.IntegerField(null=True, default=0)
     is_installed = models.IntegerField(default=0)
 
 
