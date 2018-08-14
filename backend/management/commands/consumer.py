@@ -82,6 +82,7 @@ class Command(BaseCommand):
                 click.item_id = path[4]
                 click.uid = path[6]
                 click.ua = ua
+                click.ip = ip
                 click.ts = datetime.strptime(tm, '%d/%b/%Y:%H:%M:%S %z')
                 click.uuid = uid
                 click.platform = 'android' if 'Android' in ua else 'iphone' if 'iPhone' in ua else 'other'
