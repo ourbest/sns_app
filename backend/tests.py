@@ -1,6 +1,8 @@
 # Create your tests here.
 import re
 from collections import defaultdict
+
+import requests
 from datetime import datetime, timedelta
 from time import sleep
 
@@ -669,3 +671,12 @@ def no_title():
         item = model_manager.query(ClipItem).filter(itemId=da.item_id).first()
         da.title = item.title
         model_manager.save_ignore(da, fields=['title'], force_update=True)
+
+
+def lbs():
+    for user in ItemDeviceUser.objects.filter(region__isnull=True):
+        if user.location:
+            response = requests.post('http://10.9.21.184/api/lbs/region', {'appId': user.app_id, 'lbs': user.location})
+            if response.status_code == 200:
+                user.region = response.json()['data']
+                user.save(update_fields=['region'])

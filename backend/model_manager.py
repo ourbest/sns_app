@@ -432,9 +432,11 @@ def save_ignore(model, force_update=False, fields=None):
             model.save(update_fields=fields)
         else:
             model.save(force_update=force_update)
+
+        return 1
     except Exception as ex:
         logger.info("ignore exception %s when save model %s " % (ex, model))
-        pass
+        return 0
 
 
 def get_dist_articles(days=7):

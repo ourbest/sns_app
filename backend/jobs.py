@@ -2,6 +2,8 @@ import json
 import os
 import re
 from collections import defaultdict
+
+import requests
 from datetime import timedelta, datetime
 from math import radians, sin, atan2, cos, sqrt
 
@@ -423,7 +425,7 @@ def do_save_daily_active():
         DailyActive(app_id=daily_stat['app_id'], iphone=iphone,
                     android=android, total=iphone + android).save()
 
-    do_save_active_id()
+    # do_save_active_id()
 
 
 @job
@@ -440,6 +442,17 @@ def do_save_active_id():
             location=''):
         if x.location:
             caches.redis_client.set('loc-%s' % x.deviceUserId, x.location, 3600 * 24)
+
+
+@job
+def sync_user_region(user):
+    if not user.region and user.location:
+        response = requests.post('http://10.9.21.184/api/lbs/region',
+                                 {'appId': user.app_id, 'lbs': user.location})
+        if response.status_code == 200:
+            user.region = response.json()['data']
+            if user.region:
+                user.save(update_fields=['region'])
 
 
 @job

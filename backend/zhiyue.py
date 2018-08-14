@@ -511,7 +511,11 @@ def sync_user_in_minutes(minutes):
                 majia = majias.get(device_user.sourceUserId)
                 owner = majia.user
                 if device_user.deviceUserId not in saved:
-                    model_manager.save_ignore(sync_to_item_dev_user(app, owner, device_user, majia))
+                    user = sync_to_item_dev_user(app, owner, device_user, majia)
+                    if model_manager.save_ignore(user):
+                        from backend.jobs import sync_user_region
+                        sync_user_region.delay(user)
+
                 (wx_user_ids if majia.type else qq_user_ids).append(device_user.deviceUserId)
 
                 ids_map_owner = ids_map[owner]
@@ -643,7 +647,10 @@ def sync_device_user():
             if device_user.deviceUserId not in saved:
                 majia = majias.get(device_user.sourceUserId)
                 owner = majia.user
-                sync_to_item_dev_user(app, owner, device_user, majia)
+                user = sync_to_item_dev_user(app, owner, device_user, majia)
+                if model_manager.save_ignore(user):
+                    from backend.jobs import sync_user_region
+                    sync_user_region.delay(user)
 
         if app.offline:
             coupons = model_manager.query(CouponInst).filter(partnerId=app.pk, status=1, useDate__range=date_range)
