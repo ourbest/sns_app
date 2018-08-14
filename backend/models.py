@@ -976,6 +976,25 @@ class CallingList(models.Model):
     failure_reason = models.CharField(max_length=30, null=True, blank=True)
 
 
+class WeizhanClick(models.Model):
+    """
+    微站PV
+    """
+    app_id = models.IntegerField(db_index=True)
+    item_id = models.BigIntegerField(default=0, db_index=True)
+    uid = models.BigIntegerField(default=0)
+    ua = models.CharField(max_length=255)
+    qq = models.CharField(max_length=20)
+    ts2 = models.CharField(max_length=20)
+    uuid = models.CharField(max_length=32)
+    ts = models.DateTimeField(db_index=True)
+    platform = models.CharField(max_length=10)
+    net = models.CharField(max_length=10, default='WIFI')
+    ip = models.CharField(max_length=20)
+    from_param = models.CharField(max_length=20, default='')
+    is_installed = models.IntegerField(default=0)
+
+
 class WeizhanDownClick(models.Model):
     """
     微站下载页点开的数据
@@ -993,3 +1012,4 @@ class WeizhanDownClick(models.Model):
     ip = models.CharField(max_length=20)
     uuid = models.CharField(max_length=32)
     ts = models.DateTimeField(db_index=True)
+    ua = models.CharField(max_length=255, default='')
