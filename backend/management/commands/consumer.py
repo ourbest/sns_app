@@ -72,7 +72,7 @@ class Command(BaseCommand):
                     for p in ps:
                         k, v = p.split('=', 1)
                         if k == 'dt':
-                            down.tid = v
+                            down.task_id = v
                             break
 
                 down.save()
