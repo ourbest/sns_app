@@ -19,7 +19,8 @@ from backend.models import SnsGroupSplit, SnsGroup, SnsUser, SnsUserGroup, SnsTa
     ItemDeviceUser, App, AppDailyStat, User, UserDailyStat, OfflineUser, AppUser, UserDailyDeviceUser, PhoneDevice, \
     ChannelUser, ArticleDailyInfo
 from backend.user_factory import sync_to_item_dev_user
-from backend.zhiyue_models import DeviceUser, CouponInst, CouponLog, ZhiyueUser, AdminPartnerUser, WeizhanItemView
+from backend.zhiyue_models import DeviceUser, CouponInst, CouponLog, ZhiyueUser, AdminPartnerUser, WeizhanItemView, \
+    ClipItem
 
 
 def clean_finished():
@@ -661,3 +662,10 @@ def sync_pv(ids):
 
         size = len(values)
         print('sync %s values %s' % (size, last_id))
+
+
+def no_title():
+    for da in DistArticle.objects.filter(title='（无此文章）'):
+        item = model_manager.query(ClipItem).filter(itemId=da.item_id).first()
+        da.title = item.title
+        model_manager.save_ignore(da, fields=['title'], force_update=True)

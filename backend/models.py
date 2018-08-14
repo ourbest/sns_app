@@ -507,6 +507,7 @@ class ItemDeviceUser(models.Model):
     remain_7 = models.IntegerField(default=0)
     remain_14 = models.IntegerField(default=0)
     platform = models.CharField(max_length=20, default='android', null=True)
+    region = models.CharField(max_length=30, null=True)
 
     @property
     def json(self):
