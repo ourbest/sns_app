@@ -5,6 +5,7 @@ from django.core.management import BaseCommand
 from kafka import KafkaConsumer
 from urllib.parse import unquote
 
+from backend import model_manager
 from backend.loggs import logger
 from backend.models import WeizhanDownClick
 
@@ -28,7 +29,7 @@ class Command(BaseCommand):
                 if match:
                     ip, uid, tm, method, url, code, size, dm, ua, n, ref = match.groups()
                     if url.startswith('/weizhan/tracking'):
-                        self.stdout.write('line %s' % line)
+                        # self.stdout.write('line %s' % line)
                         # tracking
                         params = url.split('?', 1)[1]
                         ps = params.split('&')
@@ -37,6 +38,8 @@ class Command(BaseCommand):
                             k, v = p.split('=', 1)
                             if k == 'app':
                                 down.app_id = v
+                                if int(v) not in model_manager.get_dist_app_ids():
+                                    continue
                             elif k == 'itemId':
                                 down.item_id = v
                             elif k == 'uid':

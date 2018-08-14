@@ -9,4 +9,6 @@ ADD . .
 
 EXPOSE 8000
 
+ENV TZ Asia/Shanghai
+
 ENTRYPOINT ["sh", "entry.sh"]
