@@ -59,6 +59,8 @@ def process_line(line):
             model_manager.save_ignore(down)
         elif url.startswith('/weizhan/article'):
             elems = url.split('?', 1)
+            if len(elems) == 1:
+                return
             path = elems[0].split('/')
             if len(path) < 7:
                 return
