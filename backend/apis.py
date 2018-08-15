@@ -1957,6 +1957,6 @@ def request_calling(request, id):
         connection = req.pull_connection()
         if connection is not None:
             return HttpResponse('[calling]\ncalled_qq=%s\nstatus=%s' % (
-                connection.called_qq.login_name if connection.called is not None else None, connection.status))
+                connection.called_qq.login_name if connection.called_qq is not None else None, connection.status))
 
     return HttpResponse('ok')
