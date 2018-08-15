@@ -981,7 +981,7 @@ class WeizhanClick(models.Model):
     微站PV
     """
     app_id = models.IntegerField(db_index=True)
-    item_id = models.BigIntegerField(default=0, db_index=True)
+    item_id = models.BigIntegerField(default=0)
     uid = models.BigIntegerField(default=0)
     ua = models.CharField(max_length=255)
     qq = models.CharField(max_length=20)
@@ -1004,7 +1004,7 @@ class WeizhanDownClick(models.Model):
     微站下载页点开的数据
     """
     app_id = models.IntegerField(db_index=True)
-    item_id = models.BigIntegerField(default=0, db_index=True)
+    item_id = models.BigIntegerField(default=0)
     type = models.CharField(max_length=30, default='')
     uid = models.BigIntegerField(default=0)
     img = models.CharField(max_length=255, default='')
@@ -1020,4 +1020,27 @@ class WeizhanDownClick(models.Model):
     task_id = models.IntegerField(null=True, default=0)
 
     class Meta:
-        unique_together = (('item_id', 'type', 'tid', 'idx', 'uuid', 'uid', 'task_id'),)
+        unique_together = (('item_id', 'uuid', 'uid', 'task_id'),)
+
+
+class WeizhanClickDaily(models.Model):
+    app_id = models.IntegerField(db_index=True)
+    stat_date = models.CharField(max_length=10)
+    item_id = models.BigIntegerField()
+    user_id = models.BigIntegerField()
+    task_id = models.IntegerField()
+    qq_id = models.IntegerField()
+    platform = models.CharField(max_length=10)
+    cnt = models.IntegerField()
+
+
+class WeizhanDlClickDaily(models.Model):
+    app_id = models.IntegerField(db_index=True)
+    stat_date = models.CharField(max_length=10)
+    item_id = models.BigIntegerField()
+    user_id = models.BigIntegerField()
+    task_id = models.IntegerField()
+    qq_id = models.IntegerField()
+    platform = models.CharField(max_length=10)
+    type = models.CharField(max_length=20)
+    cnt = models.IntegerField()
