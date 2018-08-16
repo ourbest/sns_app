@@ -9,7 +9,7 @@ docker run -d \
     -v /data/logs2:/code/logs \
     -v /data/local/local_settings.py:/code/sns_app/local_settings.py \
     -e TZ=Asia/Shanghai \
-    -e WORKERS=8 \
+    -e WORKERS=4 \
     -p 8100:8000 \
     --name tuiguang_api_for_phone \
     $IMAGE
