@@ -1769,8 +1769,8 @@ def sum_app_team(app):
                       'where g.sns_user_id=u.id and u.app_id=%s and u.dist=1 and '
                       'g.status=0 and sns_group_id=backend_snsgroup.group_id)' % app])
 
-    wx = DeviceWeixinGroup.objects.filter(device__owner__app_id=app).count()
-    wx_dist = DeviceWeixinGroup.objects.filter(device__owner__app_id=app).values('name').distinct().count()
+    wx = DeviceWeixinGroup.objects.filter(device__app_id=app).count()
+    wx_dist = DeviceWeixinGroup.objects.filter(device__app_id=app).values('name').distinct().count()
 
     return {
         'add': SnsUser.objects.filter(app_id=app, friend=1).count(),
