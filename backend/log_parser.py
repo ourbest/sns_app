@@ -51,11 +51,12 @@ def process_line(line):
             if ref:
                 ps = ref.split('&')
                 for p in ps:
-                    k, v = p.split('=', 1)
-                    if k == 'dev':
-                        down.task_id = v
-                    elif k == 'q2':
-                        down.qq = v
+                    if '=' in p:
+                        k, v = p.split('=', 1)
+                        if k == 'dev':
+                            down.task_id = v
+                        elif k == 'q2':
+                            down.qq = v
 
             model_manager.save_ignore(down, silent=True)
         elif url.startswith('/weizhan/article'):
@@ -83,17 +84,18 @@ def process_line(line):
 
             ps = params.split('&')
             for p in ps:
-                k, v = p.split('=', 1)
-                if k == 'from':
-                    click.from_param = v
-                elif k == 'isappinstalled':
-                    click.is_installed = int(v)
-                elif k == 'q2':
-                    click.qq = v
-                elif k == 'ts':
-                    click.ts2 = v
-                elif k == 'dev':
-                    click.tid = v
+                if '=' in p:
+                    k, v = p.split('=', 1)
+                    if k == 'from':
+                        click.from_param = v
+                    elif k == 'isappinstalled':
+                        click.is_installed = int(v)
+                    elif k == 'q2':
+                        click.qq = v
+                    elif k == 'ts':
+                        click.ts2 = v
+                    elif k == 'dev':
+                        click.tid = v
             model_manager.save_ignore(click, silent=True)
     else:
         logger.info('Wrong line: %s' % line)
