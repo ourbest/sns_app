@@ -5,10 +5,7 @@ ADD requirements.txt .
 
 RUN pip install -r requirements.txt -i https://pypi.douban.com/simple
 
-ADD . .
-
-EXPOSE 8000
-
 ENV TZ Asia/Shanghai
-
+EXPOSE 8000
+ADD . .
 ENTRYPOINT ["sh", "entry.sh"]
