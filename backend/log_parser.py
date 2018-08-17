@@ -57,7 +57,7 @@ def process_line(line):
                     elif k == 'q2':
                         down.qq = v
 
-            model_manager.save_ignore(down)
+            model_manager.save_ignore(down, silent=True)
         elif url.startswith('/weizhan/article'):
             elems = url.split('?', 1)
             if len(elems) == 1:
@@ -94,6 +94,6 @@ def process_line(line):
                     click.ts2 = v
                 elif k == 'dev':
                     click.tid = v
-            model_manager.save_ignore(click)
+            model_manager.save_ignore(click, silent=True)
     else:
         logger.info('Wrong line: %s' % line)
