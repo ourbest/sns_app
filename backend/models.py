@@ -1017,6 +1017,7 @@ class WeizhanDownClick(models.Model):
     uuid = models.CharField(max_length=32)
     ts = models.DateTimeField(db_index=True)
     ua = models.CharField(max_length=255, default='')
+    qq = models.CharField(max_length=10, default='', null=True)
     task_id = models.IntegerField(null=True, default=0)
 
     class Meta:
@@ -1028,10 +1029,12 @@ class WeizhanClickDaily(models.Model):
     stat_date = models.CharField(max_length=10)
     item_id = models.BigIntegerField()
     user_id = models.BigIntegerField()
-    task_id = models.IntegerField()
-    qq_id = models.IntegerField()
+    task_id = models.IntegerField(default=0)
+    qq_id = models.IntegerField(default=0)
     platform = models.CharField(max_length=10)
-    cnt = models.IntegerField()
+    sns_type = models.IntegerField(default=0)
+    cnt = models.IntegerField(default=0)
+    down_page_cnt = models.IntegerField(default=0)
 
 
 class WeizhanDlClickDaily(models.Model):
@@ -1039,8 +1042,9 @@ class WeizhanDlClickDaily(models.Model):
     stat_date = models.CharField(max_length=10)
     item_id = models.BigIntegerField()
     user_id = models.BigIntegerField()
-    task_id = models.IntegerField()
-    qq_id = models.IntegerField()
+    task_id = models.IntegerField(default=0)
+    qq_id = models.IntegerField(default=0)
     platform = models.CharField(max_length=10)
+    sns_type = models.IntegerField(default=0)
     type = models.CharField(max_length=20)
-    cnt = models.IntegerField()
+    cnt = models.IntegerField(default=0)

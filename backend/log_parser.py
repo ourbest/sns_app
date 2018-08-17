@@ -54,7 +54,8 @@ def process_line(line):
                     k, v = p.split('=', 1)
                     if k == 'dev':
                         down.task_id = v
-                        break
+                    elif k == 'q2':
+                        down.qq = v
 
             model_manager.save_ignore(down)
         elif url.startswith('/weizhan/article'):

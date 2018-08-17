@@ -160,3 +160,64 @@ def article_remain(request, from_date, to_date):
             s['remain'] += x[3]
 
     return ret + list(untitled.values())
+
+
+def sum_daily_click():
+    query = ("""
+replace into backend_weizhanclickdaily (app_id,
+                                        stat_date,
+                                        item_id,
+                                        user_id,
+                                        task_id,
+                                        qq_id,
+                                        platform,
+                                        cnt,
+                                        down_page_cnt)
+select app_id,
+       current_date - interval 1 day,
+       item_id,
+       uid,
+       tid,
+       if(qq = '', 0, qq),
+       platform,
+       count(*),
+       0
+from backend_weizhanclick
+where ts between current_date - interval 1 day and current_date
+group by app_id, item_id, uid, tid, qq, platform
+    """,
+             'update backend_weizhanclickdaily d, backend_appuser u set sns_type = u.type '
+             'where d.user_id = u.cutt_user_id and d.stat_date = current_date - interval 1 day',
+             """
+replace into backend_weizhandlclickdaily (app_id, stat_date, item_id, user_id, task_id, qq_id, platform, cnt)
+select c.app_id,
+       current_date - interval 1 day ,
+       item_id,
+       uid,
+       tid,
+       if(qq = '', 0, qq),
+       platform,
+       count(*)
+from backend_weizhandownclick c
+where ts between current_date-interval 1 day and current_date
+  and uid in (select cutt_user_id from backend_appuser)
+group by c.app_id, item_id, uid, tid, qq, platform
+             """,
+             'update backend_weizhandlclickdaily d, backend_appuser u set sns_type = u.type '
+             'where d.user_id = u.cutt_user_id and d.stat_date = current_date - interval 1 day',
+             """
+update backend_weizhanclickdaily c,
+(select app_id, item_id, stat_date, task_id, qq_id, platform, sum(cnt) s
+from backend_weizhandlclickdaily
+where stat_date = current_date - interval 1 day 
+group by app_id, item_id, stat_date, task_id, qq_id, platform) d
+set c.down_page_cnt = d.s
+where c.app_id = d.app_id and c.item_id = d.item_id
+and c.stat_date = d.stat_date and c.task_id = d.task_id and c.qq_id = d.qq_id
+and c.platform = d.platform
+             """
+             )
+
+    with connection.cursor() as cursor:
+        for q in query:
+            cursor.execute(q)

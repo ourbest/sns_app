@@ -1,7 +1,7 @@
 from django.conf.urls import url
 
 from backend import apis, users, zhiyue, tasks, daemons, bot_apis, stats, exts, kpi, offline, online, channels, shares, \
-    onlines, data
+    onlines, data, tests
 
 app_name = 'backend'
 urlpatterns = [
@@ -250,4 +250,7 @@ urlpatterns = [
 
     # data
     url(r'^export/data$', data.export_data),
+
+    # test
+    url(r'^test$', tests.test_api)
 ]

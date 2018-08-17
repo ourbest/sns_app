@@ -680,3 +680,7 @@ def lbs():
             if response.status_code == 200:
                 user.region = response.json()['data']
                 user.save(update_fields=['region'])
+
+
+def test_api():
+    return 'ok'
