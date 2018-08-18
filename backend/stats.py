@@ -162,6 +162,7 @@ def article_remain(request, from_date, to_date):
     return ret + list(untitled.values())
 
 
+@api_func_anonymous
 def sum_daily_click():
     query = ("""
 replace into backend_weizhanclickdaily (app_id,
@@ -183,25 +184,26 @@ select app_id,
        count(*),
        0
 from backend_weizhanclick
-where ts between current_date - interval 1 day and current_date
+where ts between current_date - interval 1 day and current_date and uid in (select cutt_user_id from backend_appuser)
 group by app_id, item_id, uid, tid, qq, platform
     """,
              'update backend_weizhanclickdaily d, backend_appuser u set sns_type = u.type '
              'where d.user_id = u.cutt_user_id and d.stat_date = current_date - interval 1 day',
              """
-replace into backend_weizhandlclickdaily (app_id, stat_date, item_id, user_id, task_id, qq_id, platform, cnt)
+replace into backend_weizhandlclickdaily (app_id, stat_date, item_id, user_id, task_id, qq_id, platform, type, cnt)
 select c.app_id,
        current_date - interval 1 day ,
        item_id,
        uid,
-       tid,
+       task_id,
        if(qq = '', 0, qq),
        platform,
+       type,
        count(*)
 from backend_weizhandownclick c
 where ts between current_date-interval 1 day and current_date
   and uid in (select cutt_user_id from backend_appuser)
-group by c.app_id, item_id, uid, tid, qq, platform
+group by c.app_id, item_id, uid, task_id, qq, platform, type
              """,
              'update backend_weizhandlclickdaily d, backend_appuser u set sns_type = u.type '
              'where d.user_id = u.cutt_user_id and d.stat_date = current_date - interval 1 day',
