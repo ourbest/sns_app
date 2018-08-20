@@ -4,6 +4,7 @@ from dj import times
 from dj.utils import api_func_anonymous
 from django.db import connection
 from django.db.models import Count
+from django_rq import job
 
 from backend import api_helper, model_manager
 from backend.models import DistArticle, DistArticleStat, ItemDeviceUser, User
@@ -164,6 +165,12 @@ def article_remain(request, from_date, to_date):
 
 @api_func_anonymous
 def sum_daily_click():
+    sum_daily_click_job.delay()
+    return 'ok'
+
+
+@job("default", timeout=3600)
+def sum_daily_click_job():
     query = ("""
 replace into backend_weizhanclickdaily (app_id,
                                         stat_date,
