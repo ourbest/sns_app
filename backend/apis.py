@@ -1776,7 +1776,7 @@ def sum_app_team(app):
         'add': SnsUser.objects.filter(app_id=app, friend=1).count(),
         'dist': SnsUser.objects.filter(app_id=app, dist=1).count(),
         'sum': query.aggregate(Sum('group_user_count'))['group_user_count__sum'],
-        'total': SnsUserGroup.objects.filter(sns_user__app_id=app, status=0).count(),
+        'total': SnsUserGroup.objects.filter(sns_group__app_id=app, status=0).count(),
         'count': query.count(),
         'add_count': query_add.count(),
         'add_sum': query_add.aggregate(Sum('group_user_count'))['group_user_count__sum'],
