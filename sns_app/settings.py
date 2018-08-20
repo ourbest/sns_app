@@ -20,7 +20,7 @@ RAVEN_CONFIG = {
     'dsn': 'https://fe9e540bdac242f8b8368969898b18ed:8cf5e54884964a5793998a1f5dfcabb7@sentry.io/243100',
     # If you are using git, you can also automatically configure the
     # release based on the git info.
-    'release': 'dao_sns_app_web_1',
+    'release': '8f58ebe1dfda24f8b6f6',
 }
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -175,7 +175,7 @@ FILE_UPLOAD_HANDLERS = ["django.core.files.uploadhandler.TemporaryFileUploadHand
 EMAIL_HOST = 'smtp.mxhichina.com'
 EMAIL_HOST_USER = 'yonghui.chen@cutt.com'
 
-JS_VER = '52cbdb45b9773e5a9f8e'
+JS_VER = '8f58ebe1dfda24f8b6f6'
 QINIU_URL = 'http://jwres.appgc.cn/'
 
 DEFAULT_CHARSET = 'utf-8'
