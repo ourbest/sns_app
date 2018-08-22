@@ -1217,25 +1217,26 @@ def users(request, app_id):
 def devices(request, email, i_uid, i_active):
     if i_uid:
         online = {x.device_id for x in model_manager.get_online_by_id(i_uid)}
-        query = PhoneDevice.objects.filter(owner_id=i_uid)
+        query = PhoneDevice.objects.filter(owner_id=i_uid).select_related('app')
         if i_active:
             query = query.filter(status=0)
         return [{'id': x.id, 'label': x.label, 'memo': x.memo, 'num': x.phone_num,
                  'display': x.friend_text,
                  'online': x.id in online,
                  'robot': 0 if x.in_trusteeship else 1,
-                 'status': x.status}
+                 'status': x.status,
+                 'app': x.app.app_name[0:-3]}
                 for x in query]
 
     email = email if email else get_session_user(request)
     if email:
         online = {x.device_id for x in model_manager.get_online(email)}
-        query = PhoneDevice.objects.filter(owner__email=email).select_related('owner')
+        query = PhoneDevice.objects.filter(owner__email=email).select_related('owner').select_related('app')
         if i_active:
             query = query.filter(status=0)
         return [{'id': x.id, 'label': x.label, 'owner': x.owner.name, 'memo': x.memo,
                  'robot': 0 if x.in_trusteeship else 1,
-                 'display': x.friend_text,
+                 'display': x.friend_text, 'app': x.app.app_name[0:-3],
                  'num': x.phone_num, 'online': x.id in online, 'status': x.status}
                 for x in query]
 
@@ -1776,7 +1777,7 @@ def sum_app_team(app):
         'add': SnsUser.objects.filter(app_id=app, friend=1).count(),
         'dist': SnsUser.objects.filter(app_id=app, dist=1).count(),
         'sum': query.aggregate(Sum('group_user_count'))['group_user_count__sum'],
-        'total': SnsUserGroup.objects.filter(sns_user__app_id=app, status=0).count(),
+        'total': SnsUserGroup.objects.filter(sns_group__app_id=app, status=0).count(),
         'count': query.count(),
         'add_count': query_add.count(),
         'add_sum': query_add.aggregate(Sum('group_user_count'))['group_user_count__sum'],

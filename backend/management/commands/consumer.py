@@ -1,3 +1,5 @@
+import time
+
 from django.conf import settings
 from django.core.management import BaseCommand
 from kafka import KafkaConsumer
@@ -17,12 +19,20 @@ class Command(BaseCommand):
             self._consume()
 
     def _consume(self):
+        begin_time = time.time()
+        last_records = self.total_records
         consumer = KafkaConsumer(settings.WEIZHAN_LOG_TOPIC, group_id='tuiguang',
                                  bootstrap_servers=settings.BOOTSTRAP_SERVERS)
         try:
             while True:
                 self.open_consumer(consumer)
-        except Exception as e:
+                if time.time() - begin_time > 60 * 30:
+                    delta = self.total_records - last_records
+                    if delta == 0:
+                        logger.warn('No record in 30 mins, sth wrong?')
+                    begin_time = time.time()
+                    last_records = self.total_records
+        except:
             logger.error('Consumer error', exc_info=True)
             consumer.close()
 
@@ -35,5 +45,8 @@ class Command(BaseCommand):
                     try:
                         process_line(line)
                         self.total_records += 1
+                        if self.total_records % 5000 == 0:
+                            logger.info('Process %s lines' % self.total_records)
+
                     except Exception:
                         logger.error('Error process line %s' % line, exc_info=True)
