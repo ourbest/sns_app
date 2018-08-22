@@ -186,14 +186,14 @@ def set_qun_join(qq_id, qun):
     qq = get_qq(qq_id)
     if qun.status != 2:
         qun.status = 2
-        qun.save()
+        save_ignore(qun, fields=['status'])
     sug = None
     try:
-        qun.snsgroupsplit_set.filter(user=qq.owner).update(status=3)
+        qun.snsgroupsplit_set.filter(user=qq.owner, status__in=(0, 1, 2)).update(status=3)
         sug = SnsUserGroup(sns_group=qun, sns_user=qq, status=0, active=1)
         sug.save()
     except:
-        pass
+        logger.warn('error save sug', exc_info=1)
 
     return sug
 
@@ -225,7 +225,8 @@ def set_qun_applying(device, qun):
     :param qun:
     :return:
     """
-    SnsGroupSplit.objects.filter(phone=device, group=qun).update(status=2, apply_count=F('apply_count') + 1)
+    SnsGroupSplit.objects.filter(phone=device, group=qun, status__in=(0, 1)).update(status=2,
+                                                                                    apply_count=F('apply_count') + 1)
 
 
 @job
