@@ -1835,7 +1835,7 @@ def majiang(i_user, i_app):
             return HttpResponseRedirect('http://mj.qiyew.com/apis/game_apis/login.php?uid=%s&gameId=%s'
                                         '&channel=app&time=%s&username=%s&userimg=%s&sign=%s'
                                         % (i_user, i_app, ts, user.name,
-                                           'https://qn.cutt.com/' + user.screenName, sign))
+                                           'https://qn.zhiyueapp.cn/' + user.screenName, sign))
 
 
 def article(request):

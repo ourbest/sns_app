@@ -222,14 +222,15 @@ def app_report_user(from_date, to_date):
 
 @api_func_anonymous
 def get_app_stat():
-    apps = {x.app_id: x.app_name for x in model_manager.get_dist_apps()}
+    the_apps = model_manager.get_dist_apps()
+    apps = {x.app_id: x.app_name for x in the_apps}
     size = len(apps)
     return sorted([{
         'app_id': x.app_id,
         'app_name': apps[x.app_id][:-3],
         'iphone': x.iphone,
         'android': x.android,
-    } for x in DailyActive.objects.all().order_by("-pk")[0:size]], key=lambda x: int(x['app_id']))
+    } for x in DailyActive.objects.filter(app_id__in=the_apps).order_by("-pk")[0:size]], key=lambda x: int(x['app_id']))
     # return do_get_app_stat()
 
 
