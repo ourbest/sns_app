@@ -33,13 +33,14 @@ def api_share_stat_weekly(date):
 
 @api_func_anonymous
 def api_share_stat():
+    dist_apps = model_manager.get_dist_apps()
     result = ShareUser.objects.filter(created_at__gt=dates.today() - timedelta(14),
-                                      enrolled=1).values(
+                                      enrolled=1, app__in=dist_apps).values(
         'app_id').annotate(referer=Count('referer_id', distinct=True),
                            users=Count('user_id'), remain=Sum('remain'),
                            date=Cast('created_at', DateField())).order_by("-date")
 
-    apps = {x.app_id: x.app_name for x in model_manager.get_dist_apps()}
+    apps = {x.app_id: x.app_name for x in dist_apps}
     return [{
         'app_name': apps[x['app_id']][:-3],
         'referer': x['referer'],
