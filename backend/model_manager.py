@@ -183,7 +183,7 @@ def set_qun_useless(db):
 
 
 def set_qun_join(qq_id, qun):
-    qq = get_qq(qq_id)
+    qq = get_qq(qq_id) if isinstance(qq_id, str) else qq_id
     if qun.status != 2:
         qun.status = 2
         save_ignore(qun, fields=['status'])
