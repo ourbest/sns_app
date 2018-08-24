@@ -275,6 +275,7 @@ def do_import_qun(app, ids, email, phone, edit_method, i_ignore_dup):
 
 def import_wx_dist_result(device_task, lines):
     reg = r'(.+)\t\((\d+)\)$'
+    reg2 = r'(.+)\t\((\d+)\)\tY$'
     for line in lines.split('\n'):
         match = re.match(reg, line)
         if match:
@@ -282,6 +283,13 @@ def import_wx_dist_result(device_task, lines):
             log = WxDistLog(task=device_task, group_name=name if len(name) < 100 else (name[0:90] + '...'),
                             user_count=cnt)
             log.save()
+        else:
+            match = re.match(reg2, line)
+            if match:
+                (name, cnt) = match.groups()
+                log = WxDistLog(task=device_task, group_name=name if len(name) < 100 else (name[0:90] + '...'),
+                                user_count=cnt, dist=1)
+                log.save()
 
     model_manager.sync_wx_log(device_task)
 

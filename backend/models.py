@@ -432,11 +432,10 @@ class WxDistLog(models.Model):
     group_name = models.CharField(max_length=100)
     user_count = models.IntegerField()
     created_at = models.DateTimeField(auto_now_add=True)
+    dist = models.IntegerField(default=0, null=True)
 
 
 # 用户
-
-
 class UserActionLog(models.Model):
     """
     用户操作历史
