@@ -11,6 +11,7 @@ from dj.utils import api_func_anonymous
 from django.db import connections
 from django.db.models import Count, Sum
 from django.http import HttpResponse
+from django.shortcuts import render
 from django.utils import timezone
 from django_rq import job
 from .loggs import logger
@@ -918,3 +919,9 @@ def qiniu_cb(request):
                 logger.info('%s - %s' % (values['inputKey'], v))
 
     return HttpResponse('OK')
+
+
+@api_func_anonymous
+def open_item(item_id, request):
+    return render(request, 'open_link.html', context={
+        'item_id': item_id})

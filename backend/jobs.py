@@ -1,4 +1,3 @@
-import json
 import os
 import re
 from collections import defaultdict
@@ -17,7 +16,6 @@ from django_rq import job
 from .loggs import logger
 from qiniu import Auth, put_file
 
-import backend.stat_utils
 from backend import api_helper, model_manager, group_splitter, zhiyue, stat_utils, caches, dates
 from backend.api_helper import ADD_STATUS, deal_add_result, deal_dist_result
 from backend.model_manager import save_ignore
@@ -27,6 +25,32 @@ from backend.models import DeviceFile, SnsUser, SnsGroup, SnsUserGroup, SnsApply
     AppWeeklyStat, User, SnsTaskDevice
 from backend.stat_utils import get_count, get_user_share_stat, app_daily_stat, classify_data_app
 from backend.zhiyue_models import ZhiyueUser, DeviceUser
+import os
+import re
+from collections import defaultdict
+from datetime import timedelta, datetime
+from math import radians, sin, atan2, cos, sqrt
+
+import requests
+from dj import times
+from django.conf import settings
+from django.db import connection, connections
+from django.db.models import Sum
+from django.template.loader import render_to_string
+from django.utils import timezone
+from django_rq import job
+from qiniu import Auth, put_file
+
+from backend import api_helper, model_manager, group_splitter, zhiyue, stat_utils, caches, dates
+from backend.api_helper import ADD_STATUS, deal_add_result, deal_dist_result
+from backend.model_manager import save_ignore
+from backend.models import DeviceFile, SnsUser, SnsGroup, SnsUserGroup, SnsApplyTaskLog, SnsGroupSplit, WxDistLog, \
+    SnsUserKickLog, DeviceTaskData, DailyActive, App, UserDailyStat, AppDailyStat, DeviceWeixinGroup, SnsGroupLost, \
+    DeviceWeixinGroupLost, SnsTask, UserDailyResourceStat, AppDailyResourceStat, AppUser, \
+    AppWeeklyStat, User, SnsTaskDevice
+from backend.stat_utils import get_count, get_user_share_stat, app_daily_stat, classify_data_app
+from backend.zhiyue_models import ZhiyueUser, DeviceUser
+from .loggs import logger
 
 
 @job("default", timeout=3600)

@@ -253,5 +253,7 @@ urlpatterns = [
     url(r'^export/data$', data.export_data),
 
     # test
-    url(r'^test$', tests.test_api)
+    url(r'^test$', tests.test_api),
+    # android open item
+    url(r'^open/item$', zhiyue.open_item)
 ]
