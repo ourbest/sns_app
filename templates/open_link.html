@@ -10,6 +10,9 @@
 正在打开文章。。。 <a href="http://api.zhiyueapp.cn/i/{{ item_id }}/{{ item_id }}">打开</a>
 <script>
     ZhiYue.articleDetail({{ item_id }});
+    setTimeout(function() {
+        ZhiYue.closePage();
+    }, 2)
 </script>
 </body>
 </html>
