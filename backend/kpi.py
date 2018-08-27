@@ -84,7 +84,7 @@ def get_kpi(app_id, period=None):
                                                         app_id=app_id).order_by('report_date')):
         the_row = rows_dict.get(x.report_date)
         if the_row is None:
-            logger.warn('error get row %s' % x.report_date)
+            logger.warn('error get row %s %s' % (app_id, x.report_date))
         else:
             the_row['pv'] = x.wx_pv + x.qq_pv
             the_row['users'] = x.qq_install + x.wx_install

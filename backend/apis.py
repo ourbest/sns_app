@@ -1804,7 +1804,7 @@ def sum_app_user(app, user_id, callback=None):
 
     ret = {
         'sum': query.aggregate(Sum('group_user_count'))['group_user_count__sum'],
-        'total': SnsUserGroup.objects.filter(sns_user__app_id=app, sns_user__owner_id=user_id, status=0).count(),
+        'total': SnsUserGroup.objects.filter(sns_group__app_id=app, sns_user__owner_id=user_id, status=0).count(),
         'count': query.count(),
         'wx_count': wx,
         'wx_dist': wx_dist,
