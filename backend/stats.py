@@ -170,7 +170,7 @@ def sum_daily_click():
 
 
 @job("default", timeout=3600)
-def sum_daily_click_job():
+def sum_daily_click_job(days=1):
     query = ("""
 replace into backend_weizhanclickdaily (app_id,
                                         stat_date,
@@ -182,7 +182,7 @@ replace into backend_weizhanclickdaily (app_id,
                                         cnt,
                                         down_page_cnt)
 select app_id,
-       current_date - interval 1 day,
+       current_date - interval {0} day,
        item_id,
        uid,
        tid,
@@ -191,15 +191,15 @@ select app_id,
        count(*),
        0
 from backend_weizhanclick
-where ts between current_date - interval 1 day and current_date and uid in (select cutt_user_id from backend_appuser)
+where ts between current_date - interval {0} day and current_date - interval {1} day and uid in (select cutt_user_id from backend_appuser)
 group by app_id, item_id, uid, tid, qq, platform
-    """,
+    """.format(days, days-1),
              'update backend_weizhanclickdaily d, backend_appuser u set sns_type = u.type '
-             'where d.user_id = u.cutt_user_id and d.stat_date = current_date - interval 1 day',
+             'where d.user_id = u.cutt_user_id and d.stat_date = current_date - interval {0} day'.format(days),
              """
 replace into backend_weizhandlclickdaily (app_id, stat_date, item_id, user_id, task_id, qq_id, platform, type, cnt)
 select c.app_id,
-       current_date - interval 1 day ,
+       current_date - interval {0} day ,
        item_id,
        uid,
        task_id,
@@ -208,23 +208,23 @@ select c.app_id,
        type,
        count(*)
 from backend_weizhandownclick c
-where ts between current_date-interval 1 day and current_date
+where ts between current_date-interval {0} day and current_date - interval {1} day 
   and uid in (select cutt_user_id from backend_appuser)
 group by c.app_id, item_id, uid, task_id, qq, platform, type
-             """,
+             """.format(days, days-1),
              'update backend_weizhandlclickdaily d, backend_appuser u set sns_type = u.type '
-             'where d.user_id = u.cutt_user_id and d.stat_date = current_date - interval 1 day',
+             'where d.user_id = u.cutt_user_id and d.stat_date = current_date - interval {0} day'.format(days),
              """
 update backend_weizhanclickdaily c,
 (select app_id, item_id, stat_date, task_id, qq_id, platform, sum(cnt) s
 from backend_weizhandlclickdaily
-where stat_date = current_date - interval 1 day 
+where stat_date = current_date - interval {0} day 
 group by app_id, item_id, stat_date, task_id, qq_id, platform) d
 set c.down_page_cnt = d.s
 where c.app_id = d.app_id and c.item_id = d.item_id
 and c.stat_date = d.stat_date and c.task_id = d.task_id and c.qq_id = d.qq_id
 and c.platform = d.platform
-             """
+             """.format(days)
              )
 
     with connection.cursor() as cursor:

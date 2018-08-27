@@ -610,3 +610,18 @@ class CustomPush(models.Model):
                 self.pushDetail = r.group(2)
 
         return self.itemId != 0
+
+
+class MpSentItem(models.Model):
+    userId = models.BigIntegerField()
+    itemId = models.BigIntegerField()
+    partnerId = models.IntegerField()
+    sentTime = models.DateTimeField(primary_key=True)
+
+    @staticmethod
+    def db_name():
+        return 'zhiyue'
+
+    class Meta:
+        db_table = 'partner_MpItemSent'
+        managed = False

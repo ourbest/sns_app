@@ -1822,20 +1822,24 @@ def set_article_attr(article_id, key, value):
 
 
 @api_func_anonymous
-def majiang(i_user, i_app):
-    i_app = 586432
+def majiang(i_user, i_app, auto):
+    gamekey = '5616651dfg16d5rg341f651651v6d51f'
+    i_app = 249
+    channel = '249game'
+    if not auto:
+        auto = '1'
     user = model_manager.query(ZhiyueUser).filter(userId=i_user).first()
     if user:
         if user.platform in ('iphone', 'android'):
             return '未登录'
         else:
             ts = int(time.time())
-            gamekey = 'shenghuoquan'
-            sign = md5_hex('%s%sapp%s%s' % (i_app, i_user, ts, gamekey))
-            return HttpResponseRedirect('http://mj.qiyew.com/apis/game_apis/login.php?uid=%s&gameId=%s'
-                                        '&channel=app&time=%s&username=%s&userimg=%s&sign=%s'
-                                        % (i_user, i_app, ts, user.name,
-                                           'https://qn.zhiyueapp.cn/' + user.screenName, sign))
+            sign = md5_hex('%s%s%s%s%s' % (i_app, i_user, channel, ts, gamekey))
+            return HttpResponseRedirect('http://mj.appgc.cn/apis/game_apis/login.php?uid=%s&gameId=%s'
+                                        '&channel=%s&time=%s&username=%s&userimg=%s&sign=%s%s'
+                                        % (i_user, i_app, channel, ts, user.name,
+                                           'https://img1.appgc.cn/img/' + user.screenName + "/0", sign,
+                                           '&autoaction=ingame' if auto == '1' else ''))
 
 
 def article(request):
