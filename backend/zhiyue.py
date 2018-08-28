@@ -16,7 +16,7 @@ from django.utils import timezone
 from django_rq import job
 from .loggs import logger
 
-from backend import api_helper, model_manager, stat_utils, hives, remains, cassandras, shares, lbs, dates
+from backend import api_helper, model_manager, stat_utils, hives, remains, cassandras, shares, lbs, dates, qn
 from backend.api_helper import get_session_app
 from backend.daily_stat import make_daily_remain, save_bonus_info, make_offline_stat, \
     do_offline_stat
@@ -914,7 +914,7 @@ def qiniu_cb(request):
         if values['code'] == 0:
             v = values.get('items')[0].get('result').get('result').get('result').get('label')
             if v == 1:
-                logger.warn('WARN: ' + values['inputKey'])
+                qn.send_image_audit(values['inputKey'])
             else:
                 logger.info('%s - %s' % (values['inputKey'], v))
 

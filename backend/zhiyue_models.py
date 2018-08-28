@@ -625,3 +625,18 @@ class MpSentItem(models.Model):
     class Meta:
         db_table = 'partner_MpItemSent'
         managed = False
+
+
+class ImageUploader(models.Model):
+    imageId = models.CharField(max_length=50, default='', primary_key=True)
+    userId = models.BigIntegerField()
+    partnerId = models.BigIntegerField()
+    createTime = models.DateTimeField()
+
+    @staticmethod
+    def db_name():
+        return 'cms'
+
+    class Meta:
+        db_table = 'cms_ImageUploader'
+        managed = False
