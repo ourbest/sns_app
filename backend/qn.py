@@ -11,6 +11,7 @@ from backend.zhiyue_models import ImageUploader, ZhiyueUser, PartnerImage
 url = 'https://oapi.dingtalk.com/robot/send?' \
       'access_token=a4386542db725785c6499e83cf8242bde68b3f6359a57ead50fa052ca3a77ed9'
 
+
 def send_image_audit(image_id):
     if image_id.startswith('e_'):
         return
