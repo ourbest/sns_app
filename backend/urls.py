@@ -256,5 +256,6 @@ urlpatterns = [
     # test
     url(r'^test$', tests.test_api),
     # android open item
-    url(r'^open/item$', zhiyue.open_item)
+    url(r'^open/item$', zhiyue.open_item),
+    url(r'^qn/img$', qn.show_img),
 ]

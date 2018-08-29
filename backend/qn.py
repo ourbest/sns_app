@@ -1,7 +1,7 @@
 import requests
 from dj.utils import api_func_anonymous
 from django.conf import settings
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponseRedirect
 from qiniu import Auth, BucketManager
 
 from backend import model_manager
@@ -32,8 +32,9 @@ def send_image_audit(image_id):
         'msgtype': 'actionCard',
         'actionCard': {
             'title': '确认图片有没有问题(%s)' % db.partnerId if db else '',
-            'text': '## 确认图片有没有问题(%s)\n\n![pic](http://ty.appgc.cn/%s/2)\n\n### %s选择是？\n\n'
-                    % (db.partnerId if db else '', image_id, image_id),
+            'text': '## 确认图片有没有问题(%s)\n\n![pic](http://ty.appgc.cn/%s/2)\n\n '
+                    '[浏览器打开](https://tg.appgc.cn/api/qn/img?img=%s)\n\n### %s选择是？\n\n'
+                    % (db.partnerId if db else '', image_id, image_id, image_id),
             'hideAvatar': '1',
             'btnOrientation': '1',
             'btns': [
@@ -66,6 +67,8 @@ def mark_status(img, res):
         if db:
             user = model_manager.query(ZhiyueUser).filter(userId=db.userId).first()
             add = '，上传的APP({0})，用户：{2}({1})'.format(db.partnerId, user.userId, user.name)
+        # else:
+
         q = Auth(settings.QINIU_AK, settings.QINIU_SK)
         bucket = BucketManager(q)
         bucket_name = 'cimg1'
@@ -104,3 +107,9 @@ def do_rename(bucket, bucket_name, img):
         return True
     except:
         pass
+
+
+@api_func_anonymous
+def show_img(img):
+    q = Auth(settings.QINIU_AK, settings.QINIU_SK)
+    return HttpResponseRedirect(q.private_download_url('http://ty.appgc.cn/%s' % img, 30))
