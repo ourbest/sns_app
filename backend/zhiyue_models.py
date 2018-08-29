@@ -640,3 +640,17 @@ class ImageUploader(models.Model):
     class Meta:
         db_table = 'cms_ImageUploader'
         managed = False
+
+
+class PartnerImage(models.Model):
+    imageId = models.CharField(max_length=64, primary_key=True)
+    partnerId = models.BigIntegerField()
+    createTime = models.DateTimeField()
+
+    @staticmethod
+    def db_name():
+        return 'zhiyue'
+
+    class Meta:
+        db_table = 'partner_PartnerImage'
+        managed = False

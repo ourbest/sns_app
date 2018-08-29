@@ -1047,3 +1047,22 @@ class WeizhanDlClickDaily(models.Model):
     sns_type = models.IntegerField(default=0)
     type = models.CharField(max_length=20)
     cnt = models.IntegerField(default=0)
+
+
+class UserFollowApp(models.Model):
+    app = models.ForeignKey(App, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+
+
+class DingTalkToken(models.Model):
+    id = models.CharField(max_length=32, primary_key=True)
+    token = models.CharField(max_length=64)
+    memo = models.CharField(max_length=64)
+
+
+class AuditImage(models.Model):
+    image_id = models.CharField(max_length=64, primary_key=True)
+    app_id = models.IntegerField()
+    user_id = models.BigIntegerField(null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    status = models.IntegerField(default=0)
