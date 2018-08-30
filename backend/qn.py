@@ -2,6 +2,7 @@ import requests
 from dj.utils import api_func_anonymous
 from django.conf import settings
 from django.http import HttpResponse, HttpResponseRedirect
+from django.utils import timezone
 from qiniu import Auth, BucketManager
 
 from backend import model_manager
@@ -26,7 +27,8 @@ def send_image_audit(image_id):
     else:
         app_id = db.partnerId
 
-    model_manager.save_ignore(AuditImage(image_id, app_id=app_id, user_id=db.userId if db else 0))
+    model_manager.save_ignore(
+        AuditImage(image_id, app_id=app_id, user_id=db.userId if db else 0, created_at=timezone.now()))
 
     dingding_msg = {
         'msgtype': 'actionCard',
@@ -57,7 +59,7 @@ def mark_status(img, res):
     db = AuditImage.objects.filter(image_id=img).first()
     if db:
         db.status = 1 if 'ok' == res else 2
-        model_manager.save_ignore(db)
+        model_manager.save_ignore(db, fields=['status'])
 
     if res == 'ok':
         pass

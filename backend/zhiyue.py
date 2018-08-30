@@ -900,7 +900,7 @@ def push_audit_stat():
             'msgtype': 'text',
             'text': {
                 'content': msg
-            },
+            },AuditImage
             'at': {
                 'isAtAll': True
             }
