@@ -1,7 +1,7 @@
 from dj.utils import api_func_anonymous, api_error
 
 from backend import api_helper, model_manager
-from backend.models import UserDelegate, User, AppUser
+from backend.models import UserDelegate, User, AppUser, UserFollowApp
 
 
 @api_func_anonymous
@@ -128,3 +128,20 @@ def update_majia_type(i_id, i_type, request):
         AppUser.objects.filter(cutt_user_id=i_id, user=user).update(type=i_type)
 
     return 'ok'
+
+
+@api_func_anonymous
+def api_my_follow(request, ids):
+    email = api_helper.get_session_user(request)
+    user = model_manager.get_user(email)
+    user.userfollowapp_set.all().delete()
+    for app_id in ids.split(';'):
+        model_manager.save_ignore(UserFollowApp(user=user, app_id=app_id))
+    return ''
+
+
+@api_func_anonymous
+def api_my_following(request):
+    email = api_helper.get_session_user(request)
+    user = model_manager.get_user(email)
+    return [x.app_id for x in user.userfollowapp_set.all()]

@@ -663,7 +663,7 @@ def parse_dist_article(data, task, from_time=None):
             task.article = db
             model_manager.save_ignore(task)
     else:
-        logger.warning('cannot parse task item id %s ' % data)
+        logger.warning('cannot parse task item id %s of %s' % (data, task))
 
 
 class RequestCalling:
