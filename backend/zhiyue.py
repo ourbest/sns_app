@@ -912,9 +912,13 @@ def qiniu_cb(request):
     if request.method == 'POST':
         values = json.loads(request.body)
         if values['code'] == 0:
-            v = values.get('items')[0].get('result').get('result').get('result').get('label')
+            result = values.get('items')[0].get('result').get('result').get('result')
+            v = result.get('label')
             if v == 1:
-                qn.send_image_audit(values['inputKey'])
+                if 0.85 < result.get('score') <= 0.99:
+                    qn.send_image_audit(values['inputKey'])
+                else:
+                    logger.info('%s - %s(%s)' % (values['inputKey'], v, result.get('score')))
             else:
                 logger.info('%s - %s' % (values['inputKey'], v))
 
