@@ -914,13 +914,16 @@ def qiniu_cb(request):
         if values['code'] == 0:
             result = values.get('items')[0].get('result').get('result').get('result')
             v = result.get('label')
+            img = values['inputKey']
             if v == 1:
-                if 0.85 < result.get('score') <= 0.99:
-                    qn.send_image_audit(values['inputKey'])
+                if result.get('score') >= 0.99:
+                    qn.mark_status(img, 'auto')
+                elif 0.85 < result.get('score') <= 0.99:
+                    qn.send_image_audit(img)
                 else:
-                    logger.info('%s - %s(%s)' % (values['inputKey'], v, result.get('score')))
+                    logger.info('%s - %s(%s)' % (img, v, result.get('score')))
             else:
-                logger.info('%s - %s' % (values['inputKey'], v))
+                logger.info('%s - %s' % (img, v))
 
     return HttpResponse('OK')
 

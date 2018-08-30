@@ -68,15 +68,18 @@ def mark_status(img, res):
             user = model_manager.query(ZhiyueUser).filter(userId=db.userId).first()
             add = '，上传的APP({0})，用户：{2}({1})'.format(db.partnerId, user.userId, user.name)
         # else:
+        if res == 'auto':
+            add = '，图片是黄图的置信度高，已自动处理'
+        else:
+            q = Auth(settings.QINIU_AK, settings.QINIU_SK)
+            bucket = BucketManager(q)
+            bucket_name = 'cimg1'
+            for i in range(1, 3):
+                if do_rename(bucket, bucket_name, img):
+                    send_done(img, add)
+                    break
 
-        q = Auth(settings.QINIU_AK, settings.QINIU_SK)
-        bucket = BucketManager(q)
-        bucket_name = 'cimg1'
-        for i in range(1, 3):
-            if do_rename(bucket, bucket_name, img):
-                send_done(img, add)
-                return HttpResponse('已处理' + add)
-
+        return HttpResponse('已处理' + add)
     send_done(img)
     return HttpResponse('OK')
 
