@@ -321,6 +321,7 @@ class SnsTaskDevice(models.Model):
     data = models.TextField('参数', blank=True, null=True)
     schedule_at = models.DateTimeField(null=True)
     progress = models.IntegerField('进度', default=0)
+    pv = models.IntegerField('pv', default=0, null=True)
 
     def __str__(self):
         return '%s@%s' % (self.task if self.task else 'N/A', self.device if self.device else 'N/A')

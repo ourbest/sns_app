@@ -2,9 +2,11 @@ import re
 from datetime import datetime
 from urllib.parse import unquote
 
+from django.db.models import F
+
 from backend import model_manager
 from backend.loggs import logger
-from backend.models import WeizhanClick, WeizhanDownClick
+from backend.models import WeizhanClick, WeizhanDownClick, SnsTaskDevice
 
 
 def process_line(line):
@@ -96,6 +98,8 @@ def process_line(line):
                         click.ts2 = v
                     elif k == 'dev':
                         click.tid = v
-            model_manager.save_ignore(click, silent=True)
+
+            if model_manager.save_ignore(click, silent=True) and click.tid:
+                SnsTaskDevice.objects.filter(pk=click.tid).update(pv=F('pv') + 1)
     else:
         logger.info('Wrong line: %s' % line)
