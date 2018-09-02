@@ -1493,6 +1493,7 @@ def task_devices(task_id):
         'finish_time': times.to_str(x.finish_at),
         'status': x.status,
         'id': x.id,
+        'pv': x.pv,
         'status_text': TASK_STATUS_TEXT[x.status],
     } for x in SnsTaskDevice.objects.filter(task_id=task_id).select_related('device')]
 
@@ -1519,6 +1520,7 @@ def device_tasks(device):
         'started_at': times.to_str(x.started_at),
         'finish_at': times.to_str(x.finish_at),
         'data': x.data,
+        'pv': x.pv,
         'status_text': TASK_STATUS_TEXT[x.status],
     } for x in SnsTaskDevice.objects.filter(device__label=device).select_related(
         'task', 'task__type').order_by('-pk')[:50]]
