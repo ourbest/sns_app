@@ -1394,6 +1394,7 @@ def create_task(type, params, phone, request, date):
     labels = re.split(';', phone)
     devices = model_manager.get_phones(labels)
     scheduler_date = timezone.make_aware(datetime.strptime(date, '%Y-%m-%d %H:%M')) if date else None
+    ret = 'ok'
     if devices:
         task_type = model_manager.get_task_type(type)
 
@@ -1401,6 +1402,11 @@ def create_task(type, params, phone, request, date):
                        app=user.app, status=0, schedule_at=scheduler_date,
                        data=params, creator=user)
         task.save()
+
+        if task_type.id in (3, 5):
+            parse_dist_article(params, task, from_time=scheduler_date)
+            if task.article and not task.article.category:
+                ret = task.id
 
         schedulers.run_at(task.schedule_at.timestamp() + 5, reload_phone_task, task.id)
 
@@ -1412,7 +1418,7 @@ def create_task(type, params, phone, request, date):
             SnsTaskDevice(task=task, device=device, schedule_at=scheduler_date, data=task.data).save()
             task_manager.reload_next_task(device.label)
 
-        return "ok"
+        return ret
     api_error(1001, '不存在的手机')
 
 
