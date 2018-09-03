@@ -5,6 +5,7 @@ from redis import StrictRedis
 from backend.models import Tag
 
 redis_client = StrictRedis(host=settings.REDIS_SERVER)
+zhiyue_cache = StrictRedis(host='10.9.38.245')
 
 
 def reload_cache(clz, key=None):

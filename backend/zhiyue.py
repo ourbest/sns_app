@@ -14,9 +14,12 @@ from django.http import HttpResponse
 from django.shortcuts import render
 from django.utils import timezone
 from django_rq import job
+
+from backend.caches import zhiyue_cache
 from .loggs import logger
 
-from backend import api_helper, model_manager, stat_utils, hives, remains, cassandras, shares, lbs, dates, qn
+from backend import api_helper, model_manager, stat_utils, hives, remains, cassandras, shares, lbs, dates, qn, caches, \
+    schedulers
 from backend.api_helper import get_session_app
 from backend.daily_stat import make_daily_remain, save_bonus_info, make_offline_stat, \
     do_offline_stat
@@ -514,6 +517,10 @@ def sync_user_in_minutes(minutes):
                 owner = majia.user
                 if device_user.deviceUserId not in saved:
                     user = sync_to_item_dev_user(app, owner, device_user, majia)
+                    user.view = 1 if is_user_view_item(user_id=user.user_id, item_id=user.item_id) else 0
+                    if not user.view:
+                        schedulers.run_at(datetime.now() + timedelta(minutes=30), sync_item_view, user.user_id,
+                                          user.item_id)
                     if model_manager.save_ignore(user):
                         from backend.jobs import sync_user_region
                         sync_user_region.delay(user)
@@ -650,6 +657,10 @@ def sync_device_user():
                 majia = majias.get(device_user.sourceUserId)
                 owner = majia.user
                 user = sync_to_item_dev_user(app, owner, device_user, majia)
+                user.view = 1 if is_user_view_item(user_id=user.user_id, item_id=user.item_id) else 0
+                if not user.view:
+                    schedulers.run_at(datetime.now() + timedelta(minutes=30), sync_item_view, user.user_id,
+                                      user.item_id)
                 if model_manager.save_ignore(user):
                     from backend.jobs import sync_user_region
                     sync_user_region.delay(user)
@@ -932,3 +943,16 @@ def qiniu_cb(request):
 def open_item(item_id, request):
     return render(request, 'open_link.html', context={
         'item_id': item_id})
+
+
+def is_user_view_item(user_id, item_id):
+    if zhiyue_cache.get('rc_zy_page__uva-{}-{}'.format(user_id, item_id)):
+        return True
+    return False
+
+
+def sync_item_view(user_id, item_id):
+    if is_user_view_item(user_id, item_id):
+        idu = ItemDeviceUser.objects.filter(user_id=user_id).first()
+        idu.view = 1
+        model_manager.save_ignore(idu, fields=['view'])
