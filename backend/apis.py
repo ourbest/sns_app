@@ -1180,13 +1180,17 @@ def login(request, email, password):
     if api_helper.auth(email, password):
         request.session['user'] = email
         logger.info("User %s login." % email)
-        return login_info(request)
+        return get_login_info(request)
 
     api_error(1001)
 
 
 @api_func_anonymous
 def login_info(request):
+    return get_login_info(request)
+
+
+def get_login_info(request):
     email = get_session_user(request)
     ret = {
         'email': email
@@ -1196,8 +1200,10 @@ def login_info(request):
         user = User.objects.filter(email=email).first()
         ret['app_id'] = user.app.app_id if user.app else 0
         ret['app_name'] = user.app.app_name if user.app else '没有'
+        ret['app_stage'] = user.app.stage if user.app else '没有'
         ret['username'] = user.name
         ret['role'] = user.role
+
     return ret
 
 
@@ -1406,7 +1412,7 @@ def create_task(type, params, phone, request, date):
         if task_type.id in (3, 5):
             parse_dist_article(params, task, from_time=scheduler_date)
             if task.article and not task.article.category:
-                ret = task.id
+                ret = str(task.id)
 
         schedulers.run_at(task.schedule_at.timestamp() + 5, reload_phone_task, task.id)
 
@@ -1551,6 +1557,14 @@ def qun_history(i_qun):
             'name': x.group.group_name if x.group.group_name else '(未知)',
         } for x in SnsApplyTaskLog.objects.filter(group_id=i_qun).select_related(
             'device', 'account', 'group').order_by("-pk")[0:100]]
+
+
+@api_func_anonymous
+def api_task_item_mark(i_task_id, cat):
+    sns_task = SnsTask.objects.filter(id=i_task_id).first()
+    if sns_task and sns_task.article:
+        sns_task.article.category = cat
+        model_manager.save_ignore(sns_task.article, fields=['category'])
 
 
 @api_func_anonymous

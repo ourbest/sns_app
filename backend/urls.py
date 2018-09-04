@@ -1,7 +1,7 @@
 from django.conf.urls import url
 
 from backend import apis, users, zhiyue, tasks, daemons, bot_apis, stats, exts, kpi, offline, online, channels, shares, \
-    onlines, data, tests, qn
+    onlines, data, tests, qn, charts
 
 app_name = 'backend'
 urlpatterns = [
@@ -105,6 +105,7 @@ urlpatterns = [
     url(r'^task/files$', apis.task_files),
     url(r'^task/groups$', apis.task_groups),
     url(r'^task/auto$', apis.task_auto_data),
+    url(r'^task/item/mark$', apis.api_task_item_mark),
 
     url(r'^file/content$', apis.file_content),
     url(r'^task/logs$', tasks.work_logs),
@@ -261,4 +262,7 @@ urlpatterns = [
     # android open item
     url(r'^open/item$', zhiyue.open_item),
     url(r'^qn/img$', qn.show_img),
+
+    # graph
+    url(r'^chart/month/data', charts.api_get_app_month_data),
 ]
