@@ -745,6 +745,15 @@ def batch_item_stat(app_id, items, from_time, user_type=0):
     } for x in items]
 
 
+def send_follow_mail(date, user, app_stats, summary, sum_yesterday):
+    ids = {x.app_id for x in user.userfollowapp_set.all()}
+    if ids:
+        app_stats = [x for x in app_stats if x['id'] in ids]
+        summary = [x for x in summary if x['id'] in ids]
+        sum_yesterday = [x for x in sum_yesterday if x['id'] in ids]
+        send_report_mail(date, app_stats, sum_yesterday, summary, user.email)
+
+
 @job("default", timeout=3600)
 def do_gen_daily_report():
     # pid = os.fork()
@@ -764,12 +773,14 @@ def do_gen_daily_report():
         item_stats = []
         stat = app_daily_stat(app.app_id, date, True)
         app_stats.append({
+            'id': app.app_id,
             'app': app.app_name,
             'items': item_stats,
             'sum': stat,
         })
 
         summary.append({
+            'id': app.app_id,
             'app': app.app_name,
             'qq': [x for x in stat['qq'] if x['name'] == '合计'][0],
             'wx': [x for x in stat['wx'] if x['name'] == '合计'][0],
@@ -785,17 +796,32 @@ def do_gen_daily_report():
             zhiyue.sync_report_online_remain(yesterday_stat)
 
             sum_yesterday.append({
+                'id': app.app_id,
                 'app': app.app_name,
                 'weizhan': yesterday_stat.qq_pv + yesterday_stat.wx_pv,
                 'users': yesterday_stat.qq_install + yesterday_stat.wx_install,
                 'remain': yesterday_stat.qq_remain + yesterday_stat.wx_remain
             })
 
-    html = render_to_string('daily_report.html', {'stats': app_stats, 'sum': summary, 'sum_yesterday': sum_yesterday})
-    api_helper.send_html_mail('%s线上推广日报' % date, settings.DAILY_REPORT_EMAIL, html)
+    if settings.DAILY_REPORT_EMAIL:
+        send_report_mail(date, app_stats, sum_yesterday, summary, settings.DAILY_REPORT_EMAIL)
+
+    for user in User.objects.filter(status__gte=0):
+        if user.email not in settings.DAILY_REPORT_EMAIL:
+            send_follow_mail(date, user, app_stats, summary, sum_yesterday)
+
     print('Done.')
     make_daily_detail()
     # os._exit(0)
+
+
+def send_report_mail(date, app_stats, sum_yesterday, summary, mail):
+    try:
+        html = render_to_string('daily_report.html',
+                                {'stats': app_stats, 'sum': summary, 'sum_yesterday': sum_yesterday})
+        api_helper.send_html_mail('%s线上推广日报' % date, mail, html)
+    except:
+        logger.warning('error send email to ' % mail, exc_info=1)
 
 
 def make_daily_detail():

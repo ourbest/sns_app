@@ -1068,3 +1068,4 @@ class AuditImage(models.Model):
     user_id = models.BigIntegerField(null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     status = models.IntegerField(default=0)
+    ua = models.CharField(default=None, null=True, blank=True, max_length=255)

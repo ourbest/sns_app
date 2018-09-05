@@ -26,3 +26,4 @@ rq_scheduler
 cassandra-driver
 django-extensions
 kafka-python
+fastparquet

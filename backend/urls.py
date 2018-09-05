@@ -176,6 +176,7 @@ urlpatterns = [
     url(r'^daemon/stat/sync/user$', zhiyue.sync_user),
     url(r'^daemon/stat/rt/user$', zhiyue.sync_user_realtime),
     url(r'^daemon/stat/pv$', zhiyue.sync_pv),
+    url(r'^daemon/backup/weizhan$', daemons.backup_weizhan),
 
     # weixin
     url(r'^wx/contact/sync$', bot_apis.sync_contacts),
@@ -265,4 +266,5 @@ urlpatterns = [
 
     # graph
     url(r'^chart/month/data', charts.api_get_app_month_data),
+    url(r'^chart/today/data', charts.api_get_app_today),
 ]

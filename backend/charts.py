@@ -3,7 +3,7 @@ from datetime import timedelta
 from dj.utils import api_func_anonymous
 from django.db import connection
 
-from backend import dates
+from backend import dates, model_manager
 from backend.api_helper import get_session_app
 from backend.models import AppDailyStat
 
@@ -33,43 +33,37 @@ def api_get_app_month_data(request):
 
 
 @api_func_anonymous
-def api_get_app_today():
+def api_get_app_today(request):
     hours = []
-    app_data = dict()
+    pv = dict()
+    users = dict()
+
+    app = get_session_app(request)
 
     with connection.cursor() as cursor:
         cursor.execute('select app_id, concat(left(ts, 14), \'00\'), count(*) from backend_weizhanclick '
-                       'where ts > now() - interval 24 hour and tid>0 group by app_id, left(ts, 14)')
+                       'where ts > now() - interval 24 hour and tid>0 and app_id=%s '
+                       'group by app_id, left(ts, 14)' % app)
         rows = cursor.fetchall()
         for app, hour, cnt in rows:
             if hour not in hours:
                 hours.append(hour)
 
-            value = app_data.get(app, {
-                'pv': dict(),
-                'users': dict(),
-            })
-            value['pv'][hour] = cnt
+            pv[hour] = cnt
 
         cursor.execute('select app_id, concat(left(created_at, 14), \'00\'), count(*) from backend_itemdeviceuser '
-                       'where created_at > now() - interval 24 hour group by app_id, left(created_at, 14)')
+                       'where created_at > now() - interval 24 hour and app_id=%s '
+                       'group by app_id, left(created_at, 14)' % app)
 
         rows = cursor.fetchall()
         for app, hour, cnt in rows:
             if hour not in hours:
                 hours.append(hour)
 
-            value = app_data.get(app, {
-                'pv': dict(),
-                'users': dict(),
-            })
-            value['users'][hour] = cnt
-
-    return_value = dict()
-    for k, v in app_data.items():
-        pass
+            users[hour] = cnt
 
     return {
         'hours': hours,
-        'data': return_value,
+        'pv': [pv.get(x, '0') for x in hours],
+        'users': [users.get(x, '0') for x in hours],
     }

@@ -1,14 +1,10 @@
-from datetime import timedelta, datetime
-
-from dj import times
+from datetime import timedelta
 from dj.utils import api_func_anonymous, logger
-from django.db.models import Sum
 from django.utils import timezone
 
-from backend import api_helper, model_manager, stats
+from backend import api_helper, model_manager, backups
 from backend.jobs import do_save_daily_active, do_daily_stat, make_weekly_stat
-from backend.models import SnsTask, SnsTaskDevice, App, AppUser, DistArticle
-from backend.zhiyue_models import HighValueUser
+from backend.models import SnsTask, SnsTaskDevice, WeizhanClick
 
 
 @api_func_anonymous
@@ -60,3 +56,9 @@ def gauge_data():
 @api_func_anonymous
 def weekly_stat():
     make_weekly_stat.delay()
+
+
+@api_func_anonymous
+def backup_weizhan():
+    backup_date = WeizhanClick.objects.first().ts
+    backups.backup_weizhanclick.delay(backup_date)

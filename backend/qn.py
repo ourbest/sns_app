@@ -55,11 +55,12 @@ def send_image_audit(image_id):
 
 
 @api_func_anonymous
-def mark_status(img, res):
+def mark_status(img, res, request):
     db = AuditImage.objects.filter(image_id=img).first()
     if db:
         db.status = 1 if 'ok' == res else 2
-        model_manager.save_ignore(db, fields=['status'])
+        db.ua = request.META.get('user-agent')
+        model_manager.save_ignore(db, fields=['status', 'ua'])
 
     if res == 'ok':
         pass
