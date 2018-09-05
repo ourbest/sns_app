@@ -59,7 +59,7 @@ def mark_status(img, res, request):
     db = AuditImage.objects.filter(image_id=img).first()
     if db:
         db.status = 1 if 'ok' == res else 2
-        db.ua = request.META.get('user-agent')
+        db.ua = request.META.get('HTTP_USER_AGENT')
         model_manager.save_ignore(db, fields=['status', 'ua'])
 
     if res == 'ok':
