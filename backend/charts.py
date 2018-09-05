@@ -42,6 +42,7 @@ def api_get_app_today(request):
 
     with connection.cursor() as cursor:
         cursor.execute('select app_id, concat(left(ts, 14), \'00\'), count(*) from backend_weizhanclick '
+                       'force index(backend_weizhanclick_ts_9fbc43af) '
                        'where ts > now() - interval 24 hour and tid>0 and app_id=%s '
                        'group by app_id, left(ts, 14)' % app)
         rows = cursor.fetchall()
