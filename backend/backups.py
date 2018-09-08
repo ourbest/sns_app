@@ -15,20 +15,20 @@ def backup_weizhanclick(date=None):
     date = dates.get_date(date)
 
     for app in model_manager.get_dist_apps():
-        df = pd.DataFrame(
-            list(WeizhanClick.objects.filter(app_id=app.app_id,
-                                             ts__range=(date, date +
-                                                        timedelta(days=1) - timedelta(seconds=1))).values()))
+        weizhan_to_delete = WeizhanClick.objects.filter(app_id=app.app_id, ts__range=(
+            date, date + timedelta(days=1) - timedelta(seconds=1)))
+        df = pd.DataFrame(list(weizhan_to_delete.values()))
         filename = 'logs/{}.{}.parq'.format(app.app_id, date.strftime('%Y-%m-%d'))
         write(filename, df, compression='GZIP', file_scheme='simple')
         upload_to_qn(filename, 'weizhan/' + filename)
         os.remove(filename)
+        weizhan_to_delete.delete()
 
-        df = pd.DataFrame(
-            list(WeizhanDownClick.objects.filter(app_id=app.app_id,
-                                                 ts__range=(date, date +
-                                                            timedelta(days=1) - timedelta(seconds=1))).values()))
+        dl_to_delete = WeizhanDownClick.objects.filter(app_id=app.app_id, ts__range=(
+            date, date + timedelta(days=1) - timedelta(seconds=1)))
+        df = pd.DataFrame(list(dl_to_delete.values()))
         filename = 'logs/down.{}.{}.parq'.format(app.app_id, date.strftime('%Y-%m-%d'))
         write(filename, df, compression='GZIP', file_scheme='simple')
         upload_to_qn(filename, 'weizhan/' + filename)
         os.remove(filename)
+        dl_to_delete.delete()
