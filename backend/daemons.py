@@ -62,3 +62,5 @@ def weekly_stat():
 def backup_weizhan():
     backup_date = WeizhanClick.objects.first().ts
     backups.backup_weizhanclick.delay(backup_date)
+
+    backups.clean_db.delay()

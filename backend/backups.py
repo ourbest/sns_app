@@ -2,12 +2,13 @@ import os
 
 import pandas as pd
 from datetime import timedelta
+from django.db import connection
 from django_rq import job
 from fastparquet import write
 
 from backend import dates, model_manager
 from backend.jobs import upload_to_qn
-from backend.models import WeizhanClick, WeizhanDownClick
+from backend.models import WeizhanClick, WeizhanDownClick, RuntimeData
 
 
 @job('default', timeout=1200)
@@ -32,3 +33,10 @@ def backup_weizhanclick(date=None):
         upload_to_qn(filename, 'weizhan/' + filename)
         os.remove(filename)
         dl_to_delete.delete()
+
+
+@job('default', timeout=1200)
+def clean_db():
+    with connection.cursor() as cursor:
+        for x in RuntimeData.objects.filter(name__startswith='clean_sql'):
+            cursor.execute(x.value)
