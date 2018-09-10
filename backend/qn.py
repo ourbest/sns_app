@@ -17,6 +17,16 @@ def send_image_audit(image_id):
     if image_id.startswith('e_'):
         return
 
+    image_hash = get_image_hash(image_id)
+    if image_hash:
+        ai = AuditImage.objects.filter(image_hash=image_hash).first()
+        if ai:
+            nai = AuditImage(image_id=image_id, image_hash=ai,
+                             app_id=ai.app_id, status=ai.status,
+                             created_at=timezone.now())
+            model_manager.save_ignore(nai)
+            return
+
     app_id = 0
     db = model_manager.query(ImageUploader).filter(imageId=image_id).first()
 
@@ -119,3 +129,11 @@ def do_rename(bucket, bucket_name, img):
 def show_img(img):
     q = Auth(settings.QINIU_AK, settings.QINIU_SK)
     return HttpResponseRedirect(q.private_download_url('http://ty.appgc.cn/%s' % img, 30))
+
+
+def get_image_hash(image_id):
+    q = Auth(settings.QINIU_AK, settings.QINIU_SK)
+    bucket = BucketManager(q)
+    bucket_name = 'cimg1'
+    ret, info = bucket.stat(bucket_name, image_id)
+    return info['hash'] if 'hash' in info else ''

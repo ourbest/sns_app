@@ -1064,6 +1064,7 @@ class DingTalkToken(models.Model):
 
 class AuditImage(models.Model):
     image_id = models.CharField(max_length=64, primary_key=True)
+    image_hash = models.CharField(max_length=64, db_index=True, default='')
     app_id = models.IntegerField()
     user_id = models.BigIntegerField(null=True)
     created_at = models.DateTimeField(auto_now_add=True)
