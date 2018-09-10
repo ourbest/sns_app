@@ -135,5 +135,5 @@ def get_image_hash(image_id):
     q = Auth(settings.QINIU_AK, settings.QINIU_SK)
     bucket = BucketManager(q)
     bucket_name = 'cimg1'
-    ret, info = bucket.stat(bucket_name, image_id)
+    info, ret = bucket.stat(bucket_name, image_id)
     return info['hash'] if 'hash' in info else ''
