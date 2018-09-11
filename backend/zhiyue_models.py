@@ -654,3 +654,18 @@ class PartnerImage(models.Model):
     class Meta:
         db_table = 'partner_PartnerImage'
         managed = False
+
+
+class UserLocation(models.Model):
+    userId = models.BigIntegerField(primary_key=True)
+    appId = models.IntegerField()
+    enabled = models.IntegerField()
+    updateTime = models.DateTimeField()
+
+    @staticmethod
+    def db_name():
+        return 'partner'
+
+    class Meta:
+        db_table = 'city_UserLocation'
+        managed = False

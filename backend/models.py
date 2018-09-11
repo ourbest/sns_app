@@ -1070,3 +1070,29 @@ class AuditImage(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     status = models.IntegerField(default=0)
     ua = models.CharField(default=None, null=True, blank=True, max_length=255)
+
+
+class DeviceUserExtra(models.Model):
+    user_id = models.BigIntegerField(primary_key=True)
+    app_id = models.IntegerField()
+    created_at = models.DateTimeField()
+    ip = models.CharField(max_length=20, default='')
+    city = models.CharField(max_length=50, default='')
+    location = models.CharField(max_length=100, default='', null=True)
+    region = models.CharField(max_length=100, default="")
+    view_source_item = models.IntegerField(default=0, verbose_name='是否查看关联安装文章')
+    remain = models.IntegerField(default=0)
+    area = models.CharField(max_length=20)
+    area_type = models.IntegerField(default=-1, help_text='0 - 主城区，1 - 县城，2 - 外地')
+    platform = models.CharField(max_length=10, help_text='iphone/android')
+    lbs_flag = models.IntegerField(default=-1, verbose_name='是否打开gps')
+    view_items = models.IntegerField(verbose_name='第一次查看文章次数(30分钟内)', default=0)
+    open_push = models.IntegerField(verbose_name='是否打开推送', default=0)
+    view_push = models.IntegerField(verbose_name='是否查看推送', default=0)
+    view_clips = models.IntegerField(verbose_name='查看的栏目个数', default=0)
+    sign_on = models.IntegerField(verbose_name='是否登录', default=0)
+    open_times = models.IntegerField(default=0, verbose_name='第一天打开APP次数')
+
+    @staticmethod
+    def db_name():
+        return 'zhiyue_rw'
