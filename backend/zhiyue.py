@@ -923,18 +923,34 @@ def qiniu_cb(request):
     if request.method == 'POST':
         values = json.loads(request.body)
         if values['code'] == 0:
-            result = values.get('items')[0].get('result').get('result').get('result')
-            v = result.get('label')
+            items = values.get('items')[0].get('result')
             img = values['inputKey']
-            if v == 1:
-                if result.get('score') >= 0.99:
-                    qn.mark_status(img, 'auto', request)
-                elif 0.85 < result.get('score') <= 0.99:
-                    qn.send_image_audit(img)
+
+            if 'disable' in items and items['disable']:
+                qn.mark_status(img, 'auto')
+                return HttpResponse('OK')
+            full_result = items.get('result')
+
+            if 'result' in full_result:
+                result = full_result.get('result')
+                v = result.get('label')
+                if v == 1:
+                    if result.get('score') >= 0.99:
+                        qn.mark_status(img, 'auto')
+                    elif 0.90 < result.get('score') <= 0.99:
+                        qn.send_image_audit(img)
+                    else:
+                        logger.info('%s - %s(%s)' % (img, v, result.get('score')))
                 else:
-                    logger.info('%s - %s(%s)' % (img, v, result.get('score')))
-            else:
-                logger.info('%s - %s' % (img, v))
+                    logger.info('%s - %s' % (img, v))
+
+            if 'scenes' in full_result:
+                scenes = full_result['scenes']
+                for key, value in scenes.items():
+                    suggestion = value.get('suggestion')
+                    if suggestion == 'block':
+                        qn.send_worse(img, suggestion)
+                        return HttpResponse('OK')
 
     return HttpResponse('OK')
 

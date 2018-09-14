@@ -137,3 +137,13 @@ def get_image_hash(image_id):
     bucket_name = 'cimg1'
     info, ret = bucket.stat(bucket_name, image_id)
     return info['hash'] if 'hash' in info else ''
+
+
+def send_worse(img, suggestion):
+    dingding_msg = {
+        'msgtype': 'text',
+        'text': {
+            'content': '%s已因%s自动封禁' % (img, suggestion),
+        }
+    }
+    requests.post(url, json=dingding_msg)
