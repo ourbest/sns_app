@@ -927,7 +927,7 @@ def qiniu_cb(request):
             img = values['inputKey']
 
             if 'disable' in items and items['disable']:
-                qn.mark_status(img, 'auto')
+                qn.mark_status(img, 'auto', request)
                 return HttpResponse('OK')
             full_result = items.get('result')
 
@@ -936,7 +936,7 @@ def qiniu_cb(request):
                 v = result.get('label')
                 if v == 1:
                     if result.get('score') >= 0.99:
-                        qn.mark_status(img, 'auto')
+                        qn.mark_status(img, 'auto', request)
                     elif 0.90 < result.get('score') <= 0.99:
                         qn.send_image_audit(img)
                     else:
