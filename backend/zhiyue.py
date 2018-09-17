@@ -922,6 +922,7 @@ def push_audit_stat():
 def qiniu_cb(request):
     if request.method == 'POST':
         values = json.loads(request.body)
+        logger.info('request %s ' % values)
         if values['code'] == 0:
             items = values.get('items')[0].get('result')
             img = values['inputKey']
