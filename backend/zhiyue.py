@@ -928,6 +928,7 @@ def qiniu_cb(request):
             img = values['inputKey']
 
             if 'disable' in items and items['disable']:
+                logger.info('request %s ' % values)
                 qn.mark_status(img, 'auto', request)
                 return HttpResponse('OK')
             full_result = items.get('result')
@@ -937,6 +938,7 @@ def qiniu_cb(request):
                 v = result.get('label')
                 if v == 1:
                     if result.get('score') >= 0.99:
+                        logger.info('request %s ' % values)
                         qn.mark_status(img, 'auto', request)
                     elif 0.90 < result.get('score') <= 0.99:
                         qn.send_image_audit(img)
@@ -950,6 +952,7 @@ def qiniu_cb(request):
                 for key, value in scenes.items():
                     suggestion = value.get('suggestion')
                     if suggestion == 'block':
+                        logger.info('request %s ' % values)
                         qn.mark_status(img, 'auto', request)
                         qn.send_worse(img, suggestion)
                         return HttpResponse('OK')
