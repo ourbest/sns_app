@@ -922,7 +922,7 @@ def push_audit_stat():
 def qiniu_cb(request):
     if request.method == 'POST':
         values = json.loads(request.body)
-        logger.info('request %s ' % values)
+        # logger.info('request %s ' % values)
         if values['code'] == 0:
             items = values.get('items')[0].get('result')
             img = values['inputKey']
@@ -950,6 +950,7 @@ def qiniu_cb(request):
                 for key, value in scenes.items():
                     suggestion = value.get('suggestion')
                     if suggestion == 'block':
+                        qn.mark_status(img, 'auto', request)
                         qn.send_worse(img, suggestion)
                         return HttpResponse('OK')
 
