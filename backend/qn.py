@@ -142,8 +142,11 @@ def get_image_hash(image_id):
 def send_worse(img, suggestion):
     dingding_msg = {
         'msgtype': 'text',
-        'text': {
-            'content': '%s已因%s自动封禁' % (img, suggestion),
+        'markdown': {
+            'markdown': {
+                'title': '昨天的审核排行',
+                'text': '[{0}](https://tg.appgc.cn/api/qn/img?img={0}) 已因{1}自动封禁'.format(img, suggestion)
+            },
         }
     }
     requests.post(url, json=dingding_msg)

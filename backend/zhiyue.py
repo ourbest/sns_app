@@ -876,7 +876,7 @@ def push_audit_stat():
         msg = random.choice(first) % (audit_logs[0]['operator'][:-9], audit_logs[0]['total'])
     elif audit_logs:
         if datetime.now().day == 22:
-            msg = '![图](http://qn.cutt.com/180522164610352.300.300.2.2423)\n' \
+            msg = '![图](http://qn.zhiyueapp.cn/180522164610352.300.300.2.2423)\n' \
                   '### 昨天的审核排行\n'
             for idx, x in enumerate(audit_logs):
                 msg += '%s. %s审核%s个\n' % (idx, x['operator'][:-9], x['total'])
@@ -929,6 +929,7 @@ def qiniu_cb(request):
 
             if 'disable' in items and items['disable']:
                 logger.info('request %s ' % values)
+                qn.send_worse(img, '黄图')
                 qn.mark_status(img, 'auto', request)
                 return HttpResponse('OK')
             full_result = items.get('result')
@@ -939,6 +940,7 @@ def qiniu_cb(request):
                 if v == 1:
                     if result.get('score') >= 0.99:
                         logger.info('request %s ' % values)
+                        qn.send_worse(img, '涉黄')
                         qn.mark_status(img, 'auto', request)
                     elif 0.90 < result.get('score') <= 0.99:
                         qn.send_image_audit(img)
