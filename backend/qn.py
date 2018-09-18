@@ -141,7 +141,7 @@ def get_image_hash(image_id):
 
 def send_worse(img, suggestion):
     dingding_msg = {
-        'msgtype': 'text',
+        'msgtype': 'markdown',
         'markdown': {
             'markdown': {
                 'title': '昨天的审核排行',
