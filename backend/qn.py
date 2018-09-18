@@ -143,10 +143,8 @@ def send_worse(img, suggestion):
     dingding_msg = {
         'msgtype': 'markdown',
         'markdown': {
-            'markdown': {
-                'title': '昨天的审核排行',
-                'text': '[{0}](https://tg.appgc.cn/api/qn/img?img={0}) 已因{1}自动封禁'.format(img, suggestion)
-            },
+            'title': '昨天的审核排行',
+            'text': '[{0}](https://tg.appgc.cn/api/qn/img?img={0}) 已因{1}自动封禁'.format(img, suggestion)
         }
     }
     requests.post(url, json=dingding_msg)
