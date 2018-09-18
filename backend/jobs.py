@@ -576,8 +576,9 @@ def make_resource_stat(today):
         users = app.user_set.filter(status=0)
         user_stats = []
         for user in users:
-            group_cnt = SnsUserGroup.objects.filter(sns_user__device__owner=user, status=0).count()
-            group_uniq_cnt = SnsUserGroup.objects.filter(sns_user__device__owner=user, status=0).values(
+            group_cnt = SnsUserGroup.objects.filter(sns_user__device__owner=user, status=0, sns_user__status=0).count()
+            group_uniq_cnt = SnsUserGroup.objects.filter(sns_user__device__owner=user, status=0,
+                                                         sns_user__status=0).values(
                 'sns_group_id').distinct().count()
             wx_group_cnt = DeviceWeixinGroup.objects.filter(device__owner=user).count()
             wx_group_uniq_cnt = DeviceWeixinGroup.objects.filter(device__owner=user).values('name').count()
@@ -604,9 +605,9 @@ def make_resource_stat(today):
 
         group_total = SnsGroup.objects.filter(app=app).count()
         group_new = SnsGroup.objects.filter(app=app, created_at__range=today_range).count()
-        group_uniq_cnt = SnsUserGroup.objects.filter(sns_user__app=app, status=0).values(
+        group_uniq_cnt = SnsUserGroup.objects.filter(sns_user__app=app, status=0, sns_user__status=0).values(
             'sns_group_id').distinct().count()
-        group_cnt = SnsUserGroup.objects.filter(sns_user__app=app, status=0).count()
+        group_cnt = SnsUserGroup.objects.filter(sns_user__app=app, status=0, sns_user__status=0).count()
         wx_uniq_cnt = DeviceWeixinGroup.objects.filter(device__owner__app=app).values('name').distinct().count()
         wx_group_cnt = DeviceWeixinGroup.objects.filter(device__owner__app=app).count()
 

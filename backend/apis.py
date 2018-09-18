@@ -1779,8 +1779,9 @@ def sum_team_qun(request):
 
 def sum_app_team(app):
     query = SnsGroup.objects.filter(app_id=app) \
-        .extra(where=['exists (select 1 from backend_snsusergroup '
-                      'where status=0 and sns_group_id=backend_snsgroup.group_id)'])
+        .extra(where=['exists (select 1 from backend_snsusergroup g, backend_snsuser u '
+                      'where g.status=0 and sns_group_id=backend_snsgroup.group_id and u.status=0 and '
+                      'g.sns_user_id=u.id)'])
 
     query_add = SnsGroup.objects.filter(app_id=app) \
         .extra(where=['exists (select 1 from backend_snsusergroup g, backend_snsuser u '
