@@ -748,8 +748,8 @@ class RequestCalling:
         else:
             return connection
 
-    STATUS_TIMEOUT = defaultdict(lambda: 30)
-    STATUS_TIMEOUT.update([(1, 60), (2, 2 * 60), (4, 3 * 60)])
+    STATUS_TIMEOUT = defaultdict(lambda: 60)
+    STATUS_TIMEOUT.update([(2, 2 * 60), (4, 3 * 60)])
 
     def _check_status_timeout(self, connection: CallingList) -> bool:
         if self.STATUS_TIMEOUT[connection.status]:
